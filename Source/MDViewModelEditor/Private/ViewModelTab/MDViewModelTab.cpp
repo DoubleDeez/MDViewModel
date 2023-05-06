@@ -1,0 +1,28 @@
+#include "ViewModelTab/MDViewModelTab.h"
+#include "WidgetBlueprintEditor.h"
+#include "ViewModelTab/MDViewModelEditor.h"
+
+#define LOCTEXT_NAMESPACE "MDViewModelSummoner"
+
+const FName FMDViewModelSummoner::TabID(TEXT("MDViewModelTab"));
+const FName FMDViewModelSummoner::DrawerID(TEXT("MDViewModelDrawer"));
+
+
+FMDViewModelSummoner::FMDViewModelSummoner(TSharedPtr<FWidgetBlueprintEditor> BlueprintEditor, bool bInIsDrawerTab)
+	: FWorkflowTabFactory(TabID, BlueprintEditor)
+	, WeakWidgetBlueprintEditor(BlueprintEditor)
+	, bIsDrawerTab(bInIsDrawerTab)
+{
+	TabLabel = LOCTEXT("ViewModels", "View Models");
+	// TabIcon =
+
+	bIsSingleton = true;
+
+	ViewMenuDescription = LOCTEXT("ViewModels", "View Models");
+	ViewMenuTooltip = LOCTEXT("ViewModelsTooltip", "Modify which view models are assigned to this widget");
+}
+
+TSharedRef<SWidget> FMDViewModelSummoner::CreateTabBody(const FWorkflowTabSpawnInfo& Info) const
+{
+	return SNew(SMDViewModelEditor, WeakWidgetBlueprintEditor.Pin());
+}
