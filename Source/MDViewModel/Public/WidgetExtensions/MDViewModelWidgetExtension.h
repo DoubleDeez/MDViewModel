@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Extensions/UserWidgetExtension.h"
 #include "Templates/SubclassOf.h"
+#include "Util/MDViewModelInstanceKey.h"
 #include "Util/MDViewModelUtils.h"
 #include "MDViewModelWidgetExtension.generated.h"
 
@@ -21,31 +22,31 @@ class MDVIEWMODEL_API UMDViewModelWidgetExtension : public UUserWidgetExtension
 	GENERATED_BODY()
 
 #pragma region Core
-public:	
+public:
 	virtual void Initialize() override;
 	virtual void BeginDestroy() override;
 
 	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Get or Create View Model Extension", meta = (DefaultToSelf = "Widget"))
 	static UMDViewModelWidgetExtension* GetOrCreate(UUserWidget* Widget);
-	
+
 private:
 	void PopulateViewModels();
 	void CleanUpViewModels();
 
 	UPROPERTY(Transient)
-	TMap<FName, TObjectPtr<UMDViewModelBase>> ViewModels;
+	TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>> ViewModels;
 #pragma endregion Core
 
 #pragma region Assignment
-public:	
+public:
 	template<typename T>
 	T* AssignViewModelOfClass(TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
-	
+
 	UMDViewModelBase* AssignViewModel(UMDViewModelBase* ViewModel, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
 	UMDViewModelBase* AssignViewModelOfClass(TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
-	
+
 	UMDViewModelBase* GetViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName) const;
-	
+
 protected:
 	void OnProviderViewModelUpdated(TSubclassOf<UMDViewModelBase> ViewModelClass, FGameplayTag ProviderTag);
 #pragma endregion Assignment
@@ -54,10 +55,10 @@ protected:
 public:
 	FDelegateHandle ListenForChanges(FMDVMOnViewModelAssigned::FDelegate&& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
 	void StopListeningForChanges(FDelegateHandle& Handle, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
-	
+
 private:
-	void BroadcastViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, const FName& ViewModelName);
-	TMap<FName, FMDVMOnViewModelAssigned> OnViewModelAssignedDelegates;
+	void BroadcastViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);
+	TMap<FMDViewModelInstanceKey, FMDVMOnViewModelAssigned> OnViewModelAssignedDelegates;
 #pragma endregion Delegates
 };
 

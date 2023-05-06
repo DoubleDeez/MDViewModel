@@ -3,8 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Templates/SubclassOf.h"
 #include "Widgets/SCompoundWidget.h"
 
+class UMDViewModelBase;
+struct FMDViewModelEditorAssignment;
+class SMDViewModelDetails;
 class FWidgetBlueprintEditor;
 
 /**
@@ -20,4 +24,18 @@ public:
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs, TSharedPtr<FWidgetBlueprintEditor> BlueprintEditor);
+
+private:
+	void OnSetObjectBeingDebugged(UObject* Object);
+	void OnViewModelSelected(FMDViewModelEditorAssignment* Assignment);
+
+	EVisibility GetViewModelDetailsVisibility() const;
+
+	void OnViewModelChanged();
+
+	TWeakObjectPtr<UObject> ObjectBeingDebugged;
+	TSubclassOf<UMDViewModelBase> SelectedViewModelClass;
+	FName SelectedViewModelName = NAME_None;
+
+	TSharedPtr<SMDViewModelDetails> ViewModelDetailsWidget;
 };

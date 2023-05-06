@@ -45,10 +45,11 @@ UMDViewModelBase* UMDViewModelWidgetExtension::AssignViewModel(UMDViewModelBase*
 		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModel->GetClass(), ViewModelName);
 		if (ViewModelName != NAME_None)
 		{
-			UMDViewModelBase* OldViewModel = ViewModels.FindRef(ViewModelName);
-			ViewModels.FindOrAdd(ViewModelName) = ViewModel;
+			const FMDViewModelInstanceKey Key = { ViewModelName, ViewModel->GetClass() };
+			UMDViewModelBase* OldViewModel = ViewModels.FindRef(Key);
+			ViewModels.FindOrAdd(Key) = ViewModel;
 
-			BroadcastViewModelChanged(OldViewModel, ViewModel, ViewModelName);
+			BroadcastViewModelChanged(OldViewModel, ViewModel, ViewModel->GetClass(), ViewModelName);
 		}
 	}
 
@@ -77,7 +78,8 @@ UMDViewModelBase* UMDViewModelWidgetExtension::GetViewModel(TSubclassOf<UMDViewM
 		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
 		if (ViewModelName != NAME_None)
 		{
-			return ViewModels.FindRef(ViewModelName);
+			const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
+			return ViewModels.FindRef(Key);
 		}
 	}
 
@@ -114,7 +116,8 @@ FDelegateHandle UMDViewModelWidgetExtension::ListenForChanges(FMDVMOnViewModelAs
 	if (IsValid(ViewModelClass))
 	{
 		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
-		return OnViewModelAssignedDelegates.FindOrAdd(ViewModelName).Add(MoveTemp(Delegate));
+		const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
+		return OnViewModelAssignedDelegates.FindOrAdd(Key).Add(MoveTemp(Delegate));
 	}
 
 	return {};
@@ -125,7 +128,8 @@ void UMDViewModelWidgetExtension::StopListeningForChanges(FDelegateHandle& Handl
 	if (IsValid(ViewModelClass))
 	{
 		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
-		if (FMDVMOnViewModelAssigned* Delegate = OnViewModelAssignedDelegates.Find(ViewModelName))
+		const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
+		if (FMDVMOnViewModelAssigned* Delegate = OnViewModelAssignedDelegates.Find(Key))
 		{
 			if (Delegate->Remove(Handle))
 			{
@@ -135,7 +139,7 @@ void UMDViewModelWidgetExtension::StopListeningForChanges(FDelegateHandle& Handl
 	}
 }
 
-void UMDViewModelWidgetExtension::BroadcastViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, const FName& ViewModelName)
+void UMDViewModelWidgetExtension::BroadcastViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
 {
 	UUserWidget* OwnerWidget = GetUserWidget();
 	if (IsValid(OldViewModel))
@@ -148,7 +152,8 @@ void UMDViewModelWidgetExtension::BroadcastViewModelChanged(UMDViewModelBase* Ol
 		NewViewModel->OnAssignedToWidget(OwnerWidget);
 	}
 
-	if (const FMDVMOnViewModelAssigned* Delegate = OnViewModelAssignedDelegates.Find(ViewModelName))
+	const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
+	if (const FMDVMOnViewModelAssigned* Delegate = OnViewModelAssignedDelegates.Find(Key))
 	{
 		Delegate->Broadcast(OldViewModel, NewViewModel);
 	}

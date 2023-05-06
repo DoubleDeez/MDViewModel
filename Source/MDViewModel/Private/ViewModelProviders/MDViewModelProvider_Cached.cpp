@@ -25,7 +25,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::AssignViewModel(UUserWidget& Widg
 			UMDGlobalViewModelCache* GlobalCache = UGameInstance::GetSubsystem<UMDGlobalViewModelCache>(Widget.GetGameInstance());
 			if (ensure(GlobalCache))
 			{
-				GlobalCache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass);
+				ViewModelBase = GlobalCache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass);
 			}
 		}
 		else if (Settings->ViewModelLifetime == EMDViewModelProvider_CacheLifetime::LocalPlayer)
@@ -33,7 +33,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::AssignViewModel(UUserWidget& Widg
 			UMDLocalPlayerViewModelCache* LocalPlayerCache = ULocalPlayer::GetSubsystem<UMDLocalPlayerViewModelCache>(Widget.GetOwningLocalPlayer());
 			if (ensure(LocalPlayerCache))
 			{
-				LocalPlayerCache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass);
+				ViewModelBase = LocalPlayerCache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass);
 			}
 		}
 		else if (Settings->ViewModelLifetime == EMDViewModelProvider_CacheLifetime::World)
@@ -41,7 +41,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::AssignViewModel(UUserWidget& Widg
 			UMDWorldViewModelCache* WorldCache = UWorld::GetSubsystem<UMDWorldViewModelCache>(Widget.GetWorld());
 			if (ensure(WorldCache))
 			{
-				WorldCache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass);
+				ViewModelBase = WorldCache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass);
 			}
 		}
 

@@ -15,9 +15,13 @@ struct FMDViewModelEditorAssignment;
 class MDVIEWMODELEDITOR_API SMDViewModelList : public SCompoundWidget
 {
 public:
+	DECLARE_DELEGATE_OneParam(FOnViewModelSelected, FMDViewModelEditorAssignment*);
+
 	SLATE_BEGIN_ARGS(SMDViewModelList)
 		{
 		}
+
+		SLATE_EVENT(FOnViewModelSelected, OnViewModelSelected)
 
 	SLATE_END_ARGS()
 
@@ -27,6 +31,7 @@ public:
 	void Construct(const FArguments& InArgs, UWidgetBlueprint* InBlueprint);
 
 private:
+	void OnItemSelected(TSharedPtr<FMDViewModelEditorAssignment> Item, ESelectInfo::Type SelectInfo);
 	TSharedRef<ITableRow> OnGenerateRow(TSharedPtr<FMDViewModelEditorAssignment> Item, const TSharedRef<STableViewBase>& OwningTable);
 	void PopulateAssignments();
 
@@ -41,4 +46,5 @@ private:
 	TArray<TSharedPtr<FMDViewModelEditorAssignment>> Assignments;
 	TSubclassOf<UUserWidget> WidgetClass;
 	UWidgetBlueprint* WidgetBP = nullptr;
+	FOnViewModelSelected OnViewModelSelected;
 };

@@ -25,6 +25,7 @@ void SMDViewModelList::Construct(const FArguments& InArgs, UWidgetBlueprint* InB
 	check(IsValid(InBlueprint));
 	WidgetBP = InBlueprint;
 	WidgetClass = WidgetBP->GeneratedClass;
+	OnViewModelSelected = InArgs._OnViewModelSelected;
 
 	if (UMDViewModelWidgetBlueprintExtension* BPExtension = UWidgetBlueprintExtension::RequestExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
 	{
@@ -72,8 +73,14 @@ void SMDViewModelList::Construct(const FArguments& InArgs, UWidgetBlueprint* InB
 			SAssignNew(AssignmentList, SListView<TSharedPtr<FMDViewModelEditorAssignment>>)
 			.ListItemsSource(&Assignments)
 			.OnGenerateRow(this, &SMDViewModelList::OnGenerateRow)
+			.OnSelectionChanged(this, &SMDViewModelList::OnItemSelected)
 		]
 	];
+}
+
+void SMDViewModelList::OnItemSelected(TSharedPtr<FMDViewModelEditorAssignment> Item, ESelectInfo::Type SelectInfo)
+{
+	OnViewModelSelected.ExecuteIfBound(Item.Get());
 }
 
 TSharedRef<ITableRow> SMDViewModelList::OnGenerateRow(TSharedPtr<FMDViewModelEditorAssignment> Item, const TSharedRef<STableViewBase>& OwningTable)

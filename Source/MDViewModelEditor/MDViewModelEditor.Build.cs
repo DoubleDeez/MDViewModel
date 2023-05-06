@@ -18,6 +18,7 @@ public class MDViewModelEditor : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
+	            "BlueprintGraph",
                 "CoreUObject",
                 "Engine",
                 "InputCore",
