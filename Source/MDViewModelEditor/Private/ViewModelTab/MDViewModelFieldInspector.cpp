@@ -7,7 +7,7 @@
 #include "ViewModel/MDViewModelBase.h"
 
 
-bool FMDViewModelFieldDebugLineItem::HasChildren() const
+bool FMDViewModelDebugLineItemBase::HasChildren() const
 {
 	if (!CachedChildren.IsSet())
 	{
@@ -17,7 +17,7 @@ bool FMDViewModelFieldDebugLineItem::HasChildren() const
 	return CachedChildren.GetValue().Num() > 0;
 }
 
-void FMDViewModelFieldDebugLineItem::GatherChildrenBase(TArray<FDebugTreeItemPtr>& OutChildren, const FString& InSearchString, bool bRespectSearch)
+void FMDViewModelDebugLineItemBase::GatherChildrenBase(TArray<FDebugTreeItemPtr>& OutChildren, const FString& InSearchString, bool bRespectSearch)
 {
 	if (!CachedChildren.IsSet())
 	{
@@ -25,6 +25,22 @@ void FMDViewModelFieldDebugLineItem::GatherChildrenBase(TArray<FDebugTreeItemPtr
 	}
 
 	OutChildren.Append(CachedChildren.GetValue());
+}
+
+FText FMDViewModelDebugLineItemBase::GetDisplayName() const
+{
+	return DisplayName;
+}
+
+FText FMDViewModelDebugLineItemBase::GetDescription() const
+{
+	return Description;
+}
+
+bool FMDViewModelFieldDebugLineItem::Compare(const FDebugLineItem* BaseOther) const
+{
+	const FMDViewModelFieldDebugLineItem* Other = static_cast<const FMDViewModelFieldDebugLineItem*>(BaseOther);
+	return PropertyPtr.Get() == Other->PropertyPtr.Get() && ValuePtr == Other->ValuePtr;
 }
 
 TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GetNameIcon()
@@ -59,19 +75,19 @@ TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GenerateValueWidget(TSharedP
 
 FText FMDViewModelFieldDebugLineItem::GetDisplayValue() const
 {
-	const TTuple<const FProperty*, void*> PropertyInstance = GetPropertyInstance();
-	if (PropertyInstance.Key != nullptr && PropertyInstance.Value != nullptr)
+	const FProperty* Property = PropertyPtr.Get();
+	if (Property != nullptr && ValuePtr != nullptr)
 	{
-		if (PropertyInstance.Key->IsA<FObjectProperty>() || PropertyInstance.Key->IsA<FInterfaceProperty>())
+		if (Property->IsA<FObjectProperty>() || Property->IsA<FInterfaceProperty>())
 		{
 			const UObject* Object = nullptr;
-			if (const FObjectPropertyBase* ObjectPropertyBase = CastField<FObjectPropertyBase>(PropertyInstance.Key))
+			if (const FObjectPropertyBase* ObjectPropertyBase = CastField<FObjectPropertyBase>(Property))
 			{
-				Object = ObjectPropertyBase->GetObjectPropertyValue(PropertyInstance.Value);
+				Object = ObjectPropertyBase->GetObjectPropertyValue(ValuePtr);
 			}
-			else if (PropertyInstance.Key->IsA<FInterfaceProperty>())
+			else if (Property->IsA<FInterfaceProperty>())
 			{
-				const FScriptInterface* InterfaceData = static_cast<const FScriptInterface*>(PropertyInstance.Value);
+				const FScriptInterface* InterfaceData = static_cast<const FScriptInterface*>(ValuePtr);
 				Object = InterfaceData->GetObject();
 			}
 
@@ -84,7 +100,7 @@ FText FMDViewModelFieldDebugLineItem::GetDisplayValue() const
 				return INVTEXT("[None]");
 			}
 		}
-		else if (PropertyInstance.Key->IsA<FStructProperty>())
+		else if (Property->IsA<FStructProperty>())
 		{
 			if (!CachedChildren.IsSet())
 			{
@@ -96,7 +112,7 @@ FText FMDViewModelFieldDebugLineItem::GetDisplayValue() const
 		else
 		{
 			TSharedPtr<FPropertyInstanceInfo> DebugInfo;
-			FKismetDebugUtilities::GetDebugInfoInternal(DebugInfo, PropertyInstance.Key, PropertyInstance.Value);
+			FKismetDebugUtilities::GetDebugInfoInternal(DebugInfo, Property, ValuePtr);
 			return DebugInfo->Value;
 		}
 	}
@@ -108,28 +124,27 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 {
 	CachedChildren = TArray<FDebugTreeItemPtr>();
 
-	if (const FProperty* ItemProperty = PropertyPtr.Get())
+	if (const FProperty* Prop = PropertyPtr.Get())
 	{
-		const TTuple<const FProperty*, void*> PropertyInstance = GetPropertyInstance();
 		const UStruct* PropertyStruct = nullptr;
 		void* PropertyValue = nullptr;
-		if (const FObjectPropertyBase* ObjectProp = CastField<FObjectPropertyBase>(ItemProperty))
+		if (const FObjectPropertyBase* ObjectProp = CastField<FObjectPropertyBase>(Prop))
 		{
 			PropertyStruct = ObjectProp->PropertyClass;
-			if (PropertyInstance.Value != nullptr)
+			if (ValuePtr != nullptr)
 			{
-				PropertyValue = ObjectProp->GetObjectPropertyValue(PropertyInstance.Value);
+				PropertyValue = ObjectProp->GetObjectPropertyValue(ValuePtr);
 			}
 		}
-		else if (const FStructProperty* StructProp = CastField<FStructProperty>(ItemProperty))
+		else if (const FStructProperty* StructProp = CastField<FStructProperty>(Prop))
 		{
 			PropertyStruct = StructProp->Struct;
-			PropertyValue = PropertyInstance.Value;
+			PropertyValue = ValuePtr;
 		}
-		else if (ItemProperty->IsA<FInterfaceProperty>())
+		else if (Prop->IsA<FInterfaceProperty>())
 		{
 			// Interface property won't have the class so we need the actual value to get it
-			if (const FScriptInterface* InterfaceData = static_cast<const FScriptInterface*>(PropertyInstance.Value))
+			if (const FScriptInterface* InterfaceData = static_cast<const FScriptInterface*>(ValuePtr))
 			{
 				if (UObject* Object = InterfaceData->GetObject())
 				{
@@ -148,7 +163,8 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 					void* ChildValuePtr = PropertyValue != nullptr ? ChildProp->ContainerPtrToValuePtr<void>(PropertyValue) : nullptr;
 					if (!CachedPropertyItems.Contains(ChildProp->GetFName()))
 					{
-						CachedPropertyItems.Add(ChildProp->GetFName(), MakeShared<FMDViewModelFieldDebugLineItem>(ChildProp, ChildValuePtr));
+						CachedPropertyItems.Add(ChildProp->GetFName(),
+							MakeShared<FMDViewModelFieldDebugLineItem>(ChildProp, ChildValuePtr, ChildProp->GetDisplayNameText(), ChildProp->GetToolTipText()));
 					}
 					else
 					{
@@ -161,14 +177,14 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 				}
 			}
 		}
-		else if (const FArrayProperty* ArrayProp = CastField<FArrayProperty>(ItemProperty))
+		else if (const FArrayProperty* ArrayProp = CastField<FArrayProperty>(Prop))
 		{
-			if (PropertyInstance.Value != nullptr)
+			if (ValuePtr != nullptr)
 			{
 				TMap<FName, FDebugTreeItemPtr> CacheCopy = CachedPropertyItems;
 				CachedPropertyItems.Reset();
 
-				FScriptArrayHelper Helper = FScriptArrayHelper(ArrayProp, PropertyInstance.Value);
+				FScriptArrayHelper Helper = FScriptArrayHelper(ArrayProp, ValuePtr);
 				for (int32 i = 0; i < Helper.Num(); ++i)
 				{
 					void* ChildValuePtr = Helper.GetRawPtr(i);
@@ -176,7 +192,8 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 					const FName PropertyName = *FString::Printf(TEXT("%d"), i);
 					if (!CacheCopy.Contains(PropertyName))
 					{
-						CachedPropertyItems.Add(PropertyName, MakeShared<FMDViewModelFieldDebugLineItem>(ArrayProp->Inner, ChildValuePtr, ElementDisplayName));
+						CachedPropertyItems.Add(PropertyName,
+							MakeShared<FMDViewModelFieldDebugLineItem>(ArrayProp->Inner, ChildValuePtr, ElementDisplayName, Prop->GetToolTipText()));
 					}
 					else
 					{
@@ -195,14 +212,14 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 				CachedPropertyItems.Reset();
 			}
 		}
-		else if (const FSetProperty* SetProp = CastField<FSetProperty>(ItemProperty))
+		else if (const FSetProperty* SetProp = CastField<FSetProperty>(Prop))
 		{
-			if (PropertyInstance.Value != nullptr)
+			if (ValuePtr != nullptr)
 			{
 				TMap<FName, FDebugTreeItemPtr> CacheCopy = CachedPropertyItems;
 				CachedPropertyItems.Reset();
 
-				FScriptSetHelper Helper = FScriptSetHelper(SetProp, PropertyInstance.Value);
+				FScriptSetHelper Helper = FScriptSetHelper(SetProp, ValuePtr);
 				for (int32 i = 0; i < Helper.Num(); ++i)
 				{
 					void* ChildValuePtr = Helper.GetElementPtr(i);
@@ -210,7 +227,8 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 					const FName PropertyName = *FString::Printf(TEXT("%d"), i);
 					if (!CacheCopy.Contains(PropertyName))
 					{
-						CachedPropertyItems.Add(PropertyName, MakeShared<FMDViewModelFieldDebugLineItem>(SetProp->ElementProp, ChildValuePtr, ElementDisplayName));
+						CachedPropertyItems.Add(PropertyName,
+							MakeShared<FMDViewModelFieldDebugLineItem>(SetProp->ElementProp, ChildValuePtr, ElementDisplayName, Prop->GetToolTipText()));
 					}
 					else
 					{
@@ -229,14 +247,14 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 				CachedPropertyItems.Reset();
 			}
 		}
-		else if (const FMapProperty* MapProp = CastField<FMapProperty>(ItemProperty))
+		else if (const FMapProperty* MapProp = CastField<FMapProperty>(Prop))
 		{
-			if (PropertyInstance.Value != nullptr)
+			if (ValuePtr != nullptr)
 			{
 				TMap<FName, FDebugTreeItemPtr> CacheCopy = CachedPropertyItems;
 				CachedPropertyItems.Reset();
 
-				FScriptMapHelper Helper = FScriptMapHelper(MapProp, PropertyInstance.Value);
+				FScriptMapHelper Helper = FScriptMapHelper(MapProp, ValuePtr);
 				for (int32 i = 0; i < Helper.Num(); ++i)
 				{
 					// Key
@@ -245,7 +263,8 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 					const FName KeyPropertyName = *FString::Printf(TEXT("Key[%d]"), i);
 					if (!CacheCopy.Contains(KeyPropertyName))
 					{
-						CachedPropertyItems.Add(KeyPropertyName, MakeShared<FMDViewModelFieldDebugLineItem>(MapProp->KeyProp, ChildKeyPtr, KeyDisplayName));
+						CachedPropertyItems.Add(KeyPropertyName,
+							MakeShared<FMDViewModelFieldDebugLineItem>(MapProp->KeyProp, ChildKeyPtr, KeyDisplayName, Prop->GetToolTipText()));
 					}
 					else
 					{
@@ -264,7 +283,8 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 					const FName ValuePropertyName = *FString::Printf(TEXT("Value[%d]"), i);
 					if (!CacheCopy.Contains(ValuePropertyName))
 					{
-						CachedPropertyItems.Add(ValuePropertyName, MakeShared<FMDViewModelFieldDebugLineItem>(MapProp->ValueProp, ChildValuePtr, ValueDisplayName));
+						CachedPropertyItems.Add(ValuePropertyName,
+							MakeShared<FMDViewModelFieldDebugLineItem>(MapProp->ValueProp, ChildValuePtr, ValueDisplayName, Prop->GetToolTipText()));
 					}
 					else
 					{
@@ -288,9 +308,63 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 	CachedPropertyItems.GenerateValueArray(CachedChildren.GetValue());
 }
 
-TTuple<const FProperty*, void*> FMDViewModelFieldDebugLineItem::GetPropertyInstance() const
+TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GetNameIcon()
 {
-	return { PropertyPtr.Get(), ValuePtr };
+	if (const UFunction* Function = FunctionPtr.Get())
+	{
+		FLinearColor ReturnValueColor = FLinearColor::White;
+		FText ToolTipText = Function->GetToolTipText();
+		if (const FProperty* ReturnProperty = Function->GetReturnProperty())
+		{
+			// TODO - Handle BP function return values
+			const UEdGraphSchema_K2* K2Schema = GetDefault<UEdGraphSchema_K2>();
+			FEdGraphPinType PinType;
+			if (K2Schema->ConvertPropertyToPinType(ReturnProperty, PinType))
+			{
+				ReturnValueColor = K2Schema->GetPinTypeColor(PinType);
+			}
+
+			ToolTipText = UEdGraphSchema_K2::TypeToText(ReturnProperty);
+		}
+
+		return SNew(SImage)
+			.Image(FAppStyle::Get().GetBrush(TEXT("GraphEditor.Function_16x")))
+			.ColorAndOpacity(ReturnValueColor)
+			.ToolTipText(ToolTipText);
+	}
+
+	return FDebugLineItem::GetNameIcon();
+}
+
+TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GenerateValueWidget(TSharedPtr<FString> InSearchString)
+{
+	// Display the function comment as the value
+	// Anything better we can do here? # params + Return values?
+	return SNew(STextBlock)
+		.Text(this, &FMDViewModelFunctionDebugLineItem::GetDescription)
+		.ToolTipText(this, &FMDViewModelFunctionDebugLineItem::GetDescription);
+}
+
+void FMDViewModelFunctionDebugLineItem::UpdateCachedChildren() const
+{
+	CachedChildren = TArray<FDebugTreeItemPtr>();
+
+	if (const UFunction* Function = FunctionPtr.Get())
+	{
+		for (TFieldIterator<const FProperty> It(Function); It; ++It)
+		{
+			if (const FProperty* ParamProp = *It)
+			{
+				if (!CachedPropertyItems.Contains(ParamProp->GetFName()))
+				{
+					CachedPropertyItems.Add(ParamProp->GetFName(),
+						MakeShared<FMDViewModelFieldDebugLineItem>(ParamProp, nullptr, ParamProp->GetDisplayNameText(), ParamProp->GetToolTipText()));
+				}
+			}
+		}
+	}
+
+	CachedPropertyItems.GenerateValueArray(CachedChildren.GetValue());
 }
 
 void FMDViewModelFieldDebugLineItem::UpdateValuePtr(void* InValuePtr)
@@ -306,6 +380,17 @@ void FMDViewModelFieldDebugLineItem::UpdateValuePtr(void* InValuePtr)
 
 	// Invalidate the children so they update
 	CachedChildren.Reset();
+}
+
+void SMDViewModelFieldInspector::Construct(const FArguments& InArgs)
+{
+	bIncludeBlueprintVisibleProperties = InArgs._bIncludeBlueprintVisibleProperties;
+	bIncludeBlueprintAssignableProperties = InArgs._bIncludeBlueprintAssignableProperties;
+	bIncludeBlueprintCallable = InArgs._bIncludeBlueprintCallable;
+	bIncludeBlueprintPure = InArgs._bIncludeBlueprintPure;
+	bIncludeFieldNotifyFunctions = InArgs._bIncludeFieldNotifyFunctions;
+
+	SPinValueInspector::Construct({});
 }
 
 void SMDViewModelFieldInspector::SetReferences(TSubclassOf<UMDViewModelBase> InViewModelClass, UMDViewModelBase* InDebugViewModel)
@@ -331,21 +416,98 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 
 	bIsDebugging = DebugViewModel.IsValid();
 
+	TSet<FName> FieldNotifySupportedNames;
+	{
+		const TScriptInterface<INotifyFieldValueChanged> DefaultVM = ViewModelClass->GetDefaultObject();
+		const UE::FieldNotification::IClassDescriptor& ClassDescriptor = DefaultVM->GetFieldNotificationDescriptor();
+		ClassDescriptor.ForEachField(ViewModelClass, [&FieldNotifySupportedNames](UE::FieldNotification::FFieldId FieldId)
+		{
+			FieldNotifySupportedNames.Add(FieldId.GetName());
+			return true;
+		});
+	}
+
 	for (TFieldIterator<const FProperty> It(ViewModelClass); It; ++It)
 	{
 		if (const FProperty* Prop = *It)
 		{
-			if (Prop->HasAnyPropertyFlags(CPF_BlueprintVisible))
+			if (Prop->GetOwnerUObject() == UMDViewModelBase::StaticClass())
+			{
+				continue;
+			}
+
+			const bool bIsFieldNotify = FieldNotifySupportedNames.Contains(Prop->GetFName());
+			if (bIncludeBlueprintVisibleProperties && Prop->HasAnyPropertyFlags(CPF_BlueprintVisible))
 			{
 				void* ValuePtr = bIsDebugging ? Prop->ContainerPtrToValuePtr<void>(DebugViewModel.Get()) : nullptr;
-				TSharedPtr<FMDViewModelFieldDebugLineItem>& Item = TreeItems.FindOrAdd(Prop);
+				TSharedPtr<FMDViewModelFieldDebugLineItem>& Item = PropertyTreeItems.FindOrAdd(Prop);
 				if (!Item.IsValid())
 				{
-					Item = MakeShared<FMDViewModelFieldDebugLineItem>(Prop, ValuePtr);
+					Item = MakeShared<FMDViewModelFieldDebugLineItem>(Prop, ValuePtr, Prop->GetDisplayNameText(), Prop->GetToolTipText());
 				}
 				else
 				{
 					Item->UpdateValuePtr(ValuePtr);
+				}
+
+				AddTreeItemUnique(Item);
+			}
+			else if (bIncludeBlueprintAssignableProperties && Prop->HasAnyPropertyFlags(CPF_BlueprintAssignable))
+			{
+				if (const FMulticastDelegateProperty* DelegateProp = CastField<const FMulticastDelegateProperty>(Prop))
+				{
+					if (const UFunction* Func = DelegateProp->SignatureFunction)
+					{
+						TSharedPtr<FMDViewModelFunctionDebugLineItem>& Item = FunctionTreeItems.FindOrAdd(Func);
+						if (!Item.IsValid())
+						{
+							Item = MakeShared<FMDViewModelFunctionDebugLineItem>(Func, Prop->GetDisplayNameText(), Prop->GetToolTipText());
+						}
+
+						AddTreeItemUnique(Item);
+					}
+				}
+			}
+		}
+	}
+
+	for (TFieldIterator<UFunction> It(ViewModelClass); It; ++It)
+	{
+		if (const UFunction* Func = *It)
+		{
+			if (Func->GetOuterUClass() == UMDViewModelBase::StaticClass())
+			{
+				continue;
+			}
+
+			const bool bIsFieldNotify = FieldNotifySupportedNames.Contains(Func->GetFName());
+			const bool bShouldAddFunction = [&]()
+			{
+				if (bIncludeFieldNotifyFunctions && bIsFieldNotify)
+				{
+					return true;
+				}
+
+				const bool bIsPure = Func->HasAnyFunctionFlags(FUNC_BlueprintPure);
+				if (bIncludeBlueprintPure && bIsPure)
+				{
+					return true;
+				}
+
+				if (!bIsPure && bIncludeBlueprintCallable && Func->HasAnyFunctionFlags(FUNC_BlueprintCallable))
+				{
+					return true;
+				}
+
+				return false;
+			}();
+
+			if (bShouldAddFunction)
+			{
+				TSharedPtr<FMDViewModelFunctionDebugLineItem>& Item = FunctionTreeItems.FindOrAdd(Func);
+				if (!Item.IsValid())
+				{
+					Item = MakeShared<FMDViewModelFunctionDebugLineItem>(Func, Func->GetDisplayNameText(), Func->GetToolTipText());
 				}
 
 				AddTreeItemUnique(Item);

@@ -28,5 +28,7 @@ public:
 	void UpdateViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, UMDViewModelBase* DebugViewModel);
 
 private:
-	TSharedPtr<SMDViewModelFieldInspector> FieldInspector;
+	TSharedPtr<SMDViewModelFieldInspector> PropertyInspector;
+	TSharedPtr<SMDViewModelFieldInspector> EventInspector;
+	TSharedPtr<SMDViewModelFieldInspector> CommandInspector;
 };

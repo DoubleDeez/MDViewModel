@@ -8,89 +8,113 @@
 
 class UMDViewModelBase;
 
-class FMDViewModelFieldDebugLineItem : public FDebugLineItem
+class FMDViewModelDebugLineItemBase : public FDebugLineItem
 {
 public:
-	FMDViewModelFieldDebugLineItem(const FProperty* Property, void* InValuePtr, const FText& InDisplayNameOverride = FText::GetEmpty())
-		: FDebugLineItem(EDebugLineType::DLT_Watch)
-		, PropertyPtr(Property)
-		, ValuePtr(InValuePtr)
-		, DisplayNameOverride(InDisplayNameOverride)
+	FMDViewModelDebugLineItemBase(const FText& DisplayName, const FText& Description)
+		: FDebugLineItem(DLT_Watch)
+		, DisplayName(DisplayName)
+		, Description(Description)
 	{
 	}
 
-	virtual bool Compare(const FDebugLineItem* BaseOther) const override
-	{
-		const FMDViewModelFieldDebugLineItem* Other = static_cast<const FMDViewModelFieldDebugLineItem*>(BaseOther);
-		return GetPropertyInstance() == Other->GetPropertyInstance();
-	}
-
-	virtual uint32 GetHash() override
-	{
-		const TTuple<const FProperty*, void*> Instance = GetPropertyInstance();
-		return HashCombine(GetTypeHash(Instance.Key), GetTypeHash(Instance.Value));
-	}
-
-	virtual bool CanHaveChildren() override { return true; }
+protected:
+	virtual void UpdateCachedChildren() const {};
 
 	virtual bool HasChildren() const override;
 
 	virtual void GatherChildrenBase(TArray<FDebugTreeItemPtr>& OutChildren, const FString& InSearchString, bool bRespectSearch) override;
 
+	virtual FText GetDisplayName() const override;
+
+	virtual FText GetDescription() const override;
+
+	mutable TOptional<TArray<FDebugTreeItemPtr>> CachedChildren;
+
+	mutable TMap<FName, FDebugTreeItemPtr> CachedPropertyItems;
+
+	FText DisplayName;
+	FText Description;
+};
+
+class FMDViewModelFieldDebugLineItem : public FMDViewModelDebugLineItemBase
+{
+public:
+	FMDViewModelFieldDebugLineItem(const FProperty* Property, void* InValuePtr, const FText& DisplayName, const FText& Description)
+		: FMDViewModelDebugLineItemBase(DisplayName, Description)
+		, PropertyPtr(Property)
+		, ValuePtr(InValuePtr)
+	{
+	}
+
+	virtual bool Compare(const FDebugLineItem* BaseOther) const override;
+
+	virtual uint32 GetHash() override
+	{
+		return HashCombine(GetTypeHash(PropertyPtr), GetTypeHash(ValuePtr));
+	}
+
+	virtual bool CanHaveChildren() override { return true; }
+
 	virtual TSharedRef<SWidget> GetNameIcon() override;
 
 	virtual TSharedRef<SWidget> GenerateValueWidget(TSharedPtr<FString> InSearchString) override;
 
-
-	virtual FText GetDisplayName() const override
-	{
-		if (!DisplayNameOverride.IsEmptyOrWhitespace())
-		{
-			return DisplayNameOverride;
-		}
-
-		if (const FProperty* Property = PropertyPtr.Get())
-		{
-			return Property->GetDisplayNameText();
-		}
-
-		return INVTEXT("[Invalid]");
-	}
-
-	virtual FText GetDescription() const override
-	{
-		if (const FProperty* Property = PropertyPtr.Get())
-		{
-			return Property->GetToolTipText();
-		}
-
-		return INVTEXT("[Invalid]");
-	}
-
 	FText GetDisplayValue() const;
-
-	void UpdateCachedChildren() const;
-
-	TTuple<const FProperty*, void*> GetPropertyInstance() const;
 
 	void* GetValuePtr() const { return ValuePtr; }
 
 	void UpdateValuePtr(void* InValuePtr);
 
 protected:
+	virtual void UpdateCachedChildren() const override;
+
 	virtual FDebugLineItem* Duplicate() const override
 	{
-		return new FMDViewModelFieldDebugLineItem(PropertyPtr.Get(), ValuePtr, DisplayNameOverride);
+		return new FMDViewModelFieldDebugLineItem(PropertyPtr.Get(), ValuePtr, DisplayName, Description);
 	}
-
-	mutable TOptional<TArray<FDebugTreeItemPtr>> CachedChildren;
-
-	mutable TMap<FName, FDebugTreeItemPtr> CachedPropertyItems;
 
 private:
 	TWeakFieldPtr<const FProperty> PropertyPtr;
 	void* ValuePtr = nullptr;
-	FText DisplayNameOverride;
+};
+
+class FMDViewModelFunctionDebugLineItem : public FMDViewModelDebugLineItemBase
+{
+public:
+	FMDViewModelFunctionDebugLineItem(const UFunction* Function, const FText& DisplayName, const FText& Description)
+		: FMDViewModelDebugLineItemBase(DisplayName, Description)
+		, FunctionPtr(Function)
+	{
+	}
+
+	virtual bool Compare(const FDebugLineItem* BaseOther) const override
+	{
+		const FMDViewModelFunctionDebugLineItem* Other = static_cast<const FMDViewModelFunctionDebugLineItem*>(BaseOther);
+		return FunctionPtr == Other->FunctionPtr;
+	}
+
+	virtual uint32 GetHash() override
+	{
+		return GetTypeHash(FunctionPtr);
+	}
+
+	virtual bool CanHaveChildren() override { return true; }
+
+	virtual TSharedRef<SWidget> GetNameIcon() override;
+
+	virtual TSharedRef<SWidget> GenerateValueWidget(TSharedPtr<FString> InSearchString) override;
+
+protected:
+	virtual void UpdateCachedChildren() const override;
+
+	virtual FDebugLineItem* Duplicate() const override
+	{
+		return new FMDViewModelFunctionDebugLineItem(FunctionPtr.Get(), DisplayName, Description);
+	}
+
+private:
+	TWeakObjectPtr<const UFunction> FunctionPtr;
 };
 
 /**
@@ -99,7 +123,19 @@ private:
 class MDVIEWMODELEDITOR_API SMDViewModelFieldInspector : public SPinValueInspector
 {
 public:
-	using SPinValueInspector::Construct;
+	SLATE_BEGIN_ARGS(SMDViewModelFieldInspector)
+	{
+	}
+
+		SLATE_ARGUMENT(bool, bIncludeBlueprintVisibleProperties)
+		SLATE_ARGUMENT(bool, bIncludeBlueprintAssignableProperties)
+		SLATE_ARGUMENT(bool, bIncludeBlueprintCallable)
+		SLATE_ARGUMENT(bool, bIncludeBlueprintPure)
+		SLATE_ARGUMENT(bool, bIncludeFieldNotifyFunctions)
+
+	SLATE_END_ARGS()
+
+	void Construct(const FArguments& InArgs);
 
 	void SetReferences(TSubclassOf<UMDViewModelBase> InViewModelClass, UMDViewModelBase* InDebugViewModel);
 
@@ -113,8 +149,15 @@ protected:
 	virtual EVisibility GetSearchFilterVisibility() const override { return EVisibility::Collapsed; }
 
 private:
-	TMap<const FProperty*, TSharedPtr<FMDViewModelFieldDebugLineItem>> TreeItems;
+	TMap<const FProperty*, TSharedPtr<FMDViewModelFieldDebugLineItem>> PropertyTreeItems;
+	TMap<const UFunction*, TSharedPtr<FMDViewModelFunctionDebugLineItem>> FunctionTreeItems;
 	TSubclassOf<UMDViewModelBase> ViewModelClass;
 	TWeakObjectPtr<UMDViewModelBase> DebugViewModel;
 	bool bIsDebugging = false;
+
+	bool bIncludeBlueprintVisibleProperties = false;
+	bool bIncludeBlueprintAssignableProperties = false;
+	bool bIncludeBlueprintCallable = false;
+	bool bIncludeBlueprintPure = false;
+	bool bIncludeFieldNotifyFunctions = false;
 };

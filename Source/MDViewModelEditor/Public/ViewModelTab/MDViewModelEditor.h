@@ -34,8 +34,6 @@ private:
 	void OnSetObjectBeingDebugged(UObject* Object);
 	void OnViewModelSelected(FMDViewModelEditorAssignment* Assignment);
 
-	EVisibility GetViewModelDetailsVisibility() const;
-
 	void OnViewModelChanged();
 
 	TWeakObjectPtr<UObject> ObjectBeingDebugged;

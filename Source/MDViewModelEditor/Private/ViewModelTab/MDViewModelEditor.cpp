@@ -21,22 +21,15 @@ void SMDViewModelEditor::Construct(const FArguments& InArgs, TSharedPtr<FWidgetB
 		SNew(SSplitter)
 		.Orientation(Orient_Horizontal)
 		+SSplitter::Slot()
-		.MinSize(350.f)
+		.MinSize(300.f)
 		.Value(0.15f)
 		[
 			SAssignNew(ViewModelListWidget, SMDViewModelList, WidgetBP)
 			.OnViewModelSelected(this, &SMDViewModelEditor::OnViewModelSelected)
 		]
 		+SSplitter::Slot()
-		.MinSize(400.f)
-		.Value(0.15f)
 		[
 			SAssignNew(ViewModelDetailsWidget, SMDViewModelDetails)
-			.Visibility(this, &SMDViewModelEditor::GetViewModelDetailsVisibility)
-		]
-		+SSplitter::Slot()
-		[
-			SNew(SSpacer)
 		]
 	];
 
@@ -80,11 +73,6 @@ void SMDViewModelEditor::OnViewModelSelected(FMDViewModelEditorAssignment* Assig
 	}
 
 	OnViewModelChanged();
-}
-
-EVisibility SMDViewModelEditor::GetViewModelDetailsVisibility() const
-{
-	return SelectedViewModelClass != nullptr ? EVisibility::Visible : EVisibility::Hidden;
 }
 
 void SMDViewModelEditor::OnViewModelChanged()

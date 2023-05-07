@@ -34,15 +34,18 @@ public:
 	virtual void OnAssignedToWidget(UUserWidget* Widget) {}
 	virtual void OnUnassignedFromWidget(UUserWidget* Widget) {}
 
+	// Listen for changes to the specified field
 	UFUNCTION(BlueprintCallable, Category = "FieldNotify", meta = (DisplayName = "Add Field Value Changed Delegate", ScriptName = "AddFieldValueChangedDelegate"))
 	void K2_AddFieldValueChangedDelegate(FFieldNotificationId FieldId, FFieldValueChangedDynamicDelegate Delegate);
 
+	// Stop listening for changes to the specified field
 	UFUNCTION(BlueprintCallable, Category = "FieldNotify", meta = (DisplayName = "Remove Field Value Changed Delegate", ScriptName="RemoveFieldValueChangedDelegate"))
 	void K2_RemoveFieldValueChangedDelegate(FFieldNotificationId FieldId, FFieldValueChangedDynamicDelegate Delegate);
 
 protected:
 	void BroadcastFieldValueChanged(UE::FieldNotification::FFieldId InFieldId);
 
+	// Broadcast that the specified field has changed
 	UFUNCTION(BlueprintCallable, Category="FieldNotify", meta = (DisplayName="Broadcast Field Value Changed", ScriptName="BroadcastFieldValueChanged"))
 	void K2_BroadcastFieldValueChanged(FFieldNotificationId FieldId);
 
