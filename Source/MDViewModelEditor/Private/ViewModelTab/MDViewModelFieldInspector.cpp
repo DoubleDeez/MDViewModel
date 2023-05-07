@@ -331,15 +331,13 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 
 	bIsDebugging = DebugViewModel.IsValid();
 
-	UMDViewModelBase* PropertyOuter = bIsDebugging ? DebugViewModel.Get() : ViewModelClass->GetDefaultObject<UMDViewModelBase>();
-
 	for (TFieldIterator<const FProperty> It(ViewModelClass); It; ++It)
 	{
 		if (const FProperty* Prop = *It)
 		{
 			if (Prop->HasAnyPropertyFlags(CPF_BlueprintVisible))
 			{
-				void* ValuePtr = Prop->ContainerPtrToValuePtr<void>(PropertyOuter);
+				void* ValuePtr = bIsDebugging ? Prop->ContainerPtrToValuePtr<void>(DebugViewModel.Get()) : nullptr;
 				TSharedPtr<FMDViewModelFieldDebugLineItem>& Item = TreeItems.FindOrAdd(Prop);
 				if (!Item.IsValid())
 				{
