@@ -14,7 +14,7 @@ FMDViewModelSummoner::FMDViewModelSummoner(TSharedPtr<FWidgetBlueprintEditor> Bl
 	, bIsDrawerTab(bInIsDrawerTab)
 {
 	TabLabel = LOCTEXT("ViewModels", "View Models");
-	// TabIcon =
+	TabIcon = FSlateIcon(FAppStyle::GetAppStyleSetName(),TEXT("FontEditor.Tabs.PageProperties"));
 
 	bIsSingleton = true;
 

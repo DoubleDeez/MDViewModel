@@ -108,7 +108,7 @@ void FMDViewModelEditorModule::HandleActivateMode(FWidgetBlueprintApplicationMod
 		});
 		MVVMDrawer.ButtonText = LOCTEXT("ViewsModels", "View Models");
 		MVVMDrawer.ToolTipText = LOCTEXT("ViewsModelsToolTip", "Modify which view models are assigned to this widget");
-		//MVVMDrawer.Icon =
+		MVVMDrawer.Icon = FAppStyle::GetBrush(TEXT("FontEditor.Tabs.PageProperties"));
 		BP->RegisterDrawer(MoveTemp(MVVMDrawer), 1);
 	}
 }

@@ -63,5 +63,5 @@ bool UMDViewModelFunctionLibrary::IsWidgetAbleToHaveViewModelClassAssigned(const
 		}
 	}
 
-	return nullptr;
+	return false;
 }
