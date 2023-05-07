@@ -167,6 +167,12 @@ void UMDViewModelWidgetExtension::PopulateViewModels()
 		return;
 	}
 
+	// TODO - Support DebugMode with editable debug view models
+	if (Widget->IsPreviewTime())
+	{
+		return;
+	}
+
 	const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
 	ViewModelModule.GetViewModelAssignmentsForWidgetClass(Widget->GetClass(), Assignments);
