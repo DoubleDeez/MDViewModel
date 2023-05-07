@@ -17,6 +17,10 @@ class MDVIEWMODEL_API UMDViewModelWidgetClassExtension : public UWidgetBlueprint
 public:
 	virtual void Initialize(UUserWidget* UserWidget) override;
 
+#if WITH_EDITOR
+	virtual void Construct(UUserWidget* UserWidget) override;
+#endif
+
 	void SetAssignments(const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& InAssignments);
 
 	const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& GetAssignments() const { return Assignments; }

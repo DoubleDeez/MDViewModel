@@ -1,5 +1,6 @@
 #include "Util/MDViewModelFunctionLibrary.h"
 
+#include "MDViewModelModule.h"
 #include "Blueprint/UserWidget.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetExtensions/MDViewModelWidgetExtension.h"
@@ -34,6 +35,31 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::GetViewModel(UUserWidget* Widget,
 		if (IsValid(Extension))
 		{
 			return Extension->GetViewModel(ViewModelClass, ViewModelName);
+		}
+	}
+
+	return nullptr;
+}
+
+bool UMDViewModelFunctionLibrary::IsWidgetAbleToHaveViewModelClassAssigned(const UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, bool bIncludeChildClasses)
+{
+	if (IsValid(Widget))
+	{
+		const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
+		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
+		ViewModelModule.GetViewModelAssignmentsForWidgetClass(Widget->GetClass(), Assignments);
+
+		for (const auto& Pair : Assignments)
+		{
+			TSubclassOf<UMDViewModelBase> AssignedClass = Pair.Key.ViewModelClass;
+			if (AssignedClass == ViewModelClass)
+			{
+				return true;
+			}
+			else if (bIncludeChildClasses && ViewModelClass->IsChildOf(AssignedClass))
+			{
+				return true;
+			}
 		}
 	}
 

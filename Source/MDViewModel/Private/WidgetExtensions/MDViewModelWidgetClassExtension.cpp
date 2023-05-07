@@ -16,6 +16,19 @@ void UMDViewModelWidgetClassExtension::Initialize(UUserWidget* UserWidget)
 	ensure(Extension);
 }
 
+#if WITH_EDITOR
+void UMDViewModelWidgetClassExtension::Construct(UUserWidget* UserWidget)
+{
+	Super::Construct(UserWidget);
+
+	// Initialize isn't called in editor Debug mode so we force it here
+	if (IsValid(UserWidget) && UserWidget->IsPreviewTime())
+	{
+		Initialize(UserWidget);
+	}
+}
+#endif
+
 void UMDViewModelWidgetClassExtension::SetAssignments(const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& InAssignments)
 {
 	Assignments = InAssignments;
