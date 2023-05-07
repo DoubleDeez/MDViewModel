@@ -1,6 +1,7 @@
 #include "ViewModelTab/MDViewModelList.h"
 
 #include "MDViewModelModule.h"
+#include "ScopedTransaction.h"
 #include "WidgetBlueprint.h"
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
@@ -29,6 +30,7 @@ void SMDViewModelList::Construct(const FArguments& InArgs, UWidgetBlueprint* InB
 
 	if (UMDViewModelWidgetBlueprintExtension* BPExtension = UWidgetBlueprintExtension::RequestExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
 	{
+		BPExtension->SetFlags(RF_Transactional);
 		BPExtension->OnAssignmentsChanged.AddSP(this, &SMDViewModelList::OnAssignmentsChanged);
 	}
 
@@ -76,6 +78,15 @@ void SMDViewModelList::Construct(const FArguments& InArgs, UWidgetBlueprint* InB
 			.OnSelectionChanged(this, &SMDViewModelList::OnItemSelected)
 		]
 	];
+}
+
+void SMDViewModelList::RefreshList()
+{
+	PopulateAssignments();
+	if (AssignmentList.IsValid())
+	{
+		AssignmentList->RequestListRefresh();
+	}
 }
 
 void SMDViewModelList::OnItemSelected(TSharedPtr<FMDViewModelEditorAssignment> Item, ESelectInfo::Type SelectInfo)
@@ -191,11 +202,7 @@ void SMDViewModelList::PopulateAssignments()
 
 void SMDViewModelList::OnAssignmentsChanged()
 {
-	PopulateAssignments();
-	if (AssignmentList.IsValid())
-	{
-		AssignmentList->RequestListRefresh();
-	}
+	RefreshList();
 }
 
 FReply SMDViewModelList::OnAddViewModel()
@@ -222,6 +229,8 @@ void SMDViewModelList::OnDeleteItem(TSharedPtr<FMDViewModelEditorAssignment> Ite
 	{
 		if (UMDViewModelWidgetBlueprintExtension* BPExtension = UWidgetBlueprintExtension::RequestExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
 		{
+			FScopedTransaction Transaction = FScopedTransaction(INVTEXT("Removed View Model Assignment"));
+			BPExtension->Modify();
 			BPExtension->RemoveAssignment(*Item.Get());
 		}
 	}

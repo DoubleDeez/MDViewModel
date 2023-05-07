@@ -30,6 +30,8 @@ public:
 	/** Constructs this widget with InArgs */
 	void Construct(const FArguments& InArgs, UWidgetBlueprint* InBlueprint);
 
+	void RefreshList();
+
 private:
 	void OnItemSelected(TSharedPtr<FMDViewModelEditorAssignment> Item, ESelectInfo::Type SelectInfo);
 	TSharedRef<ITableRow> OnGenerateRow(TSharedPtr<FMDViewModelEditorAssignment> Item, const TSharedRef<STableViewBase>& OwningTable);

@@ -1,5 +1,6 @@
 #include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
 
+#include "Kismet2/BlueprintEditorUtils.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
 
@@ -9,7 +10,6 @@ void UMDViewModelWidgetBlueprintExtension::AddAssignment(FMDViewModelEditorAssig
 	// TODO - validate that assignment doesn't already exist
 
 	Assignments.Emplace(MoveTemp(Assignment));
-	MarkPackageDirty();
 	OnAssignmentsChanged.Broadcast();
 }
 
@@ -27,7 +27,6 @@ void UMDViewModelWidgetBlueprintExtension::UpdateAssignment(const FMDViewModelEd
 
 		Assignments.Insert(NewAssignment, AssignmentIndex);
 
-		MarkPackageDirty();
 		OnAssignmentsChanged.Broadcast();
 	}
 }
@@ -36,7 +35,6 @@ void UMDViewModelWidgetBlueprintExtension::RemoveAssignment(const FMDViewModelEd
 {
 	if (Assignments.Remove(Assignment) > 0)
 	{
-		MarkPackageDirty();
 		OnAssignmentsChanged.Broadcast();
 	}
 }

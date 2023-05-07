@@ -24,7 +24,7 @@ void SMDViewModelEditor::Construct(const FArguments& InArgs, TSharedPtr<FWidgetB
 		.MinSize(350.f)
 		.Value(0.15f)
 		[
-			SNew(SMDViewModelList, WidgetBP)
+			SAssignNew(ViewModelListWidget, SMDViewModelList, WidgetBP)
 			.OnViewModelSelected(this, &SMDViewModelEditor::OnViewModelSelected)
 		]
 		+SSplitter::Slot()
@@ -41,6 +41,22 @@ void SMDViewModelEditor::Construct(const FArguments& InArgs, TSharedPtr<FWidgetB
 	];
 
 	OnSetObjectBeingDebugged(WidgetBP->GetObjectBeingDebugged());
+}
+
+void SMDViewModelEditor::PostUndo(bool bSuccess)
+{
+	if (ViewModelListWidget.IsValid())
+	{
+		ViewModelListWidget->RefreshList();
+	}
+}
+
+void SMDViewModelEditor::PostRedo(bool bSuccess)
+{
+	if (ViewModelListWidget.IsValid())
+	{
+		ViewModelListWidget->RefreshList();
+	}
 }
 
 void SMDViewModelEditor::OnSetObjectBeingDebugged(UObject* Object)

@@ -8,6 +8,7 @@
 #include "MDViewModelModule.h"
 #include "PropertyEditorModule.h"
 #include "SClassViewer.h"
+#include "ScopedTransaction.h"
 #include "SPrimaryButton.h"
 #include "Components/VerticalBox.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
@@ -379,6 +380,8 @@ FReply SMDViewModelAssignmentDialog::OnAddClicked() const
 		EditorObject->ViewModelClass = Class;
 		if (UMDViewModelWidgetBlueprintExtension* BPExtension = BPExtensionPtr.Get())
 		{
+			FScopedTransaction Transaction = FScopedTransaction(INVTEXT("Added View Model Assignment"));
+			BPExtension->Modify();
 			BPExtension->AddAssignment(EditorObject->CreateAssignment());
 		}
 	}
@@ -397,6 +400,8 @@ FReply SMDViewModelAssignmentDialog::OnSaveClicked() const
 	{
 		if (UMDViewModelWidgetBlueprintExtension* BPExtension = BPExtensionPtr.Get())
 		{
+			FScopedTransaction Transaction = FScopedTransaction(INVTEXT("Updated View Model Assignment"));
+			BPExtension->Modify();
 			BPExtension->UpdateAssignment(*EditorItem.Get(), EditorObject->CreateAssignment());
 		}
 	}
