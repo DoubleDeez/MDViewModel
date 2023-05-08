@@ -2,6 +2,7 @@
 
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Util/MDViewModelEditorAssignment.h"
+#include "ViewModel/MDViewModelBase.h"
 #include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
 
 
@@ -37,6 +38,47 @@ void UMDViewModelWidgetBlueprintExtension::RemoveAssignment(const FMDViewModelEd
 	{
 		OnAssignmentsChanged.Broadcast();
 	}
+}
+
+bool UMDViewModelWidgetBlueprintExtension::DoesContainViewModelAssignment(TSubclassOf<UMDViewModelBase> ViewModelClass, const FGameplayTag& ProviderTag, const FName& ViewModelName) const
+{
+	const bool bHasBPAssignment = Assignments.ContainsByPredicate([&](const FMDViewModelEditorAssignment& Assignment)
+	{
+		if (ViewModelClass != nullptr && Assignment.Assignment.ViewModelClass != ViewModelClass)
+		{
+			return false;
+		}
+
+		if (ProviderTag.IsValid() && ProviderTag != Assignment.Assignment.ProviderTag)
+		{
+			return false;
+		}
+
+		if (ViewModelName != NAME_None && ViewModelName != Assignment.Assignment.ViewModelName)
+		{
+			return false;
+		}
+
+		return true;
+	});
+
+	if (bHasBPAssignment)
+	{
+		return true;
+	}
+
+	if (UWidgetBlueprintGeneratedClass* SuperClass = Cast<UWidgetBlueprintGeneratedClass>(GetWidgetBlueprint()->GeneratedClass->GetSuperClass()))
+	{
+		if (UMDViewModelWidgetClassExtension* SuperExtension = SuperClass->GetExtension<UMDViewModelWidgetClassExtension>())
+		{
+			TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
+			SuperExtension->SearchAssignments(ViewModelAssignments, ViewModelClass, ProviderTag, ViewModelName);
+
+			return !ViewModelAssignments.IsEmpty();
+		}
+	}
+
+	return false;
 }
 
 void UMDViewModelWidgetBlueprintExtension::HandleBeginCompilation(FWidgetBlueprintCompilerContext& InCreationContext)

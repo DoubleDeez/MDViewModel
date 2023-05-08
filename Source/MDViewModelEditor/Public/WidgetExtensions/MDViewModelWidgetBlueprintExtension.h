@@ -6,6 +6,7 @@
 #include "MDViewModelWidgetBlueprintExtension.generated.h"
 
 class UMDViewModelBase;
+struct FMDViewModelEditorAssignment;
 
 /**
  * Editor-only class that holds design-time assigned view models
@@ -21,6 +22,9 @@ public:
 	void AddAssignment(FMDViewModelEditorAssignment&& Assignment);
 	void UpdateAssignment(const FMDViewModelEditorAssignment& Assignment, FMDViewModelEditorAssignment&& UpdatedAssignment);
 	void RemoveAssignment(const FMDViewModelEditorAssignment& Assignment);
+
+	bool DoesContainViewModelAssignment(TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FGameplayTag& ProviderTag = FGameplayTag::EmptyTag, const FName& ViewModelName = NAME_None) const;
+	bool HasAssignments() const { return !Assignments.IsEmpty(); }
 
 	FSimpleMulticastDelegate OnAssignmentsChanged;
 

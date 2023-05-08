@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "MDViewModelWidgetExtension.h"
 #include "Extensions/WidgetBlueprintGeneratedClassExtension.h"
 #include "Util/MDViewModelAssignmentData.h"
 #include "MDViewModelWidgetClassExtension.generated.h"
@@ -30,6 +31,9 @@ public:
 
 	bool HasAssignments() const { return !Assignments.IsEmpty(); }
 
+	// Used to listen for changes before the specified widget's viewmodel extension is created
+	void QueueListenForChanges(UUserWidget* Widget, FMDVMOnViewModelAssigned::FDelegate&& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
+
 protected:
 	UPROPERTY()
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
@@ -39,5 +43,14 @@ private:
 
 	UPROPERTY(Transient)
 	bool bHasGatheredParentAssignments = false;
+
+	struct QueuedListenerData
+	{
+		FMDVMOnViewModelAssigned::FDelegate Delegate;
+		TSubclassOf<UMDViewModelBase> ViewModelClass;
+		FName ViewModelName = NAME_None;
+	};
+
+	TMap<TWeakObjectPtr<UUserWidget>, TArray<QueuedListenerData>> QueuedDelegates;
 
 };

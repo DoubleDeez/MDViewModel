@@ -3,6 +3,7 @@
 #include "GameplayTagContainer.h"
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
+#include "Engine/Blueprint.h"
 #include "Util/MDViewModelAssignment.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
@@ -68,6 +69,8 @@ void FMDViewModelModule::GetNativeAssignments(TSubclassOf<UUserWidget> WidgetCla
 
 void FMDViewModelModule::GetViewModelClassesForWidgetClass(TSubclassOf<UUserWidget> WidgetClass, TSet<TSubclassOf<UMDViewModelBase>>& OutViewModelClasses) const
 {
+	RequestNativeAssignments();
+
 	if (WidgetClass != nullptr)
 	{
 		for (UClass* CheckClass = WidgetClass.Get(); CheckClass != UWidget::StaticClass(); CheckClass = CheckClass->GetSuperClass())
@@ -93,6 +96,8 @@ void FMDViewModelModule::GetViewModelClassesForWidgetClass(TSubclassOf<UUserWidg
 
 void FMDViewModelModule::GetViewModelAssignmentsForWidgetClass(TSubclassOf<UUserWidget> WidgetClass, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments) const
 {
+	RequestNativeAssignments();
+
 	if (WidgetClass != nullptr)
 	{
 		for (UClass* CheckClass = WidgetClass.Get(); CheckClass != UWidget::StaticClass(); CheckClass = CheckClass->GetSuperClass())
@@ -116,6 +121,8 @@ void FMDViewModelModule::GetViewModelAssignmentsForWidgetClass(TSubclassOf<UUser
 
 void FMDViewModelModule::SearchViewModelAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments, TSubclassOf<UUserWidget> WidgetClass, TSubclassOf<UMDViewModelBase> ViewModelClass, const FGameplayTag& ProviderTag, const FName& ViewModelName) const
 {
+	RequestNativeAssignments();
+
 	auto DoesAssignmentMatchSearch = [&](const FMDViewModelAssignment& Assignment)
 	{
 		if (ProviderTag.IsValid() && !Assignment.ProviderTag.MatchesTagExact(ProviderTag))
@@ -138,7 +145,7 @@ void FMDViewModelModule::SearchViewModelAssignments(TMap<FMDViewModelAssignment,
 
 	for (auto Pair : NativelyAssignedViewModels)
 	{
-		if (WidgetClass != nullptr && WidgetClass != Pair.Key)
+		if (WidgetClass != nullptr && !WidgetClass->IsChildOf(Pair.Key))
 		{
 			continue;
 		}
@@ -163,6 +170,8 @@ void FMDViewModelModule::SearchViewModelAssignments(TMap<FMDViewModelAssignment,
 
 bool FMDViewModelModule::DoesClassOrSuperClassHaveAssignments(TSubclassOf<UUserWidget> WidgetClass) const
 {
+	RequestNativeAssignments();
+
 	UClass* Class = WidgetClass;
 	while (Class != nullptr)
 	{

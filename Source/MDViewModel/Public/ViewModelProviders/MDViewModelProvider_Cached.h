@@ -31,7 +31,7 @@ public:
 
 /**
  * This provider will create an instance of the selected viewmodel and cache it for the selected lifetime.
- * When assigning a viewmodel to a widget, if a cached instance exists with the specified Viewmodel Name,
+ * When setting a viewmodel on a widget, if a cached instance exists with the specified Viewmodel Name,
  * it will be used instead of creating a new instance. Useful for reusing viewmodels in multiple widgets.
  */
 class MDVIEWMODEL_API FMDViewModelProvider_Cached : public FMDViewModelProvider_AllBase

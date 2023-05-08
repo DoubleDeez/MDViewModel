@@ -2,9 +2,16 @@
 
 #include "BlueprintEditor.h"
 #include "EdGraphSchema_K2.h"
+#include "EdGraphSchema_K2_Actions.h"
+#include "MDViewModelEditorModule.h"
+#include "WidgetBlueprint.h"
+#include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetDebugUtilities.h"
+#include "Kismet2/KismetEditorUtilities.h"
 #include "UObject/WeakFieldPtr.h"
 #include "ViewModel/MDViewModelBase.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Layout/SWidgetSwitcher.h"
 
 
 bool FMDViewModelDebugLineItemBase::HasChildren() const
@@ -68,6 +75,7 @@ TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GetNameIcon()
 
 TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GenerateValueWidget(TSharedPtr<FString> InSearchString)
 {
+	// TODO - Button to bind to Field Notify properties if top-level property with no value (eg. design time)
 	return SNew(STextBlock)
 		.Text(this, &FMDViewModelFieldDebugLineItem::GetDisplayValue)
 		.ToolTipText(this, &FMDViewModelFieldDebugLineItem::GetDisplayValue);
@@ -117,7 +125,7 @@ FText FMDViewModelFieldDebugLineItem::GetDisplayValue() const
 		}
 	}
 
-	return INVTEXT("[No Value]");
+	return FText::GetEmpty();
 }
 
 void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
@@ -367,6 +375,55 @@ void FMDViewModelFunctionDebugLineItem::UpdateCachedChildren() const
 	CachedPropertyItems.GenerateValueArray(CachedChildren.GetValue());
 }
 
+TSharedRef<SWidget> FMDViewModelEventDebugLineItem::GenerateValueWidget(TSharedPtr<FString> InSearchString)
+{
+	return SNew(SButton)
+	.ContentPadding(FMargin(3.0, 2.0))
+	.OnClicked(this, &FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked)
+	[
+		SNew(SWidgetSwitcher)
+		.WidgetIndex(this, &FMDViewModelEventDebugLineItem::GetAddOrBiewBoundFunctionIndex)
+		+ SWidgetSwitcher::Slot()
+		[
+			SNew(SImage)
+			.ColorAndOpacity(FSlateColor::UseForeground())
+			.Image(FAppStyle::Get().GetBrush("Icons.SelectInViewport"))
+			.ToolTipText(INVTEXT("Focus the existing bound function."))
+		]
+		+ SWidgetSwitcher::Slot()
+		[
+			SNew(SImage)
+			.ColorAndOpacity(FSlateColor::UseForeground())
+			.Image(FAppStyle::Get().GetBrush("Icons.Plus"))
+			.ToolTipText(INVTEXT("Create a BP event bound to this view model event"))
+		]
+	];
+}
+
+void FMDViewModelEventDebugLineItem::UpdateViewModelName(const FName& InViewModelName)
+{
+	ViewModelName = InViewModelName;
+}
+
+FReply FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked() const
+{
+	const FMDViewModelEditorModule& ViewModelEditorModule = FModuleManager::LoadModuleChecked<FMDViewModelEditorModule>(TEXT("MDViewModelEditor"));
+	if (ViewModelEditorModule.OnViewModelEventRequestedForBlueprint.IsBound() && WeakDelegateProp.IsValid())
+	{
+		ViewModelEditorModule.OnViewModelEventRequestedForBlueprint.Execute(WidgetBP.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName);
+	}
+
+	return FReply::Handled();
+}
+
+int32 FMDViewModelEventDebugLineItem::GetAddOrBiewBoundFunctionIndex() const
+{
+	const FMDViewModelEditorModule& ViewModelEditorModule = FModuleManager::LoadModuleChecked<FMDViewModelEditorModule>(TEXT("MDViewModelEditor"));
+	return (!ViewModelEditorModule.DoesBlueprintBindToViewModelEvent.IsBound() || !WeakDelegateProp.IsValid() ||
+		ViewModelEditorModule.DoesBlueprintBindToViewModelEvent.Execute(WidgetBP.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName))
+		? 0 : 1;
+}
+
 void FMDViewModelFieldDebugLineItem::UpdateValuePtr(void* InValuePtr)
 {
 	ValuePtr = InValuePtr;
@@ -382,8 +439,10 @@ void FMDViewModelFieldDebugLineItem::UpdateValuePtr(void* InValuePtr)
 	CachedChildren.Reset();
 }
 
-void SMDViewModelFieldInspector::Construct(const FArguments& InArgs)
+void SMDViewModelFieldInspector::Construct(const FArguments& InArgs, UWidgetBlueprint* WidgetBP)
 {
+	WidgetBPPtr = WidgetBP;
+
 	bIncludeBlueprintVisibleProperties = InArgs._bIncludeBlueprintVisibleProperties;
 	bIncludeBlueprintAssignableProperties = InArgs._bIncludeBlueprintAssignableProperties;
 	bIncludeBlueprintCallable = InArgs._bIncludeBlueprintCallable;
@@ -393,10 +452,11 @@ void SMDViewModelFieldInspector::Construct(const FArguments& InArgs)
 	SPinValueInspector::Construct({});
 }
 
-void SMDViewModelFieldInspector::SetReferences(TSubclassOf<UMDViewModelBase> InViewModelClass, UMDViewModelBase* InDebugViewModel)
+void SMDViewModelFieldInspector::SetReferences(TSubclassOf<UMDViewModelBase> InViewModelClass, UMDViewModelBase* InDebugViewModel, const FName& InViewModelName)
 {
 	ViewModelClass = InViewModelClass;
 	DebugViewModel = InDebugViewModel;
+	ViewModelName = InViewModelName;
 
 	RefreshList();
 }
@@ -456,16 +516,17 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 			{
 				if (const FMulticastDelegateProperty* DelegateProp = CastField<const FMulticastDelegateProperty>(Prop))
 				{
-					if (const UFunction* Func = DelegateProp->SignatureFunction)
+					TSharedPtr<FMDViewModelEventDebugLineItem>& Item = EventTreeItems.FindOrAdd(DelegateProp);
+					if (!Item.IsValid())
 					{
-						TSharedPtr<FMDViewModelFunctionDebugLineItem>& Item = FunctionTreeItems.FindOrAdd(Func);
-						if (!Item.IsValid())
-						{
-							Item = MakeShared<FMDViewModelFunctionDebugLineItem>(Func, Prop->GetDisplayNameText(), Prop->GetToolTipText());
-						}
-
-						AddTreeItemUnique(Item);
+						Item = MakeShared<FMDViewModelEventDebugLineItem>(DelegateProp, WidgetBPPtr.Get(), ViewModelClass, ViewModelName);
 					}
+					else
+					{
+						Item->UpdateViewModelName(ViewModelName);
+					}
+
+					AddTreeItemUnique(Item);
 				}
 			}
 		}

@@ -42,8 +42,30 @@ void SMDViewModelList::Construct(const FArguments& InArgs, UWidgetBlueprint* InB
 		SNew(SVerticalBox)
 		+SVerticalBox::Slot()
 		.AutoHeight()
+		[
+			SNew(SBorder)
+			.Padding(4.f)
+			.BorderImage(&FAppStyle::Get().GetWidgetStyle<FTableViewStyle>("ListView").BackgroundBrush)
+			[
+				SNew(STextBlock)
+				.Text(INVTEXT("Assigned View Models"))
+				.ToolTipText(INVTEXT("These view models will be set on the widget at runtime based on the selected providers."))
+				.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
+			]
+		]
+		+SVerticalBox::Slot()
+		.FillHeight(1.f)
+		.Padding(0, 4.f)
 		.HAlign(HAlign_Fill)
-		.Padding(0, 0, 0, 4.f)
+		[
+			SAssignNew(AssignmentList, SListView<TSharedPtr<FMDViewModelEditorAssignment>>)
+			.ListItemsSource(&Assignments)
+			.OnGenerateRow(this, &SMDViewModelList::OnGenerateRow)
+			.OnSelectionChanged(this, &SMDViewModelList::OnItemSelected)
+		]
+		+SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Fill)
 		[
 			SNew(SButton)
 			.HAlign(HAlign_Center)
@@ -68,15 +90,6 @@ void SMDViewModelList::Construct(const FArguments& InArgs, UWidgetBlueprint* InB
 				]
 			]
 		]
-		+SVerticalBox::Slot()
-		.FillHeight(1.f)
-		.HAlign(HAlign_Fill)
-		[
-			SAssignNew(AssignmentList, SListView<TSharedPtr<FMDViewModelEditorAssignment>>)
-			.ListItemsSource(&Assignments)
-			.OnGenerateRow(this, &SMDViewModelList::OnGenerateRow)
-			.OnSelectionChanged(this, &SMDViewModelList::OnItemSelected)
-		]
 	];
 }
 
@@ -85,6 +98,7 @@ void SMDViewModelList::RefreshList()
 	PopulateAssignments();
 	if (AssignmentList.IsValid())
 	{
+		// TODO - Attempt to maintain the selected item
 		AssignmentList->RequestListRefresh();
 	}
 }

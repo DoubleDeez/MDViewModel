@@ -12,8 +12,18 @@ void UMDViewModelWidgetClassExtension::Initialize(UUserWidget* UserWidget)
 	GatherParentAssignments(UserWidget->GetClass());
 
 	// ensure that we add the extension to the widget
-	const UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(UserWidget);
+	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(UserWidget);
 	ensure(Extension);
+
+	if (TArray<QueuedListenerData>* QueuedListenerDatas = QueuedDelegates.Find(UserWidget))
+	{
+		for (QueuedListenerData& Data : *QueuedListenerDatas)
+		{
+			Extension->ListenForChanges(MoveTemp(Data.Delegate), Data.ViewModelClass, Data.ViewModelName);
+		}
+
+		QueuedDelegates.Remove(UserWidget);
+	}
 }
 
 #if WITH_EDITOR
@@ -62,6 +72,21 @@ void UMDViewModelWidgetClassExtension::GetViewModelClasses(TSet<TSubclassOf<UMDV
 	for (const auto& Pair : Assignments)
 	{
 		OutViewModelClasses.Add(Pair.Key.ViewModelClass);
+	}
+}
+
+void UMDViewModelWidgetClassExtension::QueueListenForChanges(UUserWidget* Widget, FMDVMOnViewModelAssigned::FDelegate&& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
+{
+	if (IsValid(Widget))
+	{
+		if (UMDViewModelWidgetExtension* Extension = Widget->GetExtension<UMDViewModelWidgetExtension>())
+		{
+			Extension->ListenForChanges(MoveTemp(Delegate), ViewModelClass, ViewModelName);
+		}
+		else
+		{
+			QueuedDelegates.FindOrAdd(Widget).Emplace(QueuedListenerData{ MoveTemp(Delegate), ViewModelClass, ViewModelName });
+		}
 	}
 }
 

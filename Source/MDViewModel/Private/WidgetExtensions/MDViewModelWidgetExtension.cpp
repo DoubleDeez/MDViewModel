@@ -139,6 +139,14 @@ void UMDViewModelWidgetExtension::StopListeningForChanges(FDelegateHandle& Handl
 	}
 }
 
+void UMDViewModelWidgetExtension::StopListeningForAllViewModelsChanges(const void* BoundObject)
+{
+	for (auto& Pair : OnViewModelAssignedDelegates)
+	{
+		Pair.Value.RemoveAll(BoundObject);
+	}
+}
+
 void UMDViewModelWidgetExtension::BroadcastViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
 {
 	UUserWidget* OwnerWidget = GetUserWidget();

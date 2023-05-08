@@ -35,6 +35,7 @@ private:
 	void OnViewModelSelected(FMDViewModelEditorAssignment* Assignment);
 
 	void OnViewModelChanged();
+	void OnBlueprintCompiled(UBlueprint* BP);
 
 	TWeakObjectPtr<UObject> ObjectBeingDebugged;
 	TSubclassOf<UMDViewModelBase> SelectedViewModelClass;

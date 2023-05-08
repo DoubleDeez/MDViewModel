@@ -17,6 +17,4 @@ public:
 	UPROPERTY()
 	FInstancedStruct ProviderSettings;
 
-	// TODO - Event bindings
-
 };

@@ -6,6 +6,8 @@
 #include "UObject/UnrealType.h"
 #include "UObject/WeakFieldPtr.h"
 
+class UMDVMNode_ViewModelEvent;
+class UWidgetBlueprint;
 class UMDViewModelBase;
 
 class FMDViewModelDebugLineItemBase : public FDebugLineItem
@@ -117,6 +119,32 @@ private:
 	TWeakObjectPtr<const UFunction> FunctionPtr;
 };
 
+class FMDViewModelEventDebugLineItem : public FMDViewModelFunctionDebugLineItem
+{
+public:
+	FMDViewModelEventDebugLineItem(const FMulticastDelegateProperty* Prop, UWidgetBlueprint* WidgetBP, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+		: FMDViewModelFunctionDebugLineItem(Prop->SignatureFunction, Prop->GetDisplayNameText(), Prop->GetToolTipText())
+		, WeakDelegateProp(Prop)
+		, WidgetBP(WidgetBP)
+		, ViewModelClass(ViewModelClass)
+		, ViewModelName(ViewModelName)
+	{
+	}
+
+	virtual TSharedRef<SWidget> GenerateValueWidget(TSharedPtr<FString> InSearchString) override;
+
+	void UpdateViewModelName(const FName& InViewModelName);
+
+private:
+	FReply OnAddOrViewBoundFunctionClicked() const;
+	int32 GetAddOrBiewBoundFunctionIndex() const;
+
+	TWeakFieldPtr<const FMulticastDelegateProperty> WeakDelegateProp;
+	TWeakObjectPtr<UWidgetBlueprint> WidgetBP;
+	TSubclassOf<UMDViewModelBase> ViewModelClass;
+	FName ViewModelName = NAME_None;
+};
+
 /**
  * Widget that displays all the exposed properties of a viewmodel and their values when debugging
  */
@@ -135,9 +163,9 @@ public:
 
 	SLATE_END_ARGS()
 
-	void Construct(const FArguments& InArgs);
+	void Construct(const FArguments& InArgs, UWidgetBlueprint* WidgetBP);
 
-	void SetReferences(TSubclassOf<UMDViewModelBase> InViewModelClass, UMDViewModelBase* InDebugViewModel);
+	void SetReferences(TSubclassOf<UMDViewModelBase> InViewModelClass, UMDViewModelBase* InDebugViewModel, const FName& InViewModelName);
 
 	void RefreshList();
 
@@ -151,9 +179,12 @@ protected:
 private:
 	TMap<const FProperty*, TSharedPtr<FMDViewModelFieldDebugLineItem>> PropertyTreeItems;
 	TMap<const UFunction*, TSharedPtr<FMDViewModelFunctionDebugLineItem>> FunctionTreeItems;
+	TMap<const FMulticastDelegateProperty*, TSharedPtr<FMDViewModelEventDebugLineItem>> EventTreeItems;
 	TSubclassOf<UMDViewModelBase> ViewModelClass;
 	TWeakObjectPtr<UMDViewModelBase> DebugViewModel;
 	bool bIsDebugging = false;
+	TWeakObjectPtr<UWidgetBlueprint> WidgetBPPtr;
+	FName ViewModelName = NAME_None;
 
 	bool bIncludeBlueprintVisibleProperties = false;
 	bool bIncludeBlueprintAssignableProperties = false;

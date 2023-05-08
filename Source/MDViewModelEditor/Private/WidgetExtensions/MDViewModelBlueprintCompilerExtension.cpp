@@ -13,9 +13,14 @@ void UMDViewModelBlueprintCompilerExtension::ProcessBlueprintCompiled(const FKis
 	{
 		const bool bAlreadyHasExtension = WidgetBP->GetExtensions().ContainsByPredicate([](TObjectPtr<UBlueprintExtension> Extension)
 		{
-			return Extension != nullptr && Extension->IsA<UMDViewModelWidgetBlueprintExtension>();
+			if (const auto* VMExtension = Cast<UMDViewModelWidgetBlueprintExtension>(Extension))
+			{
+				return VMExtension->HasAssignments();
+			}
+
+			return false;
 		});
-		
+
 		if (!bAlreadyHasExtension)
 		{
 			if (UWidgetBlueprintGeneratedClass* WidgetClass = Cast<UWidgetBlueprintGeneratedClass>(CompilationContext.NewClass))

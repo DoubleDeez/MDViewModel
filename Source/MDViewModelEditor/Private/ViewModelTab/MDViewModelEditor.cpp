@@ -15,6 +15,7 @@ void SMDViewModelEditor::Construct(const FArguments& InArgs, TSharedPtr<FWidgetB
 {
 	UWidgetBlueprint* WidgetBP = BlueprintEditor->GetWidgetBlueprintObj();
 	WidgetBP->OnSetObjectBeingDebugged().AddSP(this, &SMDViewModelEditor::OnSetObjectBeingDebugged);
+	WidgetBP->OnCompiled().AddSP(this, &SMDViewModelEditor::OnBlueprintCompiled);
 
 	ChildSlot
 	[
@@ -30,6 +31,7 @@ void SMDViewModelEditor::Construct(const FArguments& InArgs, TSharedPtr<FWidgetB
 		+SSplitter::Slot()
 		[
 			SAssignNew(ViewModelDetailsWidget, SMDViewModelDetails)
+			.WidgetBP(WidgetBP)
 		]
 	];
 
@@ -87,11 +89,17 @@ void SMDViewModelEditor::OnViewModelChanged()
 				DebugViewModel = UMDViewModelFunctionLibrary::GetViewModel(DebugWidget, SelectedViewModelClass, SelectedViewModelName);
 			}
 
-			ViewModelDetailsWidget->UpdateViewModel(SelectedViewModelClass, DebugViewModel);
+			ViewModelDetailsWidget->UpdateViewModel(SelectedViewModelClass, DebugViewModel, SelectedViewModelName);
 		}
 		else
 		{
-			ViewModelDetailsWidget->UpdateViewModel(nullptr, nullptr);
+			ViewModelDetailsWidget->UpdateViewModel(nullptr, nullptr, NAME_None);
 		}
 	}
+}
+
+void SMDViewModelEditor::OnBlueprintCompiled(UBlueprint* BP)
+{
+	// Force a refresh
+	OnViewModelChanged();
 }

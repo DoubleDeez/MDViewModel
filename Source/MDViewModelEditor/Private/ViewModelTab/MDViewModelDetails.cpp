@@ -7,7 +7,7 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs)
 {
 	const FSlateBrush* HeaderBrushPtr = &FAppStyle::Get().GetWidgetStyle<FTableViewStyle>("ListView").BackgroundBrush;
 	ChildSlot
-	.Padding(4.f)
+	.Padding(0, 4.f)
 	[
 		SNew(SSplitter)
 		.Orientation(Orient_Horizontal)
@@ -18,6 +18,7 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs)
 			SNew(SVerticalBox)
 			+SVerticalBox::Slot()
 			.AutoHeight()
+			.Padding(4.f, 0)
 			[
 				SNew(SBorder)
 				.Padding(4.f)
@@ -31,8 +32,9 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs)
 			]
 			+SVerticalBox::Slot()
 			.FillHeight(1.f)
+			.Padding(4.f, 0)
 			[
-				SAssignNew(PropertyInspector, SMDViewModelFieldInspector)
+				SAssignNew(PropertyInspector, SMDViewModelFieldInspector, InArgs._WidgetBP)
 				.bIncludeBlueprintVisibleProperties(true)
 				.bIncludeBlueprintAssignableProperties(false)
 				.bIncludeBlueprintCallable(false)
@@ -47,6 +49,7 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs)
 			SNew(SVerticalBox)
 			+SVerticalBox::Slot()
 			.AutoHeight()
+			.Padding(4.f, 0)
 			[
 				SNew(SBorder)
 				.Padding(4.f)
@@ -60,8 +63,9 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs)
 			]
 			+SVerticalBox::Slot()
 			.FillHeight(1.f)
+			.Padding(4.f, 0)
 			[
-				SAssignNew(EventInspector, SMDViewModelFieldInspector)
+				SAssignNew(EventInspector, SMDViewModelFieldInspector, InArgs._WidgetBP)
 				.bIncludeBlueprintVisibleProperties(false)
 				.bIncludeBlueprintAssignableProperties(true)
 				.bIncludeBlueprintCallable(false)
@@ -76,6 +80,7 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs)
 			SNew(SVerticalBox)
 			+SVerticalBox::Slot()
 			.AutoHeight()
+			.Padding(4.f, 0)
 			[
 				SNew(SBorder)
 				.Padding(4.f)
@@ -89,8 +94,9 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs)
 			]
 			+SVerticalBox::Slot()
 			.FillHeight(1.f)
+			.Padding(4.f, 0)
 			[
-				SAssignNew(CommandInspector, SMDViewModelFieldInspector)
+				SAssignNew(CommandInspector, SMDViewModelFieldInspector, InArgs._WidgetBP)
 				.bIncludeBlueprintVisibleProperties(false)
 				.bIncludeBlueprintAssignableProperties(false)
 				.bIncludeBlueprintCallable(true)
@@ -100,23 +106,23 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs)
 		]
 	];
 
-	UpdateViewModel(InArgs._ViewModelClass, InArgs._DebugViewModel);
+	UpdateViewModel(InArgs._ViewModelClass, InArgs._DebugViewModel, InArgs._ViewModelName);
 }
 
-void SMDViewModelDetails::UpdateViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, UMDViewModelBase* DebugViewModel)
+void SMDViewModelDetails::UpdateViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, UMDViewModelBase* DebugViewModel, const FName& ViewModelName)
 {
 	if (PropertyInspector.IsValid())
 	{
-		PropertyInspector->SetReferences(ViewModelClass, DebugViewModel);
+		PropertyInspector->SetReferences(ViewModelClass, DebugViewModel, ViewModelName);
 	}
 
 	if (EventInspector.IsValid())
 	{
-		EventInspector->SetReferences(ViewModelClass, DebugViewModel);
+		EventInspector->SetReferences(ViewModelClass, DebugViewModel, ViewModelName);
 	}
 
 	if (CommandInspector.IsValid())
 	{
-		CommandInspector->SetReferences(ViewModelClass, DebugViewModel);
+		CommandInspector->SetReferences(ViewModelClass, DebugViewModel, ViewModelName);
 	}
 }
