@@ -14,7 +14,7 @@ UMDViewModelBase* FMDViewModelProvider_Unique::AssignViewModel(UUserWidget& Widg
 {
 	if (IsValid(Assignment.ViewModelClass))
 	{
-		return UMDViewModelFunctionLibrary::AssignViewModelOfClass(&Widget, Assignment.ViewModelClass, Assignment.ViewModelName);
+		return UMDViewModelFunctionLibrary::SetViewModelOfClass(&Widget, Assignment.ViewModelClass, Assignment.ViewModelName);
 	}
 
 	return nullptr;

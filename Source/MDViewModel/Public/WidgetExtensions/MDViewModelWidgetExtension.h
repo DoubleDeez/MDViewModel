@@ -40,10 +40,10 @@ private:
 #pragma region Assignment
 public:
 	template<typename T>
-	T* AssignViewModelOfClass(TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
+	T* SetViewModelOfClass(TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
 
-	UMDViewModelBase* AssignViewModel(UMDViewModelBase* ViewModel, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
-	UMDViewModelBase* AssignViewModelOfClass(TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
+	UMDViewModelBase* SetViewModel(UMDViewModelBase* ViewModel, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
+	UMDViewModelBase* SetViewModelOfClass(TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
 
 	UMDViewModelBase* GetViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName) const;
 
@@ -64,8 +64,8 @@ private:
 };
 
 template <typename T>
-T* UMDViewModelWidgetExtension::AssignViewModelOfClass(TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
+T* UMDViewModelWidgetExtension::SetViewModelOfClass(TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
 	static_assert(TIsDerivedFrom<T, UMDViewModelBase>::Value, "ViewModels must derive from UMDViewModelBase");
-	return Cast<T>(AssignViewModelOfClass(ViewModelClass, ViewModelName));
+	return Cast<T>(SetViewModelOfClass(ViewModelClass, ViewModelName));
 }

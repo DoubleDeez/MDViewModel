@@ -89,8 +89,10 @@ void FMDViewModelAssignmentReferenceCustomization::CustomizeChildren(TSharedRef<
 		}
 		else
 		{
+			// TODO - Disable bIsViewModelName if view model class not selected
+			// TODO - Change to a dropdown of the registered viewmodel names based on the selected ViewModelClass
 			const bool bIsViewModelName = ChildHandle->GetProperty()->GetFName() == GET_MEMBER_NAME_CHECKED(FMDViewModelAssignmentReference, ViewModelName);
-			ChildBuilder.AddProperty(ChildHandle.ToSharedRef()).IsEnabled(true); // TODO - Optionally disable bIsViewModelName
+			ChildBuilder.AddProperty(ChildHandle.ToSharedRef()).IsEnabled(true);
 		}
 	}
 }

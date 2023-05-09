@@ -177,7 +177,7 @@ void SMDViewModelList::PopulateAssignments()
 		if (FMDViewModelEditorAssignment* ExistingAssignment = FindAssignment(Pair.Key))
 		{
 			ExistingAssignment->bIsNative = true;
-			// TODO - Merge Data?
+			// TODO - Override Data
 			//ExistingAssignment->Data = Pair.Value;
 		}
 		else

@@ -47,7 +47,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::AssignViewModel(UUserWidget& Widg
 
 		if (ViewModelBase != nullptr)
 		{
-			UMDViewModelFunctionLibrary::AssignViewModel(&Widget, ViewModelBase, Assignment.ViewModelName);
+			UMDViewModelFunctionLibrary::SetViewModel(&Widget, ViewModelBase, Assignment.ViewModelName);
 		}
 	}
 

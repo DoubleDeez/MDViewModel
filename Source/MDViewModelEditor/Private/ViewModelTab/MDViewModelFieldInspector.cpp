@@ -10,6 +10,7 @@
 #include "Kismet2/KismetEditorUtilities.h"
 #include "UObject/WeakFieldPtr.h"
 #include "ViewModel/MDViewModelBase.h"
+#include "Widgets/Images/SLayeredImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 
@@ -55,16 +56,16 @@ TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GetNameIcon()
 	if (const FProperty* ItemProperty = PropertyPtr.Get())
 	{
 		FSlateColor BaseColor;
-		FSlateColor UnusedColor;
-		FSlateBrush const* UnusedIcon = nullptr;
+		FSlateColor SecondaryColor;
+		FSlateBrush const* SecondaryIcon = nullptr;
 		const FSlateBrush* IconBrush = FBlueprintEditor::GetVarIconAndColorFromProperty(
 			ItemProperty,
 			BaseColor,
-			UnusedIcon,
-			UnusedColor
+			SecondaryIcon,
+			SecondaryColor
 		);
 
-		return SNew(SImage)
+		return SNew(SLayeredImage, SecondaryIcon, SecondaryColor)
 			.Image(IconBrush)
 			.ColorAndOpacity(BaseColor)
 			.ToolTipText(UEdGraphSchema_K2::TypeToText(ItemProperty));
@@ -324,7 +325,6 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GetNameIcon()
 		FText ToolTipText = Function->GetToolTipText();
 		if (const FProperty* ReturnProperty = Function->GetReturnProperty())
 		{
-			// TODO - Handle BP function return values
 			const UEdGraphSchema_K2* K2Schema = GetDefault<UEdGraphSchema_K2>();
 			FEdGraphPinType PinType;
 			if (K2Schema->ConvertPropertyToPinType(ReturnProperty, PinType))

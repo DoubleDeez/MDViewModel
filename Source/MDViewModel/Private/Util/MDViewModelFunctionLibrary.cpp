@@ -5,23 +5,23 @@
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetExtensions/MDViewModelWidgetExtension.h"
 
-UMDViewModelBase* UMDViewModelFunctionLibrary::AssignViewModel(UUserWidget* Widget, UMDViewModelBase* ViewModel, FName ViewModelName)
+UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModel(UUserWidget* Widget, UMDViewModelBase* ViewModel, FName ViewModelName)
 {
 	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
 	if (IsValid(Extension))
 	{
-		return Extension->AssignViewModel(ViewModel, ViewModelName);
+		return Extension->SetViewModel(ViewModel, ViewModelName);
 	}
 
 	return nullptr;
 }
 
-UMDViewModelBase* UMDViewModelFunctionLibrary::AssignViewModelOfClass(UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
+UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModelOfClass(UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
 	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
 	if (IsValid(Extension))
 	{
-		return Extension->AssignViewModelOfClass(ViewModelClass, ViewModelName);
+		return Extension->SetViewModelOfClass(ViewModelClass, ViewModelName);
 	}
 
 	return nullptr;
@@ -41,7 +41,7 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::GetViewModel(UUserWidget* Widget,
 	return nullptr;
 }
 
-bool UMDViewModelFunctionLibrary::IsWidgetAbleToHaveViewModelClassAssigned(const UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, bool bIncludeChildClasses)
+bool UMDViewModelFunctionLibrary::DoesWidgetHaveViewModelClassAssigned(const UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, bool bIncludeChildClasses)
 {
 	if (IsValid(Widget))
 	{

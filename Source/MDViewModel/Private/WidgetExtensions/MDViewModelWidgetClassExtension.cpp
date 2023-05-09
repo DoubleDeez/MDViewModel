@@ -102,7 +102,6 @@ void UMDViewModelWidgetClassExtension::GatherParentAssignments(TSubclassOf<UUser
 	{
 		if (UMDViewModelWidgetClassExtension* Extension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>(false))
 		{
-			// TODO - How to deal with conflicts when a child class adds design-time data to a super class's assignment
 			Extension->GatherParentAssignments(SuperClass);
 			Assignments.Append(Extension->Assignments);
 		}

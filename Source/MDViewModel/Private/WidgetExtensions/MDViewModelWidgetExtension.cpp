@@ -38,7 +38,7 @@ UMDViewModelWidgetExtension* UMDViewModelWidgetExtension::GetOrCreate(UUserWidge
 	return nullptr;
 }
 
-UMDViewModelBase* UMDViewModelWidgetExtension::AssignViewModel(UMDViewModelBase* ViewModel, FName ViewModelName)
+UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModel(UMDViewModelBase* ViewModel, FName ViewModelName)
 {
 	if (IsValid(ViewModel))
 	{
@@ -56,7 +56,7 @@ UMDViewModelBase* UMDViewModelWidgetExtension::AssignViewModel(UMDViewModelBase*
 	return nullptr;
 }
 
-UMDViewModelBase* UMDViewModelWidgetExtension::AssignViewModelOfClass(TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
+UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModelOfClass(TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
 	if (IsValid(ViewModelClass))
 	{
@@ -64,7 +64,7 @@ UMDViewModelBase* UMDViewModelWidgetExtension::AssignViewModelOfClass(TSubclassO
 		if (IsValid(ViewModel))
 		{
 			ViewModel->InitializeViewModel();
-			return AssignViewModel(ViewModel, ViewModelName);
+			return SetViewModel(ViewModel, ViewModelName);
 		}
 	}
 

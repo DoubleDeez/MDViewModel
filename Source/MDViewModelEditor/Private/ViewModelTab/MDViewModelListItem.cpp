@@ -148,7 +148,6 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, TSharedPtr<FMDVie
 				.AutoWidth()
 				.VAlign(VAlign_Center)
 				[
-					// TODO - inline editable if non-native
 					SNew(STextBlock)
 					.Text(FText::FromName(Item->Assignment.ViewModelName))
 					.ToolTipText(INVTEXT("The name of this view model instance. It must be unique for all view models of the same class on this widget."))
