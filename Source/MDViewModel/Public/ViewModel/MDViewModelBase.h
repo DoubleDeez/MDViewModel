@@ -31,8 +31,8 @@ public:
 	virtual const UE::FieldNotification::IClassDescriptor& GetFieldNotificationDescriptor() const override;
 
 	// These feel like an anti-pattern but they're here for flexibility
-	virtual void OnAssignedToWidget(UUserWidget* Widget) {}
-	virtual void OnUnassignedFromWidget(UUserWidget* Widget) {}
+	virtual void OnSetOnWidget(UUserWidget* Widget) {}
+	virtual void OnUnsetFromWidget(UUserWidget* Widget) {}
 
 	// Listen for changes to the specified field
 	UFUNCTION(BlueprintCallable, Category = "FieldNotify", meta = (DisplayName = "Add Field Value Changed Delegate", ScriptName = "AddFieldValueChangedDelegate"))

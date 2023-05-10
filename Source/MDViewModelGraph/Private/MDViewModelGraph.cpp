@@ -5,6 +5,7 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Nodes/MDVMNode_ViewModelEvent.h"
+#include "Nodes/MDVMNode_ViewModelFieldNotify.h"
 #include "ViewModel/MDViewModelBase.h"
 
 #define LOCTEXT_NAMESPACE "FMDViewModelGraphModule"
@@ -15,6 +16,8 @@ void FMDViewModelGraphModule::StartupModule()
 	FMDViewModelEditorModule& ViewModelEditorModule = FModuleManager::LoadModuleChecked<FMDViewModelEditorModule>(TEXT("MDViewModelEditor"));
 	ViewModelEditorModule.DoesBlueprintBindToViewModelEvent.BindStatic(&FMDViewModelGraphModule::DoesBlueprintBindToViewModelEvent);
 	ViewModelEditorModule.OnViewModelEventRequestedForBlueprint.BindStatic(&FMDViewModelGraphModule::OnViewModelEventRequestedForBlueprint);
+	ViewModelEditorModule.DoesBlueprintBindToViewModelFieldNotify.BindStatic(&FMDViewModelGraphModule::DoesBlueprintBindToViewModelFieldNotify);
+	ViewModelEditorModule.OnViewModelFieldNotifyRequestedForBlueprint.BindStatic(&FMDViewModelGraphModule::OnViewModelFieldNotifyRequestedForBlueprint);
 #endif
 }
 
@@ -25,6 +28,8 @@ void FMDViewModelGraphModule::ShutdownModule()
     {
     	ViewModelEditorModule->DoesBlueprintBindToViewModelEvent.Unbind();
     	ViewModelEditorModule->OnViewModelEventRequestedForBlueprint.Unbind();
+    	ViewModelEditorModule->DoesBlueprintBindToViewModelFieldNotify.Unbind();
+    	ViewModelEditorModule->OnViewModelFieldNotifyRequestedForBlueprint.Unbind();
     }
 #endif
 }
@@ -32,7 +37,7 @@ void FMDViewModelGraphModule::ShutdownModule()
 bool FMDViewModelGraphModule::DoesBlueprintBindToViewModelEvent(const UBlueprint* BP, const FName& EventName, TSubclassOf<UMDViewModelBase> ViewModelClass,
 	const FName& ViewModelName)
 {
-	return FindExistingNode(BP, EventName, ViewModelClass, ViewModelName) != nullptr;
+	return FindExistingViewModelEventNode(BP, EventName, ViewModelClass, ViewModelName) != nullptr;
 }
 
 void FMDViewModelGraphModule::OnViewModelEventRequestedForBlueprint(const UBlueprint* BP, const FName& EventName, TSubclassOf<UMDViewModelBase> ViewModelClass,
@@ -43,7 +48,7 @@ void FMDViewModelGraphModule::OnViewModelEventRequestedForBlueprint(const UBluep
 		return;
 	}
 
-	const UMDVMNode_ViewModelEvent* Node = FindExistingNode(BP, EventName, ViewModelClass, ViewModelName);
+	const UMDVMNode_ViewModelEvent* Node = FindExistingViewModelEventNode(BP, EventName, ViewModelClass, ViewModelName);
 	if (Node == nullptr)
 	{
 		if (UEdGraph* TargetGraph = BP->GetLastEditedUberGraph())
@@ -65,7 +70,7 @@ void FMDViewModelGraphModule::OnViewModelEventRequestedForBlueprint(const UBluep
 	FKismetEditorUtilities::BringKismetToFocusAttentionOnObject(Node);
 }
 
-UMDVMNode_ViewModelEvent* FMDViewModelGraphModule::FindExistingNode(const UBlueprint* BP, const FName& EventName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+UMDVMNode_ViewModelEvent* FMDViewModelGraphModule::FindExistingViewModelEventNode(const UBlueprint* BP, const FName& EventName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
 {
 	if (BP == nullptr)
 	{
@@ -78,6 +83,61 @@ UMDVMNode_ViewModelEvent* FMDViewModelGraphModule::FindExistingNode(const UBluep
 	{
 		UMDVMNode_ViewModelEvent* BoundEvent = *NodeIter;
 		if (BoundEvent->ViewModelClass == ViewModelClass && BoundEvent->ViewModelName == ViewModelName && BoundEvent->DelegatePropertyName == EventName)
+		{
+			return BoundEvent;
+		}
+	}
+
+	return nullptr;
+}
+
+bool FMDViewModelGraphModule::DoesBlueprintBindToViewModelFieldNotify(const UBlueprint* BP, const FName& FieldNotifyName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+{
+	return FindExistingViewModelFieldNotifyNode(BP, FieldNotifyName, ViewModelClass, ViewModelName) != nullptr;
+}
+
+void FMDViewModelGraphModule::OnViewModelFieldNotifyRequestedForBlueprint(const UBlueprint* BP, const FName& FieldNotifyName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+{
+	if (BP == nullptr)
+	{
+		return;
+	}
+
+	const UMDVMNode_ViewModelFieldNotify* Node = FindExistingViewModelFieldNotifyNode(BP, FieldNotifyName, ViewModelClass, ViewModelName);
+	if (Node == nullptr)
+	{
+		if (UEdGraph* TargetGraph = BP->GetLastEditedUberGraph())
+		{
+			const FVector2D NewNodePos = TargetGraph->GetGoodPlaceForNewNode();
+
+			Node = FEdGraphSchemaAction_K2NewNode::SpawnNode<UMDVMNode_ViewModelFieldNotify>(
+				TargetGraph,
+				NewNodePos,
+				EK2NewNodeFlags::SelectNewNode,
+				[&](UMDVMNode_ViewModelFieldNotify* NewInstance)
+				{
+					NewInstance->InitializeViewModelFieldNotifyParams(ViewModelClass, ViewModelName, FieldNotifyName);
+				}
+			);
+		}
+	}
+
+	FKismetEditorUtilities::BringKismetToFocusAttentionOnObject(Node);
+}
+
+UMDVMNode_ViewModelFieldNotify* FMDViewModelGraphModule::FindExistingViewModelFieldNotifyNode(const UBlueprint* BP, const FName& FieldNotifyName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+{
+	if (BP == nullptr)
+	{
+		return nullptr;
+	}
+
+	TArray<UMDVMNode_ViewModelFieldNotify*> EventNodes;
+	FBlueprintEditorUtils::GetAllNodesOfClass(BP, EventNodes);
+	for (auto NodeIter = EventNodes.CreateIterator(); NodeIter; ++NodeIter)
+	{
+		UMDVMNode_ViewModelFieldNotify* BoundEvent = *NodeIter;
+		if (BoundEvent->ViewModelClass == ViewModelClass && BoundEvent->ViewModelName == ViewModelName && BoundEvent->FieldNotifyName == FieldNotifyName)
 		{
 			return BoundEvent;
 		}

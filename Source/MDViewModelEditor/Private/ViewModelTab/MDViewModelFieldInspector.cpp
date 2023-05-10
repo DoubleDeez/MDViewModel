@@ -15,6 +15,11 @@
 #include "Widgets/Layout/SWidgetSwitcher.h"
 
 
+void FMDViewModelDebugLineItemBase::UpdateViewModelName(const FName& InViewModelName)
+{
+	ViewModelName = InViewModelName;
+}
+
 bool FMDViewModelDebugLineItemBase::HasChildren() const
 {
 	if (!CachedChildren.IsSet())
@@ -76,10 +81,38 @@ TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GetNameIcon()
 
 TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GenerateValueWidget(TSharedPtr<FString> InSearchString)
 {
-	// TODO - Button to bind to Field Notify properties if top-level property with no value (eg. design time)
-	return SNew(STextBlock)
+	return SNew(SWidgetSwitcher)
+	.WidgetIndex(this, &FMDViewModelFieldDebugLineItem::GetShouldDisplayFieldNotifyIndex)
+	+SWidgetSwitcher::Slot()
+	[
+		SNew(SButton)
+		.ContentPadding(FMargin(3.0, 2.0))
+		.OnClicked(this, &FMDViewModelFieldDebugLineItem::OnAddOrViewBoundFunctionClicked)
+		[
+			SNew(SWidgetSwitcher)
+			.WidgetIndex(this, &FMDViewModelFieldDebugLineItem::GetAddOrViewBoundFunctionIndex)
+			+SWidgetSwitcher::Slot()
+			[
+				SNew(SImage)
+				.ColorAndOpacity(FSlateColor::UseForeground())
+				.Image(FAppStyle::Get().GetBrush("Icons.SelectInViewport"))
+				.ToolTipText(INVTEXT("Focus the existing bound function."))
+			]
+			+SWidgetSwitcher::Slot()
+			[
+				SNew(SImage)
+				.ColorAndOpacity(FSlateColor::UseForeground())
+				.Image(FAppStyle::Get().GetBrush("Icons.Plus"))
+				.ToolTipText(INVTEXT("Create a BP event bound to this view model field notify property"))
+			]
+		]
+	]
+	+SWidgetSwitcher::Slot()
+	[
+		SNew(STextBlock)
 		.Text(this, &FMDViewModelFieldDebugLineItem::GetDisplayValue)
-		.ToolTipText(this, &FMDViewModelFieldDebugLineItem::GetDisplayValue);
+		.ToolTipText(this, &FMDViewModelFieldDebugLineItem::GetDisplayValue)
+	];
 }
 
 FText FMDViewModelFieldDebugLineItem::GetDisplayValue() const
@@ -317,6 +350,34 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 	CachedPropertyItems.GenerateValueArray(CachedChildren.GetValue());
 }
 
+int32 FMDViewModelFieldDebugLineItem::GetShouldDisplayFieldNotifyIndex() const
+{
+	return (ValuePtr == nullptr && bIsFieldNotify) ? 0 : 1;
+}
+
+FReply FMDViewModelFieldDebugLineItem::OnAddOrViewBoundFunctionClicked() const
+{
+	check(bIsFieldNotify);
+
+	const FMDViewModelEditorModule& ViewModelEditorModule = FModuleManager::LoadModuleChecked<FMDViewModelEditorModule>(TEXT("MDViewModelEditor"));
+	if (ViewModelEditorModule.OnViewModelFieldNotifyRequestedForBlueprint.IsBound() && PropertyPtr.IsValid())
+	{
+		ViewModelEditorModule.OnViewModelFieldNotifyRequestedForBlueprint.Execute(WidgetBP.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName);
+	}
+
+	return FReply::Handled();
+}
+
+int32 FMDViewModelFieldDebugLineItem::GetAddOrViewBoundFunctionIndex() const
+{
+	check(bIsFieldNotify);
+
+	const FMDViewModelEditorModule& ViewModelEditorModule = FModuleManager::LoadModuleChecked<FMDViewModelEditorModule>(TEXT("MDViewModelEditor"));
+	return (!ViewModelEditorModule.DoesBlueprintBindToViewModelFieldNotify.IsBound() || !PropertyPtr.IsValid() ||
+		ViewModelEditorModule.DoesBlueprintBindToViewModelFieldNotify.Execute(WidgetBP.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName))
+		? 0 : 1;
+}
+
 TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GetNameIcon()
 {
 	if (const UFunction* Function = FunctionPtr.Get())
@@ -346,11 +407,43 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GetNameIcon()
 
 TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GenerateValueWidget(TSharedPtr<FString> InSearchString)
 {
-	// Display the function comment as the value
-	// Anything better we can do here? # params + Return values?
-	return SNew(STextBlock)
+	return SNew(SWidgetSwitcher)
+	.WidgetIndex(this, &FMDViewModelFunctionDebugLineItem::GetShouldDisplayFieldNotifyIndex)
+	+SWidgetSwitcher::Slot()
+	[
+		SNew(SButton)
+		.ContentPadding(FMargin(3.0, 2.0))
+		.OnClicked(this, &FMDViewModelFunctionDebugLineItem::OnAddOrViewBoundFieldNotifyFunctionClicked)
+		[
+			SNew(SWidgetSwitcher)
+			.WidgetIndex(this, &FMDViewModelFunctionDebugLineItem::GetAddOrViewBoundFieldNotifyFunctionIndex)
+			+SWidgetSwitcher::Slot()
+			[
+				SNew(SImage)
+				.ColorAndOpacity(FSlateColor::UseForeground())
+				.Image(FAppStyle::Get().GetBrush("Icons.SelectInViewport"))
+				.ToolTipText(INVTEXT("Focus the existing bound function."))
+			]
+			+SWidgetSwitcher::Slot()
+			[
+				SNew(SImage)
+				.ColorAndOpacity(FSlateColor::UseForeground())
+				.Image(FAppStyle::Get().GetBrush("Icons.Plus"))
+				.ToolTipText(INVTEXT("Create a BP event bound to this view model field notify function"))
+			]
+		]
+	]
+	+SWidgetSwitcher::Slot()
+	[
+		SNew(STextBlock)
 		.Text(this, &FMDViewModelFunctionDebugLineItem::GetDescription)
-		.ToolTipText(this, &FMDViewModelFunctionDebugLineItem::GetDescription);
+		.ToolTipText(this, &FMDViewModelFunctionDebugLineItem::GetDescription)
+	];
+}
+
+void FMDViewModelFunctionDebugLineItem::UpdateIsDebugging(bool InIsDebugging)
+{
+	bIsDebugging = InIsDebugging;
 }
 
 void FMDViewModelFunctionDebugLineItem::UpdateCachedChildren() const
@@ -375,6 +468,34 @@ void FMDViewModelFunctionDebugLineItem::UpdateCachedChildren() const
 	CachedPropertyItems.GenerateValueArray(CachedChildren.GetValue());
 }
 
+int32 FMDViewModelFunctionDebugLineItem::GetShouldDisplayFieldNotifyIndex() const
+{
+	return (!bIsDebugging && bIsFieldNotify) ? 0 : 1;
+}
+
+FReply FMDViewModelFunctionDebugLineItem::OnAddOrViewBoundFieldNotifyFunctionClicked() const
+{
+	check(bIsFieldNotify);
+
+	const FMDViewModelEditorModule& ViewModelEditorModule = FModuleManager::LoadModuleChecked<FMDViewModelEditorModule>(TEXT("MDViewModelEditor"));
+	if (ViewModelEditorModule.OnViewModelFieldNotifyRequestedForBlueprint.IsBound() && FunctionPtr.IsValid())
+	{
+		ViewModelEditorModule.OnViewModelFieldNotifyRequestedForBlueprint.Execute(WidgetBP.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName);
+	}
+
+	return FReply::Handled();
+}
+
+int32 FMDViewModelFunctionDebugLineItem::GetAddOrViewBoundFieldNotifyFunctionIndex() const
+{
+	check(bIsFieldNotify);
+
+	const FMDViewModelEditorModule& ViewModelEditorModule = FModuleManager::LoadModuleChecked<FMDViewModelEditorModule>(TEXT("MDViewModelEditor"));
+	return (!ViewModelEditorModule.DoesBlueprintBindToViewModelFieldNotify.IsBound() || !FunctionPtr.IsValid() ||
+		ViewModelEditorModule.DoesBlueprintBindToViewModelFieldNotify.Execute(WidgetBP.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName))
+		? 0 : 1;
+}
+
 TSharedRef<SWidget> FMDViewModelEventDebugLineItem::GenerateValueWidget(TSharedPtr<FString> InSearchString)
 {
 	return SNew(SButton)
@@ -382,7 +503,7 @@ TSharedRef<SWidget> FMDViewModelEventDebugLineItem::GenerateValueWidget(TSharedP
 	.OnClicked(this, &FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked)
 	[
 		SNew(SWidgetSwitcher)
-		.WidgetIndex(this, &FMDViewModelEventDebugLineItem::GetAddOrBiewBoundFunctionIndex)
+		.WidgetIndex(this, &FMDViewModelEventDebugLineItem::GetAddOrViewBoundFunctionIndex)
 		+ SWidgetSwitcher::Slot()
 		[
 			SNew(SImage)
@@ -400,11 +521,6 @@ TSharedRef<SWidget> FMDViewModelEventDebugLineItem::GenerateValueWidget(TSharedP
 	];
 }
 
-void FMDViewModelEventDebugLineItem::UpdateViewModelName(const FName& InViewModelName)
-{
-	ViewModelName = InViewModelName;
-}
-
 FReply FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 {
 	const FMDViewModelEditorModule& ViewModelEditorModule = FModuleManager::LoadModuleChecked<FMDViewModelEditorModule>(TEXT("MDViewModelEditor"));
@@ -416,7 +532,7 @@ FReply FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 	return FReply::Handled();
 }
 
-int32 FMDViewModelEventDebugLineItem::GetAddOrBiewBoundFunctionIndex() const
+int32 FMDViewModelEventDebugLineItem::GetAddOrViewBoundFunctionIndex() const
 {
 	const FMDViewModelEditorModule& ViewModelEditorModule = FModuleManager::LoadModuleChecked<FMDViewModelEditorModule>(TEXT("MDViewModelEditor"));
 	return (!ViewModelEditorModule.DoesBlueprintBindToViewModelEvent.IsBound() || !WeakDelegateProp.IsValid() ||
@@ -503,10 +619,11 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 				TSharedPtr<FMDViewModelFieldDebugLineItem>& Item = PropertyTreeItems.FindOrAdd(Prop);
 				if (!Item.IsValid())
 				{
-					Item = MakeShared<FMDViewModelFieldDebugLineItem>(Prop, ValuePtr, Prop->GetDisplayNameText(), Prop->GetToolTipText());
+					Item = MakeShared<FMDViewModelFieldDebugLineItem>(Prop, ValuePtr, Prop->GetDisplayNameText(), Prop->GetToolTipText(), bIsFieldNotify, WidgetBPPtr.Get(), ViewModelClass, ViewModelName);
 				}
 				else
 				{
+					Item->UpdateViewModelName(ViewModelName);
 					Item->UpdateValuePtr(ValuePtr);
 				}
 
@@ -519,7 +636,7 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 					TSharedPtr<FMDViewModelEventDebugLineItem>& Item = EventTreeItems.FindOrAdd(DelegateProp);
 					if (!Item.IsValid())
 					{
-						Item = MakeShared<FMDViewModelEventDebugLineItem>(DelegateProp, WidgetBPPtr.Get(), ViewModelClass, ViewModelName);
+						Item = MakeShared<FMDViewModelEventDebugLineItem>(DelegateProp, false, WidgetBPPtr.Get(), ViewModelClass, ViewModelName);
 					}
 					else
 					{
@@ -568,9 +685,14 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 				TSharedPtr<FMDViewModelFunctionDebugLineItem>& Item = FunctionTreeItems.FindOrAdd(Func);
 				if (!Item.IsValid())
 				{
-					Item = MakeShared<FMDViewModelFunctionDebugLineItem>(Func, Func->GetDisplayNameText(), Func->GetToolTipText());
+					Item = MakeShared<FMDViewModelFunctionDebugLineItem>(Func, Func->GetDisplayNameText(), Func->GetToolTipText(), bIsFieldNotify, WidgetBPPtr.Get(), ViewModelClass, ViewModelName);
+				}
+				else
+				{
+					Item->UpdateViewModelName(ViewModelName);
 				}
 
+				Item->UpdateIsDebugging(bIsDebugging);
 				AddTreeItemUnique(Item);
 			}
 		}

@@ -152,12 +152,12 @@ void UMDViewModelWidgetExtension::BroadcastViewModelChanged(UMDViewModelBase* Ol
 	UUserWidget* OwnerWidget = GetUserWidget();
 	if (IsValid(OldViewModel))
 	{
-		OldViewModel->OnUnassignedFromWidget(OwnerWidget);
+		OldViewModel->OnUnsetFromWidget(OwnerWidget);
 	}
 
 	if (IsValid(NewViewModel))
 	{
-		NewViewModel->OnAssignedToWidget(OwnerWidget);
+		NewViewModel->OnSetOnWidget(OwnerWidget);
 	}
 
 	const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
@@ -218,7 +218,7 @@ void UMDViewModelWidgetExtension::CleanUpViewModels()
 			UMDViewModelBase* ViewModel = It.Value();
 			if (IsValid(ViewModel))
 			{
-				ViewModel->OnUnassignedFromWidget(OwnerWidget);
+				ViewModel->OnUnsetFromWidget(OwnerWidget);
 			}
 		}
 

@@ -17,9 +17,12 @@ public:
 	virtual void ShutdownModule() override;
 
 	// Delegates as a dirty workaround for circular dependency issues
+	DECLARE_DELEGATE_RetVal_FourParams(bool, FDoesBlueprintBindToViewModelFieldNotify, const UBlueprint*, const FName&, TSubclassOf<UMDViewModelBase>, const FName&);
+	FDoesBlueprintBindToViewModelFieldNotify DoesBlueprintBindToViewModelFieldNotify;
+	DECLARE_DELEGATE_FourParams(FOnViewModelFieldNotifyRequestedForBlueprint, const UBlueprint*, const FName&, TSubclassOf<UMDViewModelBase>, const FName&);
+	FOnViewModelFieldNotifyRequestedForBlueprint OnViewModelFieldNotifyRequestedForBlueprint;
 	DECLARE_DELEGATE_RetVal_FourParams(bool, FDoesBlueprintBindToViewModelEvent, const UBlueprint*, const FName&, TSubclassOf<UMDViewModelBase>, const FName&);
 	FDoesBlueprintBindToViewModelEvent DoesBlueprintBindToViewModelEvent;
-
 	DECLARE_DELEGATE_FourParams(FOnViewModelEventRequestedForBlueprint, const UBlueprint*, const FName&, TSubclassOf<UMDViewModelBase>, const FName&);
 	FOnViewModelEventRequestedForBlueprint OnViewModelEventRequestedForBlueprint;
 
