@@ -15,6 +15,8 @@ class MDVIEWMODELEDITOR_API SMDViewModelDetails : public SCompoundWidget
 {
 public:
 	SLATE_BEGIN_ARGS(SMDViewModelDetails)
+		: _DebugViewModel(nullptr)
+		, _WidgetBP(nullptr)
 		{
 		}
 

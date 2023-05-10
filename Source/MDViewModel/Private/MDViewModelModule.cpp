@@ -86,7 +86,11 @@ void FMDViewModelModule::GetViewModelClassesForWidgetClass(TSubclassOf<UUserWidg
 
 		if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(WidgetClass))
 		{
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
+			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
+#else
 			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>(false))
+#endif
 			{
 				ClassExtension->GetViewModelClasses(OutViewModelClasses);
 			}
@@ -110,7 +114,11 @@ void FMDViewModelModule::GetViewModelAssignmentsForWidgetClass(TSubclassOf<UUser
 
 		if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(WidgetClass))
 		{
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
+			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
+#else
 			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>(false))
+#endif
 			{
 				// TODO - Deal with Native <-> BP collisions
 				OutViewModelAssignments.Append(ClassExtension->GetAssignments());
@@ -161,7 +169,11 @@ void FMDViewModelModule::SearchViewModelAssignments(TMap<FMDViewModelAssignment,
 
 	if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(WidgetClass))
 	{
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
+		if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
+#else
 		if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>(false))
+#endif
 		{
 			ClassExtension->SearchAssignments(OutViewModelAssignments, ViewModelClass, ProviderTag, ViewModelName);
 		}
@@ -185,7 +197,11 @@ bool FMDViewModelModule::DoesClassOrSuperClassHaveAssignments(TSubclassOf<UUserW
 
 		if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(WidgetClass))
 		{
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
+			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
+#else
 			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>(false))
+#endif
 			{
 				if (ClassExtension->HasAssignments())
 				{

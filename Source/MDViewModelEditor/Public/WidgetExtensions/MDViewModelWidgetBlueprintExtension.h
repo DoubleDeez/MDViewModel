@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "WidgetBlueprintExtension.h"
-#include "Util/MDViewModelAssignmentData.h"
+#include "Util/MDViewModelEditorAssignment.h"
 #include "MDViewModelWidgetBlueprintExtension.generated.h"
 
 class UMDViewModelBase;

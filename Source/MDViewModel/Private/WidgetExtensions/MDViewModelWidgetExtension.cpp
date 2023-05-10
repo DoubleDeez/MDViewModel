@@ -175,11 +175,13 @@ void UMDViewModelWidgetExtension::PopulateViewModels()
 		return;
 	}
 
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 2
 	// TODO - Support DebugMode with editable debug view models
 	if (Widget->IsPreviewTime())
 	{
 		return;
 	}
+#endif
 
 	const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;

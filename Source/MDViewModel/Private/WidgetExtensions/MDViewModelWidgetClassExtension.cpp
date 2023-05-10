@@ -31,11 +31,13 @@ void UMDViewModelWidgetClassExtension::Construct(UUserWidget* UserWidget)
 {
 	Super::Construct(UserWidget);
 
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 2
 	// Initialize isn't called in editor Debug mode so we force it here
 	if (IsValid(UserWidget) && UserWidget->IsPreviewTime())
 	{
 		Initialize(UserWidget);
 	}
+#endif
 }
 #endif
 
@@ -100,7 +102,11 @@ void UMDViewModelWidgetClassExtension::GatherParentAssignments(TSubclassOf<UUser
 	UClass* SuperClass = WidgetClass->GetSuperClass();
 	if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(SuperClass))
 	{
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
+		if (UMDViewModelWidgetClassExtension* Extension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
+#else
 		if (UMDViewModelWidgetClassExtension* Extension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>(false))
+#endif
 		{
 			Extension->GatherParentAssignments(SuperClass);
 			Assignments.Append(Extension->Assignments);

@@ -307,7 +307,7 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 				SNew(SButton)
 				.Text(INVTEXT("Cancel"))
 				.HAlign(HAlign_Center)
-				.OnClicked_Lambda([WeakWindow = ParentWindow.ToWeakPtr()]()
+				.OnClicked_Lambda([WeakWindow = TWeakPtr<SWindow>(ParentWindow)]()
 				{
 					if (const TSharedPtr<SWindow> ParentWindow = WeakWindow.Pin())
 					{
