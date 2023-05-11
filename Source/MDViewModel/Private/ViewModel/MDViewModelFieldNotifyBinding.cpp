@@ -80,22 +80,14 @@ void UMDViewModelFieldNotifyBinding::OnFieldValueChanged(UObject* ViewModel, UE:
 
 	if (UFunction* BoundFunc = BoundWidget->FindFunctionChecked(Entry.FunctionNameToBind))
 	{
-		check(IsValid(BoundFunc) && BoundFunc->GetReturnProperty() == nullptr && BoundFunc->NumParms == 1);
+		check(IsValid(BoundFunc) && BoundFunc->NumParms == 1);
 
 		void* ValuePtr = nullptr;
 		void* AllocatedParamPtr = nullptr;
 		if (const FProperty* Prop = FindFProperty<FProperty>(BoundViewModel->GetClass(), Field.GetName()))
 		{
 			check(BoundFunc->ParmsSize == Prop->GetSize());
-
-			if (const FObjectPropertyBase* ObjectProp = CastField<FObjectPropertyBase>(Prop))
-			{
-				ValuePtr = ObjectProp->GetObjectPropertyValue_InContainer(BoundViewModel);
-			}
-			else
-			{
-				ValuePtr = Prop->ContainerPtrToValuePtr<void>(BoundViewModel);
-			}
+			ValuePtr = Prop->ContainerPtrToValuePtr<void>(BoundViewModel);
 		}
 		else if (UFunction* Func = FindUField<UFunction>(BoundViewModel->GetClass(), Field.GetName()))
 		{

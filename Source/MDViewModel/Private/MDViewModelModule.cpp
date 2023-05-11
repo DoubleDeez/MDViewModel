@@ -4,6 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
 #include "Engine/Blueprint.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "Util/MDViewModelAssignment.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetExtensions/MDViewModelWidgetClassExtension.h"

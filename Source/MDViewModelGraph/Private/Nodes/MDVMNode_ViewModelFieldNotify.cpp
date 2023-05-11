@@ -204,7 +204,7 @@ void UMDVMNode_ViewModelFieldNotify::ValidateNodeDuringCompilation(FCompilerResu
 		}
 	}
 
-	Super::ValidateNodeDuringCompilation(MessageLog);
+	UK2Node_EditablePinBase::ValidateNodeDuringCompilation(MessageLog);
 }
 
 bool UMDVMNode_ViewModelFieldNotify::IsFunctionEntryCompatible(const UK2Node_FunctionEntry* EntryNode) const
