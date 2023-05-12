@@ -18,7 +18,7 @@ void UMDViewModelDelegateBinding::BindDynamicDelegates(UObject* InInstance) cons
 				for (int32 i = 0; i < ViewModelDelegateBindings.Num(); ++i)
 				{
 					const FMDViewModelDelegateBindingEntry& Entry = ViewModelDelegateBindings[i];
-					auto Delegate = FMDVMOnViewModelAssigned::FDelegate::CreateUObject(this, &UMDViewModelDelegateBinding::OnViewModelChanged, i, WeakWidget);
+					auto Delegate = FMDVMOnViewModelSet::FDelegate::CreateUObject(this, &UMDViewModelDelegateBinding::OnViewModelChanged, i, WeakWidget);
 					Extension->QueueListenForChanges(Widget, MoveTemp(Delegate), Entry.ViewModelClass, Entry.ViewModelName);
 				}
 			}
@@ -33,7 +33,7 @@ void UMDViewModelDelegateBinding::UnbindDynamicDelegates(UObject* InInstance) co
 		UMDViewModelWidgetExtension* Extension = Widget->GetExtension<UMDViewModelWidgetExtension>();
 		if (IsValid(Extension))
 		{
-			Extension->StopListeningForAllViewModelsChanges(this);
+			Extension->StopListeningForAllNativeViewModelsChanged(this);
 		}
 	}
 }

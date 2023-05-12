@@ -10,8 +10,8 @@
 struct FGameplayTag;
 class UMDViewModelBase;
 
-//DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FMDVMOnViewModelAssignedDynamic, UMDViewModelBase*, OldViewModel, UMDViewModelBase*, NewViewModel, FName, ViewModelName);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FMDVMOnViewModelAssigned, UMDViewModelBase* /*OldViewModel*/, UMDViewModelBase* /*NewViewModel*/);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FMDVMOnViewModelSetDynamic, UMDViewModelBase*, OldViewModel, UMDViewModelBase*, NewViewModel);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FMDVMOnViewModelSet, UMDViewModelBase* /*OldViewModel*/, UMDViewModelBase* /*NewViewModel*/);
 
 /**
  * A widget extension to track a widget's view models
@@ -53,13 +53,18 @@ protected:
 
 #pragma region Delegates
 public:
-	FDelegateHandle ListenForChanges(FMDVMOnViewModelAssigned::FDelegate&& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
+	FDelegateHandle ListenForChanges(FMDVMOnViewModelSet::FDelegate&& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
 	void StopListeningForChanges(FDelegateHandle& Handle, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
-	void StopListeningForAllViewModelsChanges(const void* BoundObject);
+	void StopListeningForAllNativeViewModelsChanged(const void* BoundObject);
+	
+	void ListenForChanges(FMDVMOnViewModelSetDynamic&& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
+	void StopListeningForChanges(const FMDVMOnViewModelSetDynamic& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
+	void StopListeningForAllDynamicViewModelsChanged(const UObject* BoundObject);
 
 private:
 	void BroadcastViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);
-	TMap<FMDViewModelInstanceKey, FMDVMOnViewModelAssigned> OnViewModelAssignedDelegates;
+	TMap<FMDViewModelInstanceKey, FMDVMOnViewModelSet> OnViewModelSetDelegates;
+	TMap<FMDViewModelInstanceKey, TArray<FMDVMOnViewModelSetDynamic>> OnViewModelSetDynamicDelegates;
 #pragma endregion Delegates
 };
 

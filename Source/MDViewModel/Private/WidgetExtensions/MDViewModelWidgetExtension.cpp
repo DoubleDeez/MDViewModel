@@ -111,13 +111,13 @@ void UMDViewModelWidgetExtension::OnProviderViewModelUpdated(TSubclassOf<UMDView
 	}
 }
 
-FDelegateHandle UMDViewModelWidgetExtension::ListenForChanges(FMDVMOnViewModelAssigned::FDelegate&& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
+FDelegateHandle UMDViewModelWidgetExtension::ListenForChanges(FMDVMOnViewModelSet::FDelegate&& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
 	if (IsValid(ViewModelClass))
 	{
 		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
 		const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
-		return OnViewModelAssignedDelegates.FindOrAdd(Key).Add(MoveTemp(Delegate));
+		return OnViewModelSetDelegates.FindOrAdd(Key).Add(MoveTemp(Delegate));
 	}
 
 	return {};
@@ -129,7 +129,7 @@ void UMDViewModelWidgetExtension::StopListeningForChanges(FDelegateHandle& Handl
 	{
 		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
 		const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
-		if (FMDVMOnViewModelAssigned* Delegate = OnViewModelAssignedDelegates.Find(Key))
+		if (FMDVMOnViewModelSet* Delegate = OnViewModelSetDelegates.Find(Key))
 		{
 			if (Delegate->Remove(Handle))
 			{
@@ -139,11 +139,48 @@ void UMDViewModelWidgetExtension::StopListeningForChanges(FDelegateHandle& Handl
 	}
 }
 
-void UMDViewModelWidgetExtension::StopListeningForAllViewModelsChanges(const void* BoundObject)
+void UMDViewModelWidgetExtension::StopListeningForAllNativeViewModelsChanged(const void* BoundObject)
 {
-	for (auto& Pair : OnViewModelAssignedDelegates)
+	for (auto& Pair : OnViewModelSetDelegates)
 	{
 		Pair.Value.RemoveAll(BoundObject);
+	}
+}
+
+void UMDViewModelWidgetExtension::ListenForChanges(FMDVMOnViewModelSetDynamic&& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
+{
+	if (IsValid(ViewModelClass))
+	{
+		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
+		const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
+		OnViewModelSetDynamicDelegates.FindOrAdd(Key).Add(MoveTemp(Delegate));
+	}
+}
+
+void UMDViewModelWidgetExtension::StopListeningForChanges(const FMDVMOnViewModelSetDynamic& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
+{
+	if (IsValid(ViewModelClass))
+	{
+		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
+		const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
+		if (TArray<FMDVMOnViewModelSetDynamic>* Delegates = OnViewModelSetDynamicDelegates.Find(Key))
+		{
+			Delegates->Remove(Delegate);
+		}
+	}
+}
+
+void UMDViewModelWidgetExtension::StopListeningForAllDynamicViewModelsChanged(const UObject* BoundObject)
+{
+	for (auto& Pair : OnViewModelSetDynamicDelegates)
+	{
+		for (auto It = Pair.Value.CreateIterator(); It; ++It)
+		{
+			if (It->IsBoundToObject(BoundObject))
+			{
+				It.RemoveCurrent();
+			}
+		}
 	}
 }
 
@@ -161,9 +198,17 @@ void UMDViewModelWidgetExtension::BroadcastViewModelChanged(UMDViewModelBase* Ol
 	}
 
 	const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
-	if (const FMDVMOnViewModelAssigned* Delegate = OnViewModelAssignedDelegates.Find(Key))
+	if (const FMDVMOnViewModelSet* Delegate = OnViewModelSetDelegates.Find(Key))
 	{
 		Delegate->Broadcast(OldViewModel, NewViewModel);
+	}
+
+	if (const TArray<FMDVMOnViewModelSetDynamic>* Delegates = OnViewModelSetDynamicDelegates.Find(Key))
+	{
+		for (const FMDVMOnViewModelSetDynamic& Delegate : *Delegates)
+		{
+			Delegate.ExecuteIfBound(OldViewModel, NewViewModel);
+		}
 	}
 }
 
@@ -202,7 +247,7 @@ void UMDViewModelWidgetExtension::CleanUpViewModels()
 {
 	// Broadcast out that we're null-ing out viewmodels
 	{
-		for (auto It = OnViewModelAssignedDelegates.CreateConstIterator(); It; ++It)
+		for (auto It = OnViewModelSetDelegates.CreateConstIterator(); It; ++It)
 		{
 			UMDViewModelBase* ViewModel = ViewModels.FindRef(It.Key());
 			if (IsValid(ViewModel))

@@ -70,3 +70,30 @@ bool UMDViewModelFunctionLibrary::DoesWidgetHaveViewModelClassAssigned(const UUs
 
 	return false;
 }
+
+void UMDViewModelFunctionLibrary::BindViewModelChangedEvent(UUserWidget* Widget, FMDVMOnViewModelSetDynamic Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
+{
+	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
+	if (IsValid(Extension))
+	{
+		Extension->ListenForChanges(MoveTemp(Delegate), ViewModelClass, ViewModelName);
+	}
+}
+
+void UMDViewModelFunctionLibrary::UnbindViewModelChangedEvent(UUserWidget* Widget, FMDVMOnViewModelSetDynamic Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
+{
+	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
+	if (IsValid(Extension))
+	{
+		Extension->StopListeningForChanges(Delegate, ViewModelClass, ViewModelName);
+	}
+}
+
+void UMDViewModelFunctionLibrary::UnbindAllViewModelChangedEvent(UUserWidget* Widget)
+{
+	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
+	if (IsValid(Extension))
+	{
+		Extension->StopListeningForAllDynamicViewModelsChanged(Widget);
+	}
+}

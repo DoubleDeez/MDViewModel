@@ -17,7 +17,7 @@ void UMDViewModelFieldNotifyBinding::BindDynamicDelegates(UObject* InInstance) c
 				for (int32 i = 0; i < ViewModelFieldNotifyBindings.Num(); ++i)
 				{
 					const FMDViewModelFieldNotifyBindingEntry& Entry = ViewModelFieldNotifyBindings[i];
-					auto Delegate = FMDVMOnViewModelAssigned::FDelegate::CreateUObject(this, &UMDViewModelFieldNotifyBinding::OnViewModelChanged, i, WeakWidget);
+					auto Delegate = FMDVMOnViewModelSet::FDelegate::CreateUObject(this, &UMDViewModelFieldNotifyBinding::OnViewModelChanged, i, WeakWidget);
 					Extension->QueueListenForChanges(Widget, MoveTemp(Delegate), Entry.ViewModelClass, Entry.ViewModelName);
 				}
 			}
@@ -32,7 +32,7 @@ void UMDViewModelFieldNotifyBinding::UnbindDynamicDelegates(UObject* InInstance)
 		UMDViewModelWidgetExtension* Extension = Widget->GetExtension<UMDViewModelWidgetExtension>();
 		if (IsValid(Extension))
 		{
-			Extension->StopListeningForAllViewModelsChanges(this);
+			Extension->StopListeningForAllNativeViewModelsChanged(this);
 		}
 	}
 }

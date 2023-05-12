@@ -77,7 +77,7 @@ void UMDViewModelWidgetClassExtension::GetViewModelClasses(TSet<TSubclassOf<UMDV
 	}
 }
 
-void UMDViewModelWidgetClassExtension::QueueListenForChanges(UUserWidget* Widget, FMDVMOnViewModelAssigned::FDelegate&& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
+void UMDViewModelWidgetClassExtension::QueueListenForChanges(UUserWidget* Widget, FMDVMOnViewModelSet::FDelegate&& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
 	if (IsValid(Widget))
 	{

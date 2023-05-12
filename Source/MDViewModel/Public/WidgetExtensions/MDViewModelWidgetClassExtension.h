@@ -32,7 +32,7 @@ public:
 	bool HasAssignments() const { return !Assignments.IsEmpty(); }
 
 	// Used to listen for changes before the specified widget's viewmodel extension is created
-	void QueueListenForChanges(UUserWidget* Widget, FMDVMOnViewModelAssigned::FDelegate&& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
+	void QueueListenForChanges(UUserWidget* Widget, FMDVMOnViewModelSet::FDelegate&& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
 
 protected:
 	UPROPERTY()
@@ -46,7 +46,7 @@ private:
 
 	struct QueuedListenerData
 	{
-		FMDVMOnViewModelAssigned::FDelegate Delegate;
+		FMDVMOnViewModelSet::FDelegate Delegate;
 		TSubclassOf<UMDViewModelBase> ViewModelClass;
 		FName ViewModelName = NAME_None;
 	};
