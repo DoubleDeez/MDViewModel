@@ -18,10 +18,15 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModel(UUserWidget* Widget,
 
 UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModelOfClass(UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
+	return SetViewModelOfClass(Widget, ViewModelClass, ViewModelName, GetTransientPackage());
+}
+
+UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModelOfClass(UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName, UObject* Outer)
+{
 	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
 	if (IsValid(Extension))
 	{
-		return Extension->SetViewModelOfClass(ViewModelClass, ViewModelName);
+		return Extension->SetViewModelOfClass(ViewModelClass, ViewModelName, Outer);
 	}
 
 	return nullptr;

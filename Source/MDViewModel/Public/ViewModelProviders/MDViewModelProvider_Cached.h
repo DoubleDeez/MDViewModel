@@ -10,12 +10,22 @@ MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached);
 UENUM()
 enum class EMDViewModelProvider_CacheLifetime
 {
-	// Viewmodel lifetime will be tied to the game instance
+	// View model lifetime will be tied to the game instance
 	Global,
-	// Viewmodel lifetime will be tied to the widget's owning local player
+	// View model lifetime will be tied to the widget's owning local player
 	LocalPlayer,
-	// Viewmodel lifetime will be tied to the world
-	World
+	// View model lifetime will be tied to the world
+	World,
+	// View model lifetime will be tied to the widget's owning player controller
+	OwningPlayerController,
+	// View model lifetime will be tied to the widget's owning player's HUD
+	OwningHUD,
+	// View model lifetime will be tied to the widget's owning pawn
+	OwningPawn,
+	// View model lifetime will be tied to the widget's owning player state
+	OwningPlayerState,
+	// View model lifetime will be tied to the game state
+	GameState
 };
 
 USTRUCT(DisplayName = "Cached Provider Settings")
@@ -24,7 +34,7 @@ struct FMDViewModelProvider_Cached_Settings
 	GENERATED_BODY()
 
 public:
-	// What is the desired lifetime of the cached viewmodel?
+	// What is the desired lifetime of the cached viewmodel? This also determines the View Model's Outer object
 	UPROPERTY(EditAnywhere, Category = "Provider")
 	EMDViewModelProvider_CacheLifetime ViewModelLifetime = EMDViewModelProvider_CacheLifetime::Global;
 };
@@ -45,4 +55,7 @@ public:
 
 	virtual UScriptStruct* GetProviderSettingsStruct() const override { return FMDViewModelProvider_Cached_Settings::StaticStruct(); }
 #endif
+
+protected:
+	void OnPawnChanged(TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 };
