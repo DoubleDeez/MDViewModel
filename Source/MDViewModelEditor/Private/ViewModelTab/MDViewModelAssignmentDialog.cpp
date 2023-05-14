@@ -135,7 +135,7 @@ public:
 					[
 						SNew(STextBlock)
 						.AutoWrapText(true)
-						.ColorAndOpacity(FLinearColor(1.f, 0.42f, 0.42f))
+						.ColorAndOpacity(FLinearColor(1.f, 0.65f, 0.f))
 						.Text(INVTEXT("The selected View Model class has Settings but the selected provider does not support View Model Settings so the View Model may not be properly initialized."))
 					];
 				}
@@ -312,7 +312,7 @@ private:
 			if (const TSharedPtr<FMDViewModelProviderBase> Provider = ViewModelModule.GetViewModelProvider(EditorObject->ViewModelProvider))
 			{
 				FClassViewerInitializationOptions ClassPickerOptions;
-				ClassPickerOptions.bShowNoneOption = true;
+				ClassPickerOptions.bShowNoneOption = false;
 				ClassPickerOptions.ClassFilters.Add(MakeShareable(new FMDViewModelProviderClassFilter(Provider)));
 				ClassPickerOptions.InitiallySelectedClass = GetCurrentViewModelClass();
 
@@ -364,6 +364,7 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 	if (EditorItem.IsValid())
 	{
 		EditorObject->PopulateFromAssignment(*EditorItem.Get());
+		OriginalAssignmentName = EditorObject->ViewModelInstanceName;
 	}
 
 	FDetailsViewArgs DetailsViewArgs;
@@ -403,8 +404,7 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 				{
 					if (!bIsEditMode && EditorObject.IsValid())
 					{
-						// TODO - check assignment uniqueness
-						if (EditorObject->ViewModelProvider.IsValid() && EditorObject->ViewModelInstanceName != NAME_None && EditorObject->ViewModelClass != nullptr)
+						if (IsAssignmentUnique() && EditorObject->ViewModelProvider.IsValid() && EditorObject->ViewModelInstanceName != NAME_None && EditorObject->ViewModelClass != nullptr)
 						{
 							return EVisibility::Visible;
 						}
@@ -422,8 +422,7 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 				{
 					if (bIsEditMode && EditorObject.IsValid())
 					{
-						// TODO - check assignment uniqueness
-						if (EditorObject->ViewModelProvider.IsValid() && EditorObject->ViewModelInstanceName != NAME_None)
+						if (IsAssignmentUnique() && EditorObject->ViewModelProvider.IsValid() && EditorObject->ViewModelInstanceName != NAME_None)
 						{
 							return EVisibility::Visible;
 						}
@@ -523,4 +522,41 @@ FReply SMDViewModelAssignmentDialog::OnSaveClicked() const
 	}
 
 	return FReply::Handled();
+}
+
+bool SMDViewModelAssignmentDialog::IsAssignmentUnique() const
+{
+	if (EditorObject.IsValid())
+	{
+		if (bIsEditMode && OriginalAssignmentName.IsSet() && EditorObject->ViewModelInstanceName == OriginalAssignmentName.GetValue())
+		{
+			// We haven't changed the name we came in with, so assume we're still unique
+			return true;
+		}
+
+		if (const UMDViewModelWidgetBlueprintExtension* Extension = BPExtensionPtr.Get())
+		{
+			if (const UWidgetBlueprint* WidgetBP = Extension->GetWidgetBlueprint())
+			{
+				if (const TSubclassOf<UUserWidget> WidgetClass = Cast<UClass>(WidgetBP->GeneratedClass))
+				{
+					TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
+					const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
+					ViewModelModule.GetViewModelAssignmentsForWidgetClass(WidgetClass, ViewModelAssignments);
+
+					for (const auto& Pair : ViewModelAssignments)
+					{
+						if (Pair.Key.ViewModelClass == EditorObject->ViewModelClass && Pair.Key.ViewModelName == EditorObject->ViewModelInstanceName)
+						{
+							return false;
+						}
+					}
+
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
 }

@@ -36,6 +36,8 @@ protected:
 	FReply OnAddClicked() const;
 	FReply OnSaveClicked() const;
 
+	bool IsAssignmentUnique() const;
+
 	bool bIsEditMode = false;
 
 	TSharedPtr<FMDViewModelEditorAssignment> EditorItem;
@@ -43,5 +45,5 @@ protected:
 	TSharedPtr<SWindow> ParentWindow;
 	TStrongObjectPtr<UMDViewModelAssignmentEditorObject> EditorObject;
 	TWeakObjectPtr<UMDViewModelWidgetBlueprintExtension> BPExtensionPtr;
-
+	TOptional<FName> OriginalAssignmentName;
 };
