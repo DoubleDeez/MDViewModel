@@ -41,4 +41,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "View Model")
 	TSubclassOf<UMDViewModelBase> ViewModelClass;
 
+	// Settings for the specified view model class
+	UPROPERTY(EditAnywhere, NoClear, Category = "View Model", meta = (StructTypeConst))
+	FInstancedStruct ViewModelSettings;
+
 };

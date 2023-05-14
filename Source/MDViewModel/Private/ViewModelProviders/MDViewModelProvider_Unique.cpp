@@ -2,6 +2,7 @@
 
 #include "Blueprint/UserWidget.h"
 #include "Util/MDViewModelAssignment.h"
+#include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelFunctionLibrary.h"
 #include "Util/MDViewModelNativeProvider.h"
 #include "ViewModel/MDViewModelBase.h"
@@ -15,7 +16,7 @@ UMDViewModelBase* FMDViewModelProvider_Unique::AssignViewModel(UUserWidget& Widg
 {
 	if (IsValid(Assignment.ViewModelClass))
 	{
-		return UMDViewModelFunctionLibrary::SetViewModelOfClass(&Widget, Assignment.ViewModelClass, Assignment.ViewModelName, &Widget);
+		return UMDViewModelFunctionLibrary::SetViewModelOfClass(&Widget, Assignment.ViewModelClass, Data.ViewModelSettings, Assignment.ViewModelName, &Widget);
 	}
 
 	return nullptr;

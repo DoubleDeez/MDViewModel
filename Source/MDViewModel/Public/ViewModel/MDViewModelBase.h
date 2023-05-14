@@ -7,6 +7,7 @@
 #include "UObject/Object.h"
 #include "MDViewModelBase.generated.h"
 
+struct FInstancedStruct;
 class UUserWidget;
 /**
  * Base UObject that adds FieldNotify support
@@ -18,10 +19,10 @@ class MDVIEWMODEL_API UMDViewModelBase : public UObject, public INotifyFieldValu
 
 public:
 	// Called by view model providers after they create the viewmodel object
-	virtual void InitializeViewModel() {};
+	virtual void InitializeViewModel(const FInstancedStruct& ViewModelSettings) {};
 
-	// Override this to expose properties in the view model assignment editor
-	virtual UScriptStruct* GetProviderSettingsStruct() const { return nullptr; }
+	// Override this to expose properties in the view model assignment editor, called on the CDO
+	virtual UScriptStruct* GetViewModelSettingsStruct() const { return nullptr; }
 
 	struct MDVIEWMODEL_API FFieldNotificationClassDescriptor : public ::UE::FieldNotification::IClassDescriptor
 	{

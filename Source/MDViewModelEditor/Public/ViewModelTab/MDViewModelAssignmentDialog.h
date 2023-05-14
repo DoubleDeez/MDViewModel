@@ -28,7 +28,6 @@ public:
 
 	/** Constructs this widget with InArgs */
 	void Construct(const FArguments& InArgs, const TSharedRef<SWindow>& InParentWindow);
-	void OnClassListSelectionChanged(TSharedPtr<FMDViewModelClassItem> Item, ESelectInfo::Type SelectInfo);
 
 	static void OpenAssignmentDialog(UMDViewModelWidgetBlueprintExtension* BPExtension);
 	static void OpenEditDialog(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem);
@@ -43,7 +42,6 @@ protected:
 
 	TSharedPtr<SWindow> ParentWindow;
 	TStrongObjectPtr<UMDViewModelAssignmentEditorObject> EditorObject;
-	TSharedPtr<FMDViewModelClassItem> SelectedViewModelItem;
 	TWeakObjectPtr<UMDViewModelWidgetBlueprintExtension> BPExtensionPtr;
 
 };

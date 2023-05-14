@@ -5,6 +5,7 @@
 #include "Util/MDViewModelInstanceKey.h"
 #include "MDGlobalViewModelCache.generated.h"
 
+struct FInstancedStruct;
 class UMDViewModelBase;
 
 /**
@@ -18,7 +19,7 @@ class MDVIEWMODEL_API UMDGlobalViewModelCache : public UGameInstanceSubsystem
 public:
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 
-	UMDViewModelBase* GetOrCreateViewModel(const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass);
+	UMDViewModelBase* GetOrCreateViewModel(const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings);
 
 private:
 	UPROPERTY(VisibleAnywhere, Transient, Category = "View Model")

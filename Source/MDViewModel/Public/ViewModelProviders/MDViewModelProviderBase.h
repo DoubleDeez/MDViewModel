@@ -30,6 +30,9 @@ public:
 	// An opportunity to perform game-based initialization, bind to delegates, etc
 	virtual void InitializeProvider(UGameInstance* GameInstance) {}
 
+	// Override this to return false if your provider doesn't perform the actual assignment since your provider will not be able to pass along view model settings
+	virtual bool DoesSupportViewModelSettings() const { return true; }
+
 	// Perform the actual assignment of the view model
 	virtual UMDViewModelBase* AssignViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data) = 0;
 

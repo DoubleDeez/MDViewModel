@@ -58,14 +58,14 @@ UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModel(UMDViewModelBase* Vi
 	return nullptr;
 }
 
-UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModelOfClass(TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName, UObject* Outer)
+UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModelOfClass(TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings, FName ViewModelName, UObject* Outer)
 {
 	if (IsValid(ViewModelClass))
 	{
 		UMDViewModelBase* ViewModel = NewObject<UMDViewModelBase>(Outer, ViewModelClass);
 		if (IsValid(ViewModel))
 		{
-			ViewModel->InitializeViewModel();
+			ViewModel->InitializeViewModel(ViewModelSettings);
 			return SetViewModel(ViewModel, ViewModelClass, ViewModelName);
 		}
 	}

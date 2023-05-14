@@ -13,8 +13,8 @@ class MDVIEWMODEL_API UMDViewModelCacheComponent : public UActorComponent
 
 public:
 	static UMDViewModelCacheComponent* FindOrAddCache(AActor* Owner);
-	
-	UMDViewModelBase* GetOrCreateViewModel(const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass);
+
+	UMDViewModelBase* GetOrCreateViewModel(const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings);
 
 private:
 	UPROPERTY(VisibleAnywhere, Transient, Category = "View Model")

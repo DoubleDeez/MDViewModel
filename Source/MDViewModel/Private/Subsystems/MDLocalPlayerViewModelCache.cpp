@@ -12,7 +12,7 @@ bool UMDLocalPlayerViewModelCache::ShouldCreateSubsystem(UObject* Outer) const
 	return ChildClasses.Num() == 0;
 }
 
-UMDViewModelBase* UMDLocalPlayerViewModelCache::GetOrCreateViewModel(const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass)
+UMDViewModelBase* UMDLocalPlayerViewModelCache::GetOrCreateViewModel(const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
 {
 	const FMDViewModelInstanceKey Key = { MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName), ViewModelClass };
 	check(Key.IsValid());
@@ -21,7 +21,7 @@ UMDViewModelBase* UMDLocalPlayerViewModelCache::GetOrCreateViewModel(const FName
 	if (ViewModel == nullptr)
 	{
 		ViewModel = NewObject<UMDViewModelBase>(GetLocalPlayer(), Key.ViewModelClass);
-		ViewModel->InitializeViewModel();
+		ViewModel->InitializeViewModel(ViewModelSettings);
 	}
 
 	return ViewModel;

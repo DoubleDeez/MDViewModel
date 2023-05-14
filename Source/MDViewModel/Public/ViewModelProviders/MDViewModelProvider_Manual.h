@@ -16,6 +16,8 @@ class MDVIEWMODEL_API FMDViewModelProvider_Manual : public FMDViewModelProvider_
 public:
 	virtual UMDViewModelBase* AssignViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data) override;
 
+	virtual bool DoesSupportViewModelSettings() const override { return false; }
+
 #if WITH_EDITOR
 	virtual FText GetDisplayName() const override { return INVTEXT("Manual Set"); }
 	virtual FText GetDescription() const override { return INVTEXT("The view model will have to be manually set on the widget at runtime."); }

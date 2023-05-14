@@ -9,6 +9,7 @@
 #include "MDViewModelWidgetExtension.generated.h"
 
 struct FGameplayTag;
+struct FInstancedStruct;
 class UMDViewModelBase;
 
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FMDVMOnViewModelSetDynamic, UMDViewModelBase*, OldViewModel, UMDViewModelBase*, NewViewModel);
@@ -44,7 +45,7 @@ public:
 	T* SetViewModelOfClass(TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
 
 	UMDViewModelBase* SetViewModel(UMDViewModelBase* ViewModel, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
-	UMDViewModelBase* SetViewModelOfClass(TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName, UObject* Outer = GetTransientPackage());
+	UMDViewModelBase* SetViewModelOfClass(TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings, FName ViewModelName = MDViewModelUtils::DefaultViewModelName, UObject* Outer = GetTransientPackage());
 
 	UMDViewModelBase* GetViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName) const;
 

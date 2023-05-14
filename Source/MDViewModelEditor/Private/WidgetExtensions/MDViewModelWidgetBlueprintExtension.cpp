@@ -25,6 +25,7 @@ void UMDViewModelWidgetBlueprintExtension::UpdateAssignment(const FMDViewModelEd
 		// Only copy the properties that are allowed to change
 		NewAssignment.Assignment.ViewModelName = UpdatedAssignment.Assignment.ViewModelName;
 		NewAssignment.Data.ProviderSettings = UpdatedAssignment.Data.ProviderSettings;
+		NewAssignment.Data.ViewModelSettings = UpdatedAssignment.Data.ViewModelSettings;
 
 		Assignments.Insert(NewAssignment, AssignmentIndex);
 

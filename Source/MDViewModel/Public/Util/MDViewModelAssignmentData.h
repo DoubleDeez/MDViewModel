@@ -17,4 +17,6 @@ public:
 	UPROPERTY()
 	FInstancedStruct ProviderSettings;
 
+	UPROPERTY()
+	FInstancedStruct ViewModelSettings;
 };

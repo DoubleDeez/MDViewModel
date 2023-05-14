@@ -41,7 +41,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::AssignViewModel(UUserWidget& Widg
 			UMDGlobalViewModelCache* GlobalCache = UGameInstance::GetSubsystem<UMDGlobalViewModelCache>(Widget.GetGameInstance());
 			if (ensure(GlobalCache))
 			{
-				ViewModelInstance = GlobalCache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass);
+				ViewModelInstance = GlobalCache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 			}
 		}
 		else if (Settings->ViewModelLifetime == EMDViewModelProvider_CacheLifetime::LocalPlayer)
@@ -49,7 +49,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::AssignViewModel(UUserWidget& Widg
 			UMDLocalPlayerViewModelCache* LocalPlayerCache = ULocalPlayer::GetSubsystem<UMDLocalPlayerViewModelCache>(Widget.GetOwningLocalPlayer());
 			if (ensure(LocalPlayerCache))
 			{
-				ViewModelInstance = LocalPlayerCache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass);
+				ViewModelInstance = LocalPlayerCache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 			}
 		}
 		else if (Settings->ViewModelLifetime == EMDViewModelProvider_CacheLifetime::World)
@@ -57,7 +57,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::AssignViewModel(UUserWidget& Widg
 			UMDWorldViewModelCache* WorldCache = UWorld::GetSubsystem<UMDWorldViewModelCache>(Widget.GetWorld());
 			if (ensure(WorldCache))
 			{
-				ViewModelInstance = WorldCache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass);
+				ViewModelInstance = WorldCache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 			}
 		}
 		else if (Settings->ViewModelLifetime == EMDViewModelProvider_CacheLifetime::OwningPlayerController)
@@ -68,7 +68,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::AssignViewModel(UUserWidget& Widg
 				UMDViewModelCacheComponent* Cache = UMDViewModelCacheComponent::FindOrAddCache(PlayerController);
 				if (ensure(IsValid(Cache)))
 				{
-					ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass);
+					ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 				}
 			}
 		}
@@ -83,7 +83,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::AssignViewModel(UUserWidget& Widg
 					UMDViewModelCacheComponent* Cache = UMDViewModelCacheComponent::FindOrAddCache(HUD);
 					if (ensure(IsValid(Cache)))
 					{
-						ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass);
+						ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 					}
 				}
 
@@ -98,7 +98,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::AssignViewModel(UUserWidget& Widg
 				UMDViewModelCacheComponent* Cache = UMDViewModelCacheComponent::FindOrAddCache(Pawn);
 				if (ensure(IsValid(Cache)))
 				{
-					ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass);
+					ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 				}
 			}
 
@@ -127,7 +127,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::AssignViewModel(UUserWidget& Widg
 				UMDViewModelCacheComponent* Cache = UMDViewModelCacheComponent::FindOrAddCache(PlayerState);
 				if (ensure(IsValid(Cache)))
 				{
-					ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass);
+					ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 				}
 			}
 
@@ -142,7 +142,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::AssignViewModel(UUserWidget& Widg
 				UMDViewModelCacheComponent* Cache = UMDViewModelCacheComponent::FindOrAddCache(GameState);
 				if (ensure(IsValid(Cache)))
 				{
-					ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass);
+					ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 				}
 
 				FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
@@ -167,7 +167,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::AssignViewModel(UUserWidget& Widg
 						UMDViewModelCacheComponent* Cache = UMDViewModelCacheComponent::FindOrAddCache(ViewTarget);
 						if (ensure(IsValid(Cache)))
 						{
-							ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass);
+							ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 						}
 					}
 				}

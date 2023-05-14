@@ -12,15 +12,57 @@
 #include "SPrimaryButton.h"
 #include "Components/VerticalBox.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "Kismet2/SClassPickerDialog.h"
 #include "Misc/FeedbackContext.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
-#include "ViewModelTab/MDViewModelClassList.h"
 #include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
 #include "Widgets/Input/SComboButton.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 
+class FMDViewModelProviderClassFilter : public IClassViewerFilter
+{
 
+public:
+	FMDViewModelProviderClassFilter(const TSharedPtr<FMDViewModelProviderBase>& Provider)
+	{
+		if (Provider.IsValid())
+		{
+			Provider->GetSupportedViewModelClasses(ProviderSupportedViewModelClasses);
+		}
+	}
+
+	TArray<FMDViewModelSupportedClass> ProviderSupportedViewModelClasses;
+
+	virtual bool IsClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const UClass* InClass, TSharedRef< class FClassViewerFilterFuncs > InFilterFuncs ) override
+	{
+		for (const FMDViewModelSupportedClass& SupportedClass : ProviderSupportedViewModelClasses)
+		{
+			if (SupportedClass.Class == InClass || (SupportedClass.bAllowChildClasses && InClass->IsChildOf(SupportedClass.Class)))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	virtual bool IsUnloadedClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const TSharedRef< const class IUnloadedBlueprintData > InUnloadedClassData, TSharedRef< class FClassViewerFilterFuncs > InFilterFuncs) override
+	{
+		for (const FMDViewModelSupportedClass& SupportedClass : ProviderSupportedViewModelClasses)
+		{
+			if (SupportedClass.bAllowChildClasses && InUnloadedClassData->IsChildOf(SupportedClass.Class))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+};
+
+// TODO - move to its own file
 class FEditorObjectCustomization : public IDetailCustomization
 {
 public:
@@ -64,10 +106,14 @@ public:
 			]
 		];
 
-		const TSharedRef<IPropertyHandle> ProviderSettingsHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ProviderSettings), UMDViewModelAssignmentEditorObject::StaticClass());
 		if (const UMDViewModelAssignmentEditorObject* EditorObject = EditorObjectPtr.Get())
 		{
-			if (EditorObject->ProviderSettings.IsValid())
+			const TSharedRef<IPropertyHandle> ViewModelClassHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ViewModelClass), UMDViewModelAssignmentEditorObject::StaticClass());
+			const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
+			const TSharedPtr<FMDViewModelProviderBase> Provider = ViewModelModule.GetViewModelProvider(EditorObject->ViewModelProvider);
+
+			const TSharedRef<IPropertyHandle> ProviderSettingsHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ProviderSettings), UMDViewModelAssignmentEditorObject::StaticClass());
+			if (Provider.IsValid() && EditorObject->ProviderSettings.IsValid())
 			{
 				DetailBuilder.EditDefaultProperty(ProviderSettingsHandle)->ShouldAutoExpand(true).OverrideResetToDefault(HideResetToDefault);
 			}
@@ -76,29 +122,44 @@ public:
 				DetailBuilder.HideProperty(ProviderSettingsHandle);
 			}
 
-			const TSharedRef<IPropertyHandle> ViewModelClassHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ViewModelClass), UMDViewModelAssignmentEditorObject::StaticClass());
-			const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
-			if (const TSharedPtr<FMDViewModelProviderBase> Provider = ViewModelModule.GetViewModelProvider(EditorObject->ViewModelProvider))
+			const TSharedRef<IPropertyHandle> ViewModelSettingsHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ViewModelSettings), UMDViewModelAssignmentEditorObject::StaticClass());
+			if (Provider.IsValid() && EditorObject->ViewModelSettings.IsValid())
+			{
+				if (Provider->DoesSupportViewModelSettings())
+				{
+					DetailBuilder.EditDefaultProperty(ViewModelSettingsHandle)->ShouldAutoExpand(true).OverrideResetToDefault(HideResetToDefault);
+				}
+				else
+				{
+					DetailBuilder.EditDefaultProperty(ViewModelSettingsHandle)->CustomWidget().OverrideResetToDefault(HideResetToDefault)
+					[
+						SNew(STextBlock)
+						.AutoWrapText(true)
+						.ColorAndOpacity(FLinearColor(1.f, 0.42f, 0.42f))
+						.Text(INVTEXT("The selected View Model class has Settings but the selected provider does not support View Model Settings so the View Model may not be properly initialized."))
+					];
+				}
+			}
+			else
+			{
+				DetailBuilder.HideProperty(ViewModelSettingsHandle);
+			}
+
+			if (Provider.IsValid())
 			{
 				DetailBuilder.EditDefaultProperty(ViewModelClassHandle)->CustomWidget()
-				.OverrideResetToDefault(HideResetToDefault)
+				.NameContent()
 				[
-					SNew(SVerticalBox)
-					+SVerticalBox::Slot()
-					.AutoHeight()
-					.Padding(2.f, 4.f, 2.f, 2.f)
-					[
-						ViewModelClassHandle->CreatePropertyNameWidget()
-					]
-					+SVerticalBox::Slot()
-					.FillHeight(1.f)
-					.Padding(2.f)
-					[
-						SNew(SMDViewModelClassList, Provider)
-						.IsEnabled(!bIsEditMode)
-						.SelectedClass(EditorObjectPtr.IsValid() ? EditorObjectPtr->ViewModelClass : nullptr)
-						.OnSelectionChanged(Dialog, &SMDViewModelAssignmentDialog::OnClassListSelectionChanged)
-					]
+					ViewModelClassHandle->CreatePropertyNameWidget()
+				]
+				.ValueContent()
+				[
+					SNew(SButton)
+					.IsEnabled(!bIsEditMode)
+					.ButtonStyle(&FAppStyle::Get().GetWidgetStyle<FComboButtonStyle>("ComboButton").ButtonStyle)
+					.OnClicked(this, &FEditorObjectCustomization::OnClassPickerButtonClicked)
+					.Text(this, &FEditorObjectCustomization::GetSelectedClassText)
+					.ToolTipText(this, &FEditorObjectCustomization::GetSelectedClassToolTipText)
 				];
 			}
 			else
@@ -198,6 +259,8 @@ private:
 			}
 			else
 			{
+				EditorObject->ViewModelClass = nullptr;
+				EditorObject->ViewModelSettings.Reset();
 				EditorObject->ProviderSettings.Reset();
 			}
 
@@ -213,7 +276,75 @@ private:
 		if (UMDViewModelAssignmentEditorObject* EditorObject = EditorObjectPtr.Get())
 		{
 			EditorObject->ViewModelClass = TSubclassOf<UMDViewModelBase>(ViewModelClass);
+
+			EditorObject->ViewModelSettings.Reset();
+
+			if (ViewModelClass != nullptr)
+			{
+				if (const UMDViewModelBase* ViewModelCDO = ViewModelClass->GetDefaultObject<UMDViewModelBase>())
+				{
+					EditorObject->ViewModelSettings.InitializeAs(ViewModelCDO->GetViewModelSettingsStruct());
+				}
+			}
+
+			if (IDetailLayoutBuilder* LayoutBuilder = CachedDetailBuilder.Pin().Get())
+			{
+				LayoutBuilder->ForceRefreshDetails();
+			}
 		}
+	}
+
+	UClass* GetCurrentViewModelClass() const
+	{
+		if (const UMDViewModelAssignmentEditorObject* EditorObject = EditorObjectPtr.Get())
+		{
+			return EditorObject->ViewModelClass;
+		}
+
+		return nullptr;
+	}
+
+	FReply OnClassPickerButtonClicked() const
+	{
+		if (const UMDViewModelAssignmentEditorObject* EditorObject = EditorObjectPtr.Get())
+		{
+			const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
+			if (const TSharedPtr<FMDViewModelProviderBase> Provider = ViewModelModule.GetViewModelProvider(EditorObject->ViewModelProvider))
+			{
+				FClassViewerInitializationOptions ClassPickerOptions;
+				ClassPickerOptions.bShowNoneOption = true;
+				ClassPickerOptions.ClassFilters.Add(MakeShareable(new FMDViewModelProviderClassFilter(Provider)));
+				ClassPickerOptions.InitiallySelectedClass = GetCurrentViewModelClass();
+
+				UClass* Class = nullptr;
+				if (SClassPickerDialog::PickClass(INVTEXT("Select the View Model Class"), ClassPickerOptions, Class, UClass::StaticClass()))
+				{
+					OnViewModelClassPicked(Class);
+				}
+			}
+		}
+
+		return FReply::Handled();
+	}
+
+	FText GetSelectedClassText() const
+	{
+		if (const UClass* Class = GetCurrentViewModelClass())
+		{
+			return Class->GetDisplayNameText();
+		}
+
+		return INVTEXT("Select a ViewModel Class...");
+	}
+
+	FText GetSelectedClassToolTipText() const
+	{
+		if (const UClass* Class = GetCurrentViewModelClass())
+		{
+			return Class->GetToolTipText();
+		}
+
+		return INVTEXT("Select a ViewModel Class...");
 	}
 
 	TWeakPtr<IDetailLayoutBuilder> CachedDetailBuilder;
@@ -273,7 +404,7 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 					if (!bIsEditMode && EditorObject.IsValid())
 					{
 						// TODO - check assignment uniqueness
-						if (EditorObject->ViewModelProvider.IsValid() && EditorObject->ViewModelInstanceName != NAME_None && SelectedViewModelItem.IsValid())
+						if (EditorObject->ViewModelProvider.IsValid() && EditorObject->ViewModelInstanceName != NAME_None && EditorObject->ViewModelClass != nullptr)
 						{
 							return EVisibility::Visible;
 						}
@@ -359,31 +490,11 @@ void SMDViewModelAssignmentDialog::OpenEditDialog(UMDViewModelWidgetBlueprintExt
 
 FReply SMDViewModelAssignmentDialog::OnAddClicked() const
 {
-	if (SelectedViewModelItem.IsValid())
+	if (UMDViewModelWidgetBlueprintExtension* BPExtension = BPExtensionPtr.Get())
 	{
-		UClass* Class = SelectedViewModelItem->Class.Get();
-		if (Class == nullptr)
-		{
-			GWarn->BeginSlowTask(INVTEXT("Loading View Model Class..."), true);
-			Class = LoadObject<UClass>(nullptr, *SelectedViewModelItem->ClassPath.ToString());
-			GWarn->EndSlowTask();
-		}
-
-		if (Class == nullptr)
-		{
-			FMessageLog EditorErrors("EditorErrors");
-			FFormatNamedArguments Arguments;
-			Arguments.Add(TEXT("ObjectName"), FText::FromString(SelectedViewModelItem->ClassPath.ToString()));
-			EditorErrors.Error(FText::Format(INVTEXT("Failed to load class {ObjectName}"), Arguments));
-		}
-
-		EditorObject->ViewModelClass = Class;
-		if (UMDViewModelWidgetBlueprintExtension* BPExtension = BPExtensionPtr.Get())
-		{
-			FScopedTransaction Transaction = FScopedTransaction(INVTEXT("Added View Model Assignment"));
-			BPExtension->Modify();
-			BPExtension->AddAssignment(EditorObject->CreateAssignment());
-		}
+		FScopedTransaction Transaction = FScopedTransaction(INVTEXT("Added View Model Assignment"));
+		BPExtension->Modify();
+		BPExtension->AddAssignment(EditorObject->CreateAssignment());
 	}
 
 	if (ParentWindow.IsValid())
@@ -412,12 +523,4 @@ FReply SMDViewModelAssignmentDialog::OnSaveClicked() const
 	}
 
 	return FReply::Handled();
-}
-
-void SMDViewModelAssignmentDialog::OnClassListSelectionChanged(TSharedPtr<FMDViewModelClassItem> Item, ESelectInfo::Type SelectInfo)
-{
-	if (!bIsEditMode)
-	{
-		SelectedViewModelItem = Item;
-	}
 }
