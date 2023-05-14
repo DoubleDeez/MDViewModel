@@ -30,7 +30,7 @@ FMDViewModelProvider_Cached::~FMDViewModelProvider_Cached()
 	FGameDelegates::Get().GetViewTargetChangedDelegate().RemoveAll(this);
 }
 
-UMDViewModelBase* FMDViewModelProvider_Cached::AssignViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
+UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
 	const FMDViewModelProvider_Cached_Settings* Settings = Data.ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
 	if (ensure(Settings))
@@ -202,7 +202,7 @@ void FMDViewModelProvider_Cached::OnGameStateChanged(AGameStateBase* GameState, 
 	UUserWidget* Widget = WidgetPtr.Get();
 	if (IsValid(Widget))
 	{
-		AssignViewModel(*Widget, Assignment, Data);
+		SetViewModel(*Widget, Assignment, Data);
 	}
 }
 
@@ -211,7 +211,7 @@ void FMDViewModelProvider_Cached::OnPawnChanged(TWeakObjectPtr<UUserWidget> Widg
 	UUserWidget* Widget = WidgetPtr.Get();
 	if (IsValid(Widget))
 	{
-		AssignViewModel(*Widget, Assignment, Data);
+		SetViewModel(*Widget, Assignment, Data);
 	}
 }
 
@@ -221,6 +221,6 @@ void FMDViewModelProvider_Cached::OnViewTargetChanged(APlayerController* PC, AAc
 	UUserWidget* Widget = WidgetPtr.Get();
 	if (IsValid(Widget) && Widget->GetOwningPlayer() == PC)
 	{
-		AssignViewModel(*Widget, Assignment, Data);
+		SetViewModel(*Widget, Assignment, Data);
 	}
 }

@@ -14,7 +14,7 @@ MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Manual);
 class MDVIEWMODEL_API FMDViewModelProvider_Manual : public FMDViewModelProvider_AllBase
 {
 public:
-	virtual UMDViewModelBase* AssignViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data) override;
+	virtual UMDViewModelBase* SetViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data) override;
 
 	virtual bool DoesSupportViewModelSettings() const override { return false; }
 

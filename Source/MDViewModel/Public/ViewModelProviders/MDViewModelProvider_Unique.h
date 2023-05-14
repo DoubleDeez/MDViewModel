@@ -12,7 +12,7 @@ MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Unique);
 class MDVIEWMODEL_API FMDViewModelProvider_Unique : public FMDViewModelProvider_AllBase
 {
 public:
-	virtual UMDViewModelBase* AssignViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data) override;
+	virtual UMDViewModelBase* SetViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data) override;
 
 #if WITH_EDITOR
 	virtual FText GetDisplayName() const override { return INVTEXT("Unique Instance"); }

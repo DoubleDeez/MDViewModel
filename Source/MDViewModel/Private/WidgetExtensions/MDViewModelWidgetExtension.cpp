@@ -125,7 +125,7 @@ void UMDViewModelWidgetExtension::OnProviderViewModelUpdated(TSubclassOf<UMDView
 
 	for (const auto& Pair : Assignments)
 	{
-		Provider->AssignViewModel(*Widget, Pair.Key, Pair.Value);
+		Provider->SetViewModel(*Widget, Pair.Key, Pair.Value);
 	}
 }
 
@@ -255,7 +255,7 @@ void UMDViewModelWidgetExtension::PopulateViewModels()
 		TSharedPtr<FMDViewModelProviderBase> Provider = ViewModelModule.GetViewModelProvider(Pair.Key.ProviderTag);
 		if (ensureMsgf(Provider.IsValid(), TEXT("A View Model Provider with tag [%s] was not found"), *Pair.Key.ProviderTag.ToString()))
 		{
-			Provider->AssignViewModel(*Widget, Pair.Key, Pair.Value);
+			Provider->SetViewModel(*Widget, Pair.Key, Pair.Value);
 			Provider->OnViewModelUpdated.AddUObject(this, &UMDViewModelWidgetExtension::OnProviderViewModelUpdated, Pair.Key.ProviderTag);
 		}
 	}

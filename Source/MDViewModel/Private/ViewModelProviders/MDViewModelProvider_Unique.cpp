@@ -12,7 +12,7 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_MDVMProvider_Unique, "MDVM.Provider.Unique");
 MDVM_REGISTER_PROVIDER(FMDViewModelProvider_Unique, TAG_MDVMProvider_Unique);
 
 
-UMDViewModelBase* FMDViewModelProvider_Unique::AssignViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
+UMDViewModelBase* FMDViewModelProvider_Unique::SetViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
 	if (IsValid(Assignment.ViewModelClass))
 	{

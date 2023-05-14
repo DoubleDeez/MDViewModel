@@ -75,7 +75,7 @@ class MDVIEWMODEL_API FMDViewModelProvider_Cached : public FMDViewModelProvider_
 public:
 	virtual ~FMDViewModelProvider_Cached() override;
 
-	virtual UMDViewModelBase* AssignViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data) override;
+	virtual UMDViewModelBase* SetViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data) override;
 
 #if WITH_EDITOR
 	virtual FText GetDisplayName() const override { return INVTEXT("Cached Viewmodel"); }
