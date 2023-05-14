@@ -3,9 +3,33 @@
 #include "CoreMinimal.h"
 #include "MDViewModelProvider_AllBase.h"
 #include "NativeGameplayTags.h"
+#include "Util/MDViewModelAssignment.h"
 #include "MDViewModelProvider_Cached.generated.h"
 
+class APlayerController;
+class AGameStateBase;
+
 MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached);
+
+// Each assignment on a widget needs an individual binding, we track that use this struct as a key
+struct FMDVMCachedProviderBindingKey
+{
+	FMDViewModelAssignment Assignment;
+
+	TWeakObjectPtr<UUserWidget> WidgetPtr;
+
+	bool operator==(const FMDVMCachedProviderBindingKey& Other) const;
+
+	bool operator!=(const FMDVMCachedProviderBindingKey& Other) const
+	{
+		return !(*this == Other);
+	}
+};
+
+inline uint32 GetTypeHash(const FMDVMCachedProviderBindingKey& Key)
+{
+	return HashCombine(GetTypeHash(Key.Assignment), GetTypeHash(Key.WidgetPtr));
+}
 
 UENUM()
 enum class EMDViewModelProvider_CacheLifetime
@@ -25,7 +49,9 @@ enum class EMDViewModelProvider_CacheLifetime
 	// View model lifetime will be tied to the widget's owning player state
 	OwningPlayerState,
 	// View model lifetime will be tied to the game state
-	GameState
+	GameState,
+	// View model lifetime will be tied to the player's view target
+	ViewTarget
 };
 
 USTRUCT(DisplayName = "Cached Provider Settings")
@@ -47,6 +73,8 @@ public:
 class MDVIEWMODEL_API FMDViewModelProvider_Cached : public FMDViewModelProvider_AllBase
 {
 public:
+	virtual ~FMDViewModelProvider_Cached() override;
+
 	virtual UMDViewModelBase* AssignViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data) override;
 
 #if WITH_EDITOR
@@ -58,4 +86,11 @@ public:
 
 protected:
 	void OnPawnChanged(TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
+
+	void OnGameStateChanged(AGameStateBase* GameState, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
+
+	void OnViewTargetChanged(APlayerController* PC, AActor* OldViewTarget, AActor* NewViewTarget, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
+
+	// TODO - Need to clean this map up when the corresponding objects are destroyed
+	TMap<FMDVMCachedProviderBindingKey, FDelegateHandle> DelegateHandles;
 };

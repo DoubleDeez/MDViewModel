@@ -2,18 +2,28 @@
 
 #include "MDViewModelModule.h"
 #include "Blueprint/UserWidget.h"
+#include "UObject/Package.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetExtensions/MDViewModelWidgetExtension.h"
 
-UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModel(UUserWidget* Widget, UMDViewModelBase* ViewModel, FName ViewModelName)
+UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModel(UUserWidget* Widget, UMDViewModelBase* ViewModel, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
 	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
 	if (IsValid(Extension))
 	{
-		return Extension->SetViewModel(ViewModel, ViewModelName);
+		return Extension->SetViewModel(ViewModel, ViewModelClass, ViewModelName);
 	}
 
 	return nullptr;
+}
+
+void UMDViewModelFunctionLibrary::ClearViewModel(UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
+{
+	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
+	if (IsValid(Extension))
+	{
+		Extension->ClearViewModel(ViewModelClass, ViewModelName);
+	}
 }
 
 UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModelOfClass(UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
@@ -46,7 +56,7 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::GetViewModel(UUserWidget* Widget,
 	return nullptr;
 }
 
-bool UMDViewModelFunctionLibrary::DoesWidgetHaveViewModelClassAssigned(const UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, bool bIncludeChildClasses)
+bool UMDViewModelFunctionLibrary::DoesWidgetHaveViewModelClassAssigned(const UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, TSubclassOf<UMDViewModelBase>& OutAssignedViewModelClass, bool bIncludeChildClasses)
 {
 	if (IsValid(Widget))
 	{
@@ -59,15 +69,18 @@ bool UMDViewModelFunctionLibrary::DoesWidgetHaveViewModelClassAssigned(const UUs
 			TSubclassOf<UMDViewModelBase> AssignedClass = Pair.Key.ViewModelClass;
 			if (AssignedClass == ViewModelClass)
 			{
+				OutAssignedViewModelClass = ViewModelClass;
 				return true;
 			}
 			else if (bIncludeChildClasses && ViewModelClass->IsChildOf(AssignedClass))
 			{
+				OutAssignedViewModelClass = AssignedClass;
 				return true;
 			}
 		}
 	}
 
+	OutAssignedViewModelClass= nullptr;
 	return false;
 }
 

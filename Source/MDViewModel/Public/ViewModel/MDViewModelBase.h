@@ -20,6 +20,9 @@ public:
 	// Called by view model providers after they create the viewmodel object
 	virtual void InitializeViewModel() {};
 
+	// Override this to expose properties in the view model assignment editor
+	virtual UScriptStruct* GetProviderSettingsStruct() const { return nullptr; }
+
 	struct MDVIEWMODEL_API FFieldNotificationClassDescriptor : public ::UE::FieldNotification::IClassDescriptor
 	{
 	};

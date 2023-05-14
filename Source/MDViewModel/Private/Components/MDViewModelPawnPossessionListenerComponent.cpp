@@ -1,5 +1,7 @@
 ﻿#include "Components/MDViewModelPawnPossessionListenerComponent.h"
 
+#include "GameFramework/PlayerController.h"
+
 
 UMDViewModelPawnPossessionListenerComponent* UMDViewModelPawnPossessionListenerComponent::FindOrAddListener(APlayerController* Owner)
 {
@@ -35,7 +37,7 @@ void UMDViewModelPawnPossessionListenerComponent::EndPlay(const EEndPlayReason::
 	{
 		PC->OnPossessedPawnChanged.RemoveAll(this);
 	}
-	
+
 	Super::EndPlay(EndPlayReason);
 }
 

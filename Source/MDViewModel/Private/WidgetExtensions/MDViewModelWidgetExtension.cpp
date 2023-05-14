@@ -38,18 +38,20 @@ UMDViewModelWidgetExtension* UMDViewModelWidgetExtension::GetOrCreate(UUserWidge
 	return nullptr;
 }
 
-UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModel(UMDViewModelBase* ViewModel, FName ViewModelName)
+UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModel(UMDViewModelBase* ViewModel, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
 	if (IsValid(ViewModel))
 	{
-		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModel->GetClass(), ViewModelName);
+		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
 		if (ViewModelName != NAME_None)
 		{
-			const FMDViewModelInstanceKey Key = { ViewModelName, ViewModel->GetClass() };
+			const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
 			UMDViewModelBase* OldViewModel = ViewModels.FindRef(Key);
 			ViewModels.FindOrAdd(Key) = ViewModel;
 
-			BroadcastViewModelChanged(OldViewModel, ViewModel, ViewModel->GetClass(), ViewModelName);
+			BroadcastViewModelChanged(OldViewModel, ViewModel, ViewModelClass, ViewModelName);
+
+			return ViewModel;
 		}
 	}
 
@@ -64,7 +66,7 @@ UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModelOfClass(TSubclassOf<U
 		if (IsValid(ViewModel))
 		{
 			ViewModel->InitializeViewModel();
-			return SetViewModel(ViewModel, ViewModelName);
+			return SetViewModel(ViewModel, ViewModelClass, ViewModelName);
 		}
 	}
 
@@ -84,6 +86,22 @@ UMDViewModelBase* UMDViewModelWidgetExtension::GetViewModel(TSubclassOf<UMDViewM
 	}
 
 	return nullptr;
+}
+
+void UMDViewModelWidgetExtension::ClearViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
+{
+	if (ViewModelClass != nullptr)
+	{
+		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
+		if (ViewModelName != NAME_None)
+		{
+			const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
+			UMDViewModelBase* OldViewModel = ViewModels.FindRef(Key);
+			ViewModels.FindOrAdd(Key) = nullptr;
+
+			BroadcastViewModelChanged(OldViewModel, nullptr, ViewModelClass, ViewModelName);
+		}
+	}
 }
 
 void UMDViewModelWidgetExtension::OnProviderViewModelUpdated(TSubclassOf<UMDViewModelBase> ViewModelClass, FGameplayTag ProviderTag)
