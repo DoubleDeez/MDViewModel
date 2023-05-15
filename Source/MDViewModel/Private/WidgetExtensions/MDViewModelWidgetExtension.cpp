@@ -50,7 +50,10 @@ UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModel(UMDViewModelBase* Vi
 			UMDViewModelBase* OldViewModel = ViewModels.FindRef(Key);
 			ViewModels.FindOrAdd(Key) = ViewModel;
 
-			BroadcastViewModelChanged(OldViewModel, ViewModel, ViewModelClass, ViewModelName);
+			if (ViewModel != OldViewModel)
+			{
+				BroadcastViewModelChanged(OldViewModel, ViewModel, ViewModelClass, ViewModelName);
+			}
 
 			return ViewModel;
 		}

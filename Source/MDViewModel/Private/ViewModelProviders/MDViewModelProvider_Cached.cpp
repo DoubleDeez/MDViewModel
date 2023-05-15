@@ -4,6 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/MDViewModelCacheComponent.h"
 #include "Components/MDViewModelPawnPossessionListenerComponent.h"
+#include "Components/MDVMPlayerControllerUpdatePollingComponent.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/HUD.h"
@@ -35,6 +36,8 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 	const FMDViewModelProvider_Cached_Settings* Settings = Data.ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
 	if (ensure(Settings))
 	{
+		// TODO - Most of these cases need to know when the player controller has changed
+
 		UMDViewModelBase* ViewModelInstance = nullptr;
 		if (Settings->ViewModelLifetime == EMDViewModelProvider_CacheLifetime::Global)
 		{
@@ -74,7 +77,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 		}
 		else if (Settings->ViewModelLifetime == EMDViewModelProvider_CacheLifetime::OwningHUD)
 		{
-			const APlayerController* PlayerController = Widget.GetOwningPlayer();
+			APlayerController* PlayerController = Widget.GetOwningPlayer();
 			if (IsValid(PlayerController))
 			{
 				AHUD* HUD = PlayerController->GetHUD();
@@ -87,7 +90,17 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 					}
 				}
 
-				// TODO - listen for HUD changes (needs polling)
+				FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
+				if (!DelegateHandles.Contains(BindingKey))
+				{
+					UMDVMPlayerControllerUpdatePollingComponent* Poller = UMDVMPlayerControllerUpdatePollingComponent::FindOrAddPollingComponent(PlayerController);
+					if (IsValid(Poller))
+					{
+						FSimpleDelegate Delegate = FSimpleDelegate::CreateSP(this, &FMDViewModelProvider_Cached::RefreshViewModel, MakeWeakObjectPtr(&Widget), Assignment, Data);
+						FDelegateHandle Handle = Poller->BindOnHUDChanged(MoveTemp(Delegate));
+						DelegateHandles.Emplace(MoveTemp(BindingKey), MoveTemp(Handle));
+					}
+				}
 			}
 		}
 		else if (Settings->ViewModelLifetime == EMDViewModelProvider_CacheLifetime::OwningPawn)
@@ -113,7 +126,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 					UMDViewModelPawnPossessionListenerComponent* ListenerComponent = UMDViewModelPawnPossessionListenerComponent::FindOrAddListener(PlayerController);
 					if (ensure(IsValid(ListenerComponent)))
 					{
-						FDelegateHandle Handle = ListenerComponent->OnPawnChanged.AddSP(this, &FMDViewModelProvider_Cached::OnPawnChanged, MakeWeakObjectPtr(&Widget), Assignment, Data);
+						FDelegateHandle Handle = ListenerComponent->OnPawnChanged.AddSP(this, &FMDViewModelProvider_Cached::RefreshViewModel, MakeWeakObjectPtr(&Widget), Assignment, Data);
 						DelegateHandles.Emplace(MoveTemp(BindingKey), MoveTemp(Handle));
 					}
 				}
@@ -131,7 +144,21 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 				}
 			}
 
-			// TODO - Listen for playerstate changed (needs polling)
+			FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
+			if (!DelegateHandles.Contains(BindingKey))
+			{
+				APlayerController* PlayerController = Widget.GetOwningPlayer();
+				if (IsValid(PlayerController))
+				{
+					UMDVMPlayerControllerUpdatePollingComponent* Poller = UMDVMPlayerControllerUpdatePollingComponent::FindOrAddPollingComponent(PlayerController);
+					if (IsValid(Poller))
+					{
+						FSimpleDelegate Delegate = FSimpleDelegate::CreateSP(this, &FMDViewModelProvider_Cached::RefreshViewModel, MakeWeakObjectPtr(&Widget), Assignment, Data);
+						FDelegateHandle Handle = Poller->BindOnPlayerStateChanged(MoveTemp(Delegate));
+						DelegateHandles.Emplace(MoveTemp(BindingKey), MoveTemp(Handle));
+					}
+				}
+			}
 		}
 		else if (Settings->ViewModelLifetime == EMDViewModelProvider_CacheLifetime::GameState)
 		{
@@ -158,7 +185,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 			const APlayerController* PlayerController = Widget.GetOwningPlayer();
 			if (IsValid(PlayerController))
 			{
-				APlayerCameraManager* CameraManager = PlayerController->PlayerCameraManager;
+				const APlayerCameraManager* CameraManager = PlayerController->PlayerCameraManager;
 				if (IsValid(CameraManager))
 				{
 					AActor* ViewTarget = CameraManager->GetViewTarget();
@@ -171,8 +198,6 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 						}
 					}
 				}
-
-				// TODO - Listen for camera manager changed (needs polling)
 			}
 
 			FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
@@ -196,8 +221,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 	return nullptr;
 }
 
-void FMDViewModelProvider_Cached::OnGameStateChanged(AGameStateBase* GameState, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment,
-	FMDViewModelAssignmentData Data)
+void FMDViewModelProvider_Cached::RefreshViewModel(TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data)
 {
 	UUserWidget* Widget = WidgetPtr.Get();
 	if (IsValid(Widget))
@@ -206,7 +230,8 @@ void FMDViewModelProvider_Cached::OnGameStateChanged(AGameStateBase* GameState, 
 	}
 }
 
-void FMDViewModelProvider_Cached::OnPawnChanged(TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data)
+void FMDViewModelProvider_Cached::OnGameStateChanged(AGameStateBase* GameState, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment,
+	FMDViewModelAssignmentData Data)
 {
 	UUserWidget* Widget = WidgetPtr.Get();
 	if (IsValid(Widget))

@@ -14,6 +14,8 @@ class MDVIEWMODEL_API UMDViewModelCacheComponent : public UActorComponent
 public:
 	static UMDViewModelCacheComponent* FindOrAddCache(AActor* Owner);
 
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	UMDViewModelBase* GetOrCreateViewModel(const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings);
 
 private:

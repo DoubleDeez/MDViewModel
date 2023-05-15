@@ -12,6 +12,20 @@ bool UMDGlobalViewModelCache::ShouldCreateSubsystem(UObject* Outer) const
 	return ChildClasses.Num() == 0;
 }
 
+void UMDGlobalViewModelCache::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+
+	// TODO - Notify the provider that we're available
+}
+
+void UMDGlobalViewModelCache::Deinitialize()
+{
+	Super::Deinitialize();
+
+	// TODO - Notify the provider that the viewmodel should null-out
+}
+
 UMDViewModelBase* UMDGlobalViewModelCache::GetOrCreateViewModel(const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
 {
 	const FMDViewModelInstanceKey Key = { MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName), ViewModelClass };

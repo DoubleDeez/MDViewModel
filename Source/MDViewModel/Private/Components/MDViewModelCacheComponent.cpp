@@ -24,6 +24,13 @@ UMDViewModelCacheComponent* UMDViewModelCacheComponent::FindOrAddCache(AActor* O
 	return nullptr;
 }
 
+void UMDViewModelCacheComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	// TODO - Notify the provider that the viewmodel should null-out
+}
+
 UMDViewModelBase* UMDViewModelCacheComponent::GetOrCreateViewModel(const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
 {
 	const FMDViewModelInstanceKey Key = { MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName), ViewModelClass };
