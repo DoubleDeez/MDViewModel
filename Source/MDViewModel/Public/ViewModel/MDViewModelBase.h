@@ -18,8 +18,11 @@ class MDVIEWMODEL_API UMDViewModelBase : public UObject, public INotifyFieldValu
 	GENERATED_BODY()
 
 public:
-	// Called by view model providers after they create the viewmodel object
+	// Called by view model providers after they create the view model object
 	virtual void InitializeViewModel(const FInstancedStruct& ViewModelSettings) {};
+
+	// Called by view model providers when they stop referencing the view model object
+	virtual void ShutdownViewModel() {}
 
 	// Override this to expose properties in the view model assignment editor, called on the CDO
 	virtual UScriptStruct* GetViewModelSettingsStruct() const { return nullptr; }

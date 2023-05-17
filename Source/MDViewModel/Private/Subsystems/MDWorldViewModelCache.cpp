@@ -21,22 +21,12 @@ void UMDWorldViewModelCache::Initialize(FSubsystemCollectionBase& Collection)
 
 void UMDWorldViewModelCache::Deinitialize()
 {
+	BroadcastShutdown();
+	
 	Super::Deinitialize();
-
-	// TODO - Notify the provider that the viewmodel should null-out
 }
 
-UMDViewModelBase* UMDWorldViewModelCache::GetOrCreateViewModel(const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
+UObject* UMDWorldViewModelCache::GetViewModelOwner() const
 {
-	const FMDViewModelInstanceKey Key = { MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName), ViewModelClass };
-	check(Key.IsValid());
-
-	TObjectPtr<UMDViewModelBase>& ViewModel = CachedViewModels.FindOrAdd(Key);
-	if (ViewModel == nullptr)
-	{
-		ViewModel = NewObject<UMDViewModelBase>(GetWorld(), Key.ViewModelClass);
-		ViewModel->InitializeViewModel(ViewModelSettings);
-	}
-
-	return ViewModel;
+	return GetWorld();
 }

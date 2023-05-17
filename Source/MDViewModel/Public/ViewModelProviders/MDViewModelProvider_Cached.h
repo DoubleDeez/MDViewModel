@@ -3,9 +3,13 @@
 #include "CoreMinimal.h"
 #include "MDViewModelProvider_AllBase.h"
 #include "NativeGameplayTags.h"
+#include "UObject/WeakInterfacePtr.h"
 #include "Util/MDViewModelAssignment.h"
 #include "MDViewModelProvider_Cached.generated.h"
 
+struct FMDViewModelInstanceKey;
+struct MDViewModelAssignmentData;
+class IMDViewModelCacheInterface;
 class APlayerController;
 class AGameStateBase;
 
@@ -91,6 +95,9 @@ protected:
 
 	void OnViewTargetChanged(APlayerController* PC, AActor* OldViewTarget, AActor* NewViewTarget, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 
-	// TODO - Need to clean this map up when the corresponding objects are destroyed
+	void OnViewModelCacheShutdown(const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& ViewModelCache, TWeakInterfacePtr<IMDViewModelCacheInterface> BoundCache);
+
+	// TODO - Need to clean these maps up when the corresponding Widgets are destroyed
 	TMap<FMDVMCachedProviderBindingKey, FDelegateHandle> DelegateHandles;
+	TMap<FMDViewModelAssignment, TMap<TWeakObjectPtr<UUserWidget>, TWeakInterfacePtr<IMDViewModelCacheInterface>>> BoundAssignments;
 };

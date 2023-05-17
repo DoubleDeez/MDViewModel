@@ -21,22 +21,12 @@ void UMDLocalPlayerViewModelCache::Initialize(FSubsystemCollectionBase& Collecti
 
 void UMDLocalPlayerViewModelCache::Deinitialize()
 {
+	BroadcastShutdown();
+	
 	Super::Deinitialize();
-
-	// TODO - Notify the provider that the viewmodel should null-out
 }
 
-UMDViewModelBase* UMDLocalPlayerViewModelCache::GetOrCreateViewModel(const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
+UObject* UMDLocalPlayerViewModelCache::GetViewModelOwner() const
 {
-	const FMDViewModelInstanceKey Key = { MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName), ViewModelClass };
-	check(Key.IsValid());
-
-	TObjectPtr<UMDViewModelBase>& ViewModel = CachedViewModels.FindOrAdd(Key);
-	if (ViewModel == nullptr)
-	{
-		ViewModel = NewObject<UMDViewModelBase>(GetLocalPlayer(), Key.ViewModelClass);
-		ViewModel->InitializeViewModel(ViewModelSettings);
-	}
-
-	return ViewModel;
+	return GetLocalPlayer();
 }

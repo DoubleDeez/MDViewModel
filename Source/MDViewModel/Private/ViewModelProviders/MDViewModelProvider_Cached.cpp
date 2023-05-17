@@ -15,6 +15,7 @@
 #include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelFunctionLibrary.h"
 #include "Util/MDViewModelNativeProvider.h"
+#include "ViewModel/MDViewModelBase.h"
 
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_MDVMProvider_Cached, "MDVM.Provider.Cached");
@@ -39,11 +40,13 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 		// TODO - Most of these cases need to know when the player controller has changed
 
 		UMDViewModelBase* ViewModelInstance = nullptr;
+		IMDViewModelCacheInterface* ViewModelCache = nullptr;
 		if (Settings->ViewModelLifetime == EMDViewModelProvider_CacheLifetime::Global)
 		{
 			UMDGlobalViewModelCache* GlobalCache = UGameInstance::GetSubsystem<UMDGlobalViewModelCache>(Widget.GetGameInstance());
 			if (ensure(GlobalCache))
 			{
+				ViewModelCache = GlobalCache;
 				ViewModelInstance = GlobalCache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 			}
 		}
@@ -52,6 +55,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 			UMDLocalPlayerViewModelCache* LocalPlayerCache = ULocalPlayer::GetSubsystem<UMDLocalPlayerViewModelCache>(Widget.GetOwningLocalPlayer());
 			if (ensure(LocalPlayerCache))
 			{
+				ViewModelCache = LocalPlayerCache;
 				ViewModelInstance = LocalPlayerCache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 			}
 		}
@@ -60,6 +64,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 			UMDWorldViewModelCache* WorldCache = UWorld::GetSubsystem<UMDWorldViewModelCache>(Widget.GetWorld());
 			if (ensure(WorldCache))
 			{
+				ViewModelCache = WorldCache;
 				ViewModelInstance = WorldCache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 			}
 		}
@@ -71,6 +76,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 				UMDViewModelCacheComponent* Cache = UMDViewModelCacheComponent::FindOrAddCache(PlayerController);
 				if (ensure(IsValid(Cache)))
 				{
+					ViewModelCache = Cache;
 					ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 				}
 			}
@@ -86,6 +92,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 					UMDViewModelCacheComponent* Cache = UMDViewModelCacheComponent::FindOrAddCache(HUD);
 					if (ensure(IsValid(Cache)))
 					{
+						ViewModelCache = Cache;
 						ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 					}
 				}
@@ -111,6 +118,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 				UMDViewModelCacheComponent* Cache = UMDViewModelCacheComponent::FindOrAddCache(Pawn);
 				if (ensure(IsValid(Cache)))
 				{
+					ViewModelCache = Cache;
 					ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 				}
 			}
@@ -140,6 +148,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 				UMDViewModelCacheComponent* Cache = UMDViewModelCacheComponent::FindOrAddCache(PlayerState);
 				if (ensure(IsValid(Cache)))
 				{
+					ViewModelCache = Cache;
 					ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 				}
 			}
@@ -169,6 +178,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 				UMDViewModelCacheComponent* Cache = UMDViewModelCacheComponent::FindOrAddCache(GameState);
 				if (ensure(IsValid(Cache)))
 				{
+					ViewModelCache = Cache;
 					ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 				}
 
@@ -194,6 +204,7 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 						UMDViewModelCacheComponent* Cache = UMDViewModelCacheComponent::FindOrAddCache(ViewTarget);
 						if (ensure(IsValid(Cache)))
 						{
+							ViewModelCache = Cache;
 							ViewModelInstance = Cache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
 						}
 					}
@@ -216,6 +227,13 @@ UMDViewModelBase* FMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 		{
 			UMDViewModelFunctionLibrary::ClearViewModel(&Widget, Assignment.ViewModelClass, Assignment.ViewModelName);
 		}
+
+		if (ViewModelCache != nullptr && !ViewModelCache->OnViewModelCacheShuttingDown.IsBoundToObject(this))
+		{
+			ViewModelCache->OnViewModelCacheShuttingDown.AddSP(this, &FMDViewModelProvider_Cached::OnViewModelCacheShutdown, TWeakInterfacePtr<IMDViewModelCacheInterface>(ViewModelCache));
+		}
+
+		BoundAssignments.FindOrAdd(Assignment).Add(&Widget, TWeakInterfacePtr<IMDViewModelCacheInterface>(ViewModelCache));
 	}
 
 	return nullptr;
@@ -247,5 +265,35 @@ void FMDViewModelProvider_Cached::OnViewTargetChanged(APlayerController* PC, AAc
 	if (IsValid(Widget) && Widget->GetOwningPlayer() == PC)
 	{
 		SetViewModel(*Widget, Assignment, Data);
+	}
+}
+
+void FMDViewModelProvider_Cached::OnViewModelCacheShutdown(const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& ViewModelCache, TWeakInterfacePtr<IMDViewModelCacheInterface> BoundCache)
+{
+	for (const TTuple<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& ViewModelInstance : ViewModelCache)
+	{
+		// Find all widgets with this viewmodel assignment and clear it
+		const FMDViewModelAssignment Assignment = {
+			ViewModelInstance.Key.ViewModelClass,
+			TAG_MDVMProvider_Cached,
+			ViewModelInstance.Key.ViewModelName
+		};
+
+		if (const TMap<TWeakObjectPtr<UUserWidget>, TWeakInterfacePtr<IMDViewModelCacheInterface>>* BoundWidgets = BoundAssignments.Find(Assignment))
+		{
+			for (const TTuple<TWeakObjectPtr<UUserWidget>, TWeakInterfacePtr<IMDViewModelCacheInterface>>& BoundWidget : *BoundWidgets)
+			{
+				if (BoundWidget.Value == BoundCache)
+				{
+					UMDViewModelFunctionLibrary::ClearViewModel(BoundWidget.Key.Get(), Assignment.ViewModelClass, Assignment.ViewModelName);
+				}
+			}
+		}
+
+		UMDViewModelBase* ViewModel = ViewModelInstance.Value;
+		if (IsValid(ViewModel))
+		{
+			ViewModel->ShutdownViewModel();
+		}
 	}
 }

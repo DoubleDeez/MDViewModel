@@ -19,10 +19,13 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModel(UUserWidget* Widget,
 
 void UMDViewModelFunctionLibrary::ClearViewModel(UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
-	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
-	if (IsValid(Extension))
+	if (IsValid(Widget))
 	{
-		Extension->ClearViewModel(ViewModelClass, ViewModelName);
+		UMDViewModelWidgetExtension* Extension = Widget->GetExtension<UMDViewModelWidgetExtension>();
+		if (IsValid(Extension))
+		{
+			Extension->ClearViewModel(ViewModelClass, ViewModelName);
+		}
 	}
 }
 

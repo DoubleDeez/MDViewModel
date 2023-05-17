@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Interfaces/MDViewModelCacheInterface.h"
 #include "Subsystems/LocalPlayerSubsystem.h"
 #include "Util/MDViewModelInstanceKey.h"
 #include "MDLocalPlayerViewModelCache.generated.h"
@@ -11,7 +12,7 @@ class UMDViewModelBase;
  *
  */
 UCLASS()
-class MDVIEWMODEL_API UMDLocalPlayerViewModelCache : public ULocalPlayerSubsystem
+class MDVIEWMODEL_API UMDLocalPlayerViewModelCache : public ULocalPlayerSubsystem, public IMDViewModelCacheInterface
 {
 	GENERATED_BODY()
 
@@ -21,7 +22,9 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
-	UMDViewModelBase* GetOrCreateViewModel(const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings);
+protected:
+	virtual UObject* GetViewModelOwner() const override;
+	virtual TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& GetViewModelCache() override { return CachedViewModels; }
 
 private:
 	UPROPERTY(VisibleAnywhere, Transient, Category = "View Model")
