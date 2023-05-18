@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/DynamicEntryBox.h"
+#include "Util/MDViewModelUtils.h"
 #include "MDVMDynamicEntryBox.generated.h"
 
 class UMDViewModelBase;
@@ -17,4 +18,11 @@ class MDVIEWMODEL_API UMDVMDynamicEntryBox : public UDynamicEntryBox
 public:
 	UFUNCTION(BlueprintCallable , Category = "DynamicEntryBox")
 	void PopulateItems(const TArray<UMDViewModelBase*>& ViewModels);
+
+protected:
+	UPROPERTY(EditAnywhere, Category = "View Model")
+	FName ViewModelName = MDViewModelUtils::DefaultViewModelName;
+	
+	UPROPERTY(Transient)
+	TArray<TSubclassOf<UMDViewModelBase>> AssignedViewModelClasses;
 };

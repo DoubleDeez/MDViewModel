@@ -17,18 +17,33 @@ void UMDVMDynamicEntryBox::PopulateItems(const TArray<UMDViewModelBase*>& ViewMo
 	// Remove entries we don't need
 	for (int32 i = StartNumItems - 1; i >= NumVMs; --i)
 	{
-		RemoveEntry(GetAllEntries()[i]);
+		UUserWidget* Widget = GetAllEntries()[i];
+        if (IsValid(Widget))
+        {
+        	if (AssignedViewModelClasses.IsValidIndex(i))
+        	{
+        		UMDViewModelFunctionLibrary::ClearViewModel(Widget, AssignedViewModelClasses[i], ViewModelName);
+        		AssignedViewModelClasses[i] = nullptr;
+        	}
+        	
+        	RemoveEntry(Widget);
+        }
 	}
 
 	check(GetNumEntries() == NumVMs);
+	AssignedViewModelClasses.SetNum(NumVMs);
 
 	// Set all entry VMs
 	for (int32 i = 0; i < NumVMs; ++i)
 	{
-		UUserWidget* Widget = GetAllEntries()[i];
-		if (IsValid(Widget))
+		if (UMDViewModelBase* ViewModel = ViewModels[i])
 		{
-			UMDViewModelFunctionLibrary::SetViewModel(Widget, ViewModels[i], ViewModels[i]->GetClass());
+			UUserWidget* Widget = GetAllEntries()[i];
+			if (IsValid(Widget))
+			{
+				UMDViewModelFunctionLibrary::SetViewModel(Widget, ViewModel, ViewModel->GetClass(), ViewModelName);
+				AssignedViewModelClasses[i] = ViewModel->GetClass();
+			}
 		}
 	}
 }
