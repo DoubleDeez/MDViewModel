@@ -8,10 +8,13 @@
 
 void UMDViewModelWidgetBlueprintExtension::AddAssignment(FMDViewModelEditorAssignment&& Assignment)
 {
-	// TODO - validate that assignment doesn't already exist
+	if (!Assignments.Contains(Assignment))
+	{
+		Assignments.Emplace(MoveTemp(Assignment));
+		OnAssignmentsChanged.Broadcast();
 
-	Assignments.Emplace(MoveTemp(Assignment));
-	OnAssignmentsChanged.Broadcast();
+		FBlueprintEditorUtils::MarkBlueprintAsModified(GetWidgetBlueprint());
+	}
 }
 
 void UMDViewModelWidgetBlueprintExtension::UpdateAssignment(const FMDViewModelEditorAssignment& Assignment, FMDViewModelEditorAssignment&& UpdatedAssignment)
@@ -30,6 +33,8 @@ void UMDViewModelWidgetBlueprintExtension::UpdateAssignment(const FMDViewModelEd
 		Assignments.Insert(NewAssignment, AssignmentIndex);
 
 		OnAssignmentsChanged.Broadcast();
+
+		FBlueprintEditorUtils::MarkBlueprintAsModified(GetWidgetBlueprint());
 	}
 }
 
@@ -38,6 +43,8 @@ void UMDViewModelWidgetBlueprintExtension::RemoveAssignment(const FMDViewModelEd
 	if (Assignments.Remove(Assignment) > 0)
 	{
 		OnAssignmentsChanged.Broadcast();
+		
+		FBlueprintEditorUtils::MarkBlueprintAsModified(GetWidgetBlueprint());
 	}
 }
 
