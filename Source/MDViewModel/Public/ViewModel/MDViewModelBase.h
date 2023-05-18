@@ -9,20 +9,24 @@
 
 struct FInstancedStruct;
 class UUserWidget;
+
 /**
- * Base UObject that adds FieldNotify support
+ * Base UObject that adds FieldNotify support.
+ * Should not have an outer object (other than the transient package)
  */
-UCLASS(Abstract, BlueprintType)
+UCLASS(Abstract, BlueprintType, Within=Package)
 class MDVIEWMODEL_API UMDViewModelBase : public UObject, public INotifyFieldValueChanged
 {
 	GENERATED_BODY()
 
 public:
 	// Called by view model providers after they create the view model object
-	virtual void InitializeViewModel(const FInstancedStruct& ViewModelSettings) {};
+	void InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject);
 
 	// Called by view model providers when they stop referencing the view model object
 	virtual void ShutdownViewModel() {}
+
+	virtual UWorld* GetWorld() const override;
 
 	// Override this to expose properties in the view model assignment editor, called on the CDO
 	virtual UScriptStruct* GetViewModelSettingsStruct() const { return nullptr; }
@@ -49,7 +53,21 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "FieldNotify", meta = (DisplayName = "Remove Field Value Changed Delegate", ScriptName="RemoveFieldValueChangedDelegate"))
 	void K2_RemoveFieldValueChangedDelegate(FFieldNotificationId FieldId, FFieldValueChangedDynamicDelegate Delegate);
 
+	template<typename T = UObject>
+	T* GetContextObject() const
+	{
+		if (ContextObject.IsValid())
+		{
+			return Cast<T>(ContextObject.Get());
+		}
+
+		return Cast<T>(GetOuter());
+	}
+
 protected:
+	// Called by view model providers after they create the view model object
+	virtual void InitializeViewModel(const FInstancedStruct& ViewModelSettings) {};
+	
 	void BroadcastFieldValueChanged(UE::FieldNotification::FFieldId InFieldId);
 
 	// Broadcast that the specified field has changed
@@ -57,6 +75,9 @@ protected:
 	void K2_BroadcastFieldValueChanged(FFieldNotificationId FieldId);
 
 private:
+	UPROPERTY(Transient)
+	TWeakObjectPtr<UObject> ContextObject;
+	
 	UE::FieldNotification::FFieldMulticastDelegate FieldNotifyDelegates;
 	TBitArray<> EnabledFieldNotifications;
 };

@@ -1,5 +1,21 @@
 #include "ViewModel/MDViewModelBase.h"
 
+void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject)
+{
+	ContextObject = InContextObject;
+	InitializeViewModel(ViewModelSettings);
+}
+
+UWorld* UMDViewModelBase::GetWorld() const
+{
+	if (const UObject* Context = GetContextObject<UObject>())
+	{
+		return Context->GetWorld();
+	}
+	
+	return nullptr;
+}
+
 FDelegateHandle UMDViewModelBase::AddFieldValueChangedDelegate(UE::FieldNotification::FFieldId InFieldId, FFieldValueChangedDelegate InNewDelegate)
 {
 	FDelegateHandle Result;

@@ -11,8 +11,8 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const FName& 
 	TObjectPtr<UMDViewModelBase>& ViewModel = GetViewModelCache().FindOrAdd(Key);
 	if (ViewModel == nullptr)
 	{
-		ViewModel = NewObject<UMDViewModelBase>(GetViewModelOwner(), Key.ViewModelClass);
-		ViewModel->InitializeViewModel(ViewModelSettings);
+		ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), Key.ViewModelClass);
+		ViewModel->InitializeViewModelWithContext(ViewModelSettings, GetViewModelOwner());
 	}
 
 	return ViewModel;

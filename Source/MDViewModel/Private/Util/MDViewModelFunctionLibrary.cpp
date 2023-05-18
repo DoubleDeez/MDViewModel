@@ -29,17 +29,12 @@ void UMDViewModelFunctionLibrary::ClearViewModel(UUserWidget* Widget, TSubclassO
 	}
 }
 
-UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModelOfClass(UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings, FName ViewModelName)
-{
-	return SetViewModelOfClass(Widget, ViewModelClass, ViewModelSettings, ViewModelName, GetTransientPackage());
-}
-
-UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModelOfClass(UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings, FName ViewModelName, UObject* Outer)
+UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModelOfClass(UUserWidget* Widget, UObject* ContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings, FName ViewModelName)
 {
 	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
 	if (IsValid(Extension))
 	{
-		return Extension->SetViewModelOfClass(ViewModelClass, ViewModelSettings, ViewModelName, Outer);
+		return Extension->SetViewModelOfClass(ContextObject, ViewModelClass, ViewModelSettings, ViewModelName);
 	}
 
 	return nullptr;
