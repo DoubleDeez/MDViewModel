@@ -1,9 +1,11 @@
 #include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
 
+#include "MDViewModelModule.h"
 #include "ViewModel/MDViewModelBase.h"
+#include "ViewModelProviders/MDViewModelProviderBase.h"
 
 
-void UMDViewModelAssignmentEditorObject::PopulateFromAssignment(const FMDViewModelEditorAssignment& Assignment)
+void UMDViewModelAssignmentEditorObject::PopulateFromAssignment(const FMDViewModelEditorAssignment& Assignment, UWidgetBlueprint* WidgetBlueprint)
 {
 	ViewModelClass = Assignment.Assignment.ViewModelClass;
 	ViewModelProvider = Assignment.Assignment.ProviderTag;
@@ -11,15 +13,28 @@ void UMDViewModelAssignmentEditorObject::PopulateFromAssignment(const FMDViewMod
 
 	bOverrideName = (ViewModelInstanceName != MDViewModelUtils::DefaultViewModelName);
 
-	// TODO - Handle cases where ProviderSettings/ViewModelSettings no longer match what the Provider/ViewModel ask for
-
 	ProviderSettings = Assignment.Data.ProviderSettings;
+	
+	if (UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(ViewModelProvider))
+	{
+		if (ProviderSettings.GetScriptStruct() != Provider->GetProviderSettingsStruct())
+		{
+			ProviderSettings.InitializeAs(Provider->GetProviderSettingsStruct());
+		}
+		
+		Provider->OnProviderSettingsInitializedInEditor(ProviderSettings, WidgetBlueprint);
+	}
+	else
+	{
+		ProviderSettings.Reset();
+	}
 
-	if (Assignment.Data.ViewModelSettings.IsValid())
+	const UMDViewModelBase* ViewModelCDO = ViewModelClass->GetDefaultObject<UMDViewModelBase>();
+	if (Assignment.Data.ViewModelSettings.IsValid() && Assignment.Data.ViewModelSettings.GetScriptStruct() == ViewModelCDO->GetViewModelSettingsStruct())
 	{
 		ViewModelSettings = Assignment.Data.ViewModelSettings;
 	}
-	else if (const UMDViewModelBase* ViewModelCDO = ViewModelClass->GetDefaultObject<UMDViewModelBase>())
+	else
 	{
 		ViewModelSettings.InitializeAs(ViewModelCDO->GetViewModelSettingsStruct());
 	}

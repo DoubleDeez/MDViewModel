@@ -1,49 +1,16 @@
 #include "Customizations/MDViewModelAssignmentReferenceCustomization.h"
 
-#include "ClassViewerFilter.h"
+#include "Blueprint/UserWidget.h"
 #include "DetailWidgetRow.h"
+#include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "IDetailChildrenBuilder.h"
 #include "MDViewModelModule.h"
 #include "PropertyHandle.h"
-#include "Blueprint/UserWidget.h"
-#include "Kismet2/SClassPickerDialog.h"
 #include "Util/MDViewModelAssignmentReference.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
 
-class FMDViewModelClassFilter : public IClassViewerFilter
-{
-
-public:
-	FMDViewModelClassFilter(UClass* WidgetOwnerClass)
-		: WidgetClass(WidgetOwnerClass)
-	{
-		if (WidgetClass.IsValid())
-		{
-			const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
-			TSet<TSubclassOf<UMDViewModelBase>> ViewModelClasses;
-			ViewModelModule.GetViewModelClassesForWidgetClass(WidgetClass.Get(), ViewModelClasses);
-
-			Algo::Transform(ViewModelClasses, SupportedViewModelClasses, [](const TSubclassOf<UMDViewModelBase>& Class){ return Class.Get(); });
-		}
-	}
-
-	TWeakObjectPtr<UClass> WidgetClass;
-
-	TSet<const UClass*> SupportedViewModelClasses;
-
-	virtual bool IsClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const UClass* InClass, TSharedRef< class FClassViewerFilterFuncs > InFilterFuncs ) override
-	{
-		return InFilterFuncs->IfInClassesSet(SupportedViewModelClasses, InClass) == EFilterReturn::Passed;
-	}
-
-	virtual bool IsUnloadedClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const TSharedRef< const class IUnloadedBlueprintData > InUnloadedClassData, TSharedRef< class FClassViewerFilterFuncs > InFilterFuncs) override
-	{
-		return InFilterFuncs->IfInClassesSet(SupportedViewModelClasses, InUnloadedClassData) == EFilterReturn::Passed;
-	}
-
-};
 
 TSharedRef<IPropertyTypeCustomization> FMDViewModelAssignmentReferenceCustomization::MakeInstance()
 {
@@ -59,41 +26,33 @@ void FMDViewModelAssignmentReferenceCustomization::CustomizeHeader(TSharedRef<IP
 void FMDViewModelAssignmentReferenceCustomization::CustomizeChildren(TSharedRef<IPropertyHandle> PropertyHandle,
 	IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils)
 {
-	uint32 NumChildren = 0;
-	PropertyHandle->GetNumChildren(NumChildren);
-	for (uint32 i = 0; i < NumChildren; ++i)
+	const FMDViewModelAssignmentReference* Reference = GetAssignmentReference();
+	if (Reference != nullptr && Reference->OnGetWidgetClass.IsBound())
 	{
-		TSharedPtr<IPropertyHandle> ChildHandle = PropertyHandle->GetChildHandle(i);
-		if (!ChildHandle.IsValid())
-		{
-			continue;
-		}
-
-		if (ChildHandle->GetProperty()->GetFName() == GET_MEMBER_NAME_CHECKED(FMDViewModelAssignmentReference, ViewModelClass))
-		{
-			ClassHandle = ChildHandle;
-
-			ChildBuilder.AddCustomRow(FText::GetEmpty())
-			.NameContent()
+		ChildBuilder.AddCustomRow(FText::GetEmpty())
+		.NameContent()
+		[
+			StructHandle->CreatePropertyNameWidget()
+		]
+		.ValueContent()
+		[
+			SNew(SComboButton)
+			.OnGetMenuContent(this, &FMDViewModelAssignmentReferenceCustomization::MakeAssignmentMenu)
+			.ButtonContent()
 			[
-				ChildHandle->CreatePropertyNameWidget()
+				SNew(STextBlock)
+				.Text(this, &FMDViewModelAssignmentReferenceCustomization::GetSelectedAssignmentText)
 			]
-			.ValueContent()
-			[
-				SNew(SButton)
-				.ButtonStyle(&FAppStyle::Get().GetWidgetStyle<FComboButtonStyle>("ComboButton").ButtonStyle)
-				.OnClicked(this, &FMDViewModelAssignmentReferenceCustomization::OnClassPickerButtonClicked)
-				.Text(this, &FMDViewModelAssignmentReferenceCustomization::GetSelectedClassText)
-				.ToolTipText(this, &FMDViewModelAssignmentReferenceCustomization::GetSelectedClassToolTipText)
-			];
-		}
-		else
-		{
-			// TODO - Disable bIsViewModelName if view model class not selected
-			// TODO - Change to a dropdown of the registered viewmodel names based on the selected ViewModelClass
-			const bool bIsViewModelName = ChildHandle->GetProperty()->GetFName() == GET_MEMBER_NAME_CHECKED(FMDViewModelAssignmentReference, ViewModelName);
-			ChildBuilder.AddProperty(ChildHandle.ToSharedRef()).IsEnabled(true);
-		}
+		];
+	}
+	else
+	{
+		ChildBuilder.AddCustomRow(FText::GetEmpty()).WholeRowContent()
+		[
+			SNew(STextBlock)
+			.AutoWrapText(true)
+			.Text(FText::Format(INVTEXT("{0}.OnGetWidgetClass must be bound to set the assignment reference in the editor"), StructHandle->GetPropertyDisplayName()))
+		];
 	}
 }
 
@@ -135,44 +94,57 @@ UClass* FMDViewModelAssignmentReferenceCustomization::GetCurrentViewModelClass()
 	return nullptr;
 }
 
-FReply FMDViewModelAssignmentReferenceCustomization::OnClassPickerButtonClicked() const
+FName FMDViewModelAssignmentReferenceCustomization::GetCurrentViewModelName() const
 {
-	FClassViewerInitializationOptions ClassPickerOptions;
-	ClassPickerOptions.bShowNoneOption = true;
-	ClassPickerOptions.ClassFilters.Add(MakeShareable(new FMDViewModelClassFilter(GetWidgetOwnerClass())));
-	ClassPickerOptions.InitiallySelectedClass = GetCurrentViewModelClass();
-
-	UClass* Class = nullptr;
-	if (SClassPickerDialog::PickClass(ClassHandle->GetPropertyDisplayName(), ClassPickerOptions, Class, UClass::StaticClass()))
+	if (const FMDViewModelAssignmentReference* VMAssignment = GetAssignmentReference())
 	{
-		ClassHandle->SetValue(Class);
+		return VMAssignment->ViewModelName;
 	}
 
-	return FReply::Handled();
+	return NAME_None;
 }
 
-FText FMDViewModelAssignmentReferenceCustomization::GetSelectedClassText() const
+TSharedRef<SWidget> FMDViewModelAssignmentReferenceCustomization::MakeAssignmentMenu()
+{
+	FMenuBuilder MenuBuilder(true, NULL);
+	if (UClass* WidgetClass = GetWidgetOwnerClass())
+	{
+		const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
+		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
+		ViewModelModule.GetViewModelAssignmentsForWidgetClass(WidgetClass, ViewModelAssignments);
+
+		for (const auto& Pair : ViewModelAssignments)
+		{
+			MenuBuilder.AddMenuEntry(
+				FText::Format(INVTEXT("{0} ({1})"), Pair.Key.ViewModelClass->GetDisplayNameText(), FText::FromName(Pair.Key.ViewModelName)),
+				Pair.Key.ViewModelClass->GetToolTipText(),
+				FSlateIcon(),
+				FExecuteAction::CreateSP(this, &FMDViewModelAssignmentReferenceCustomization::SetSelectedAssignment, Pair.Key)
+			);
+		}
+	}
+
+	return MenuBuilder.MakeWidget();
+}
+
+void FMDViewModelAssignmentReferenceCustomization::SetSelectedAssignment(FMDViewModelAssignment Assignment) const
+{
+	if (FMDViewModelAssignmentReference* VMAssignment = GetAssignmentReference())
+	{
+		VMAssignment->ViewModelClass = Assignment.ViewModelClass;
+		VMAssignment->ViewModelName = Assignment.ViewModelName;
+	}
+}
+
+FText FMDViewModelAssignmentReferenceCustomization::GetSelectedAssignmentText() const
 {
 	if (const FMDViewModelAssignmentReference* VMAssignment = GetAssignmentReference())
 	{
 		if (VMAssignment->ViewModelClass != nullptr)
 		{
-			return VMAssignment->ViewModelClass->GetDisplayNameText();
+			return FText::Format(INVTEXT("{0} ({1})"), VMAssignment->ViewModelClass->GetDisplayNameText(), FText::FromName(VMAssignment->ViewModelName));
 		}
 	}
 
-	return INVTEXT("Select a ViewModel Class...");
-}
-
-FText FMDViewModelAssignmentReferenceCustomization::GetSelectedClassToolTipText() const
-{
-	if (const FMDViewModelAssignmentReference* VMAssignment = GetAssignmentReference())
-	{
-		if (VMAssignment->ViewModelClass != nullptr)
-		{
-			return VMAssignment->ViewModelClass->GetToolTipText();
-		}
-	}
-
-	return INVTEXT("Select a ViewModel Class...");
+	return INVTEXT("Select an Assignment...");
 }

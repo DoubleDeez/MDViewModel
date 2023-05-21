@@ -29,5 +29,10 @@ public class MDViewModel : ModuleRules
 				"SlateCore"
 			}
 		);
+
+		if (Target.Type == TargetType.Editor)
+		{
+			PublicDependencyModuleNames.Add("UMGEditor");
+		}
 	}
 }

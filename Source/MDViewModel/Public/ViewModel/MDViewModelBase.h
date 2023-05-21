@@ -10,9 +10,33 @@
 struct FInstancedStruct;
 class UUserWidget;
 
+#if WITH_EDITOR
+class UWidgetBlueprint;
+#endif
+
+// Fix syntax highlighting caused by code analysis engine not detecting FieldNotify names
+#if defined(__RESHARPER__)
+// Broadcast that the specified field has changed
+#define MDVM_BROADCAST_FIELD(FIELD_NAME) [_ = FIELD_NAME](){}()
+#else
+// Broadcast that the specified field has changed
+#define MDVM_BROADCAST_FIELD(FIELD_NAME) BroadcastFieldValueChanged(ThisClass::FFieldNotificationClassDescriptor::FIELD_NAME)
+#endif
+
+// Fix syntax highlighting caused by code analysis engine not detecting FieldNotify names, attempts to maintain traits of SetFieldNotifyValue
+#if defined(__RESHARPER__)
+// Check if the field value is different than the passed in value then set it and broadcast if it changed.
+#define MDVM_SET_FIELD(FIELD_NAME, VALUE) [_ = FIELD_NAME, __ = VALUE](){ return FMath::RandBool(); }()
+#else
+// Check if the field value is different than the passed in value then set it and broadcast if it changed.
+#define MDVM_SET_FIELD(FIELD_NAME, VALUE) SetFieldNotifyValue(FIELD_NAME, VALUE, ThisClass::FFieldNotificationClassDescriptor::FIELD_NAME)
+#endif
+
 /**
  * Base UObject that adds FieldNotify support.
- * Should not have an outer object (other than the transient package)
+ * Should not have an outer object (other than the transient package), relies on ContextObject for GetWorld().
+ *
+ * InitializeViewModelWithContext() and ShutdownViewModel() are expected to be called by the creator of this object.
  */
 UCLASS(Abstract, BlueprintType, Within=Package)
 class MDVIEWMODEL_API UMDViewModelBase : public UObject, public INotifyFieldValueChanged
@@ -24,13 +48,16 @@ public:
 	void InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject);
 
 	// Called by view model providers when they stop referencing the view model object
-	virtual void ShutdownViewModel() {}
+	void ShutdownViewModelFromProvider();
 
 	virtual UWorld* GetWorld() const override;
 
+#if WITH_EDITOR
 	// Override this to expose properties in the view model assignment editor, called on the CDO
 	virtual UScriptStruct* GetViewModelSettingsStruct() const { return nullptr; }
-
+	virtual bool ValidateViewModelSettings(const FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint, TArray<FText>& OutIssues) const { return true; }
+#endif
+	
 	struct MDVIEWMODEL_API FFieldNotificationClassDescriptor : public ::UE::FieldNotification::IClassDescriptor
 	{
 	};
@@ -64,11 +91,31 @@ public:
 		return Cast<T>(GetOuter());
 	}
 
+	FSimpleMulticastDelegate OnViewModelShutDown;
+
 protected:
 	// Called by view model providers after they create the view model object
 	virtual void InitializeViewModel(const FInstancedStruct& ViewModelSettings) {};
+
+	// Called by view model providers when they stop referencing the view model object
+	virtual void ShutdownViewModel() {}
 	
 	void BroadcastFieldValueChanged(UE::FieldNotification::FFieldId InFieldId);
+
+	// Helper that changes for equality before setting and broadcasting the specified field. Uses operator==.
+	// Returns whether the field value was changed or not
+	template<typename T, typename U>
+	bool SetFieldNotifyValue(T& Value, const U& NewValue, UE::FieldNotification::FFieldId FieldId)
+	{
+		if (Value == NewValue)
+		{
+			return false;
+		}
+
+		Value = NewValue;
+		BroadcastFieldValueChanged(FieldId);
+		return true;
+	}
 
 	// Broadcast that the specified field has changed
 	UFUNCTION(BlueprintCallable, Category="FieldNotify", meta = (DisplayName="Broadcast Field Value Changed", ScriptName="BroadcastFieldValueChanged"))

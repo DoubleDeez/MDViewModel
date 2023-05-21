@@ -5,11 +5,16 @@
 
 UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
 {
+	if (bIsShutdown)
+	{
+		return nullptr;
+	}
+	
 	const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
 	check(Key.IsValid());
 
 	TObjectPtr<UMDViewModelBase>& ViewModel = GetViewModelCache().FindOrAdd(Key);
-	if (ViewModel == nullptr)
+	if (!IsValid(ViewModel))
 	{
 		ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), Key.ViewModelClass);
 		ViewModel->InitializeViewModelWithContext(ViewModelSettings, GetViewModelOwner());
@@ -20,5 +25,12 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const FName& 
 
 void IMDViewModelCacheInterface::BroadcastShutdown()
 {
-	OnViewModelCacheShuttingDown.Broadcast(GetViewModelCache());
+	bIsShutdown = true;
+	
+	// Empty out the cache before we shutdown
+	TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& Cache = GetViewModelCache();
+	TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>> ShutdownViewModels = MoveTemp(Cache);
+	Cache.Reset();
+	
+	OnViewModelCacheShuttingDown.Broadcast(Cache);
 }

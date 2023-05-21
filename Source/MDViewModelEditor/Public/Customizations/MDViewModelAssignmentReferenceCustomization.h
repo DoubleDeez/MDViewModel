@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "IPropertyTypeCustomization.h"
 #include "Input/Reply.h"
+#include "Util/MDViewModelAssignment.h"
 
 class SWidget;
 struct FMDViewModelAssignmentReference;
@@ -22,9 +23,12 @@ protected:
 	FMDViewModelAssignmentReference* GetAssignmentReference() const;
 	UClass* GetWidgetOwnerClass() const;
 	UClass* GetCurrentViewModelClass() const;
-	FReply OnClassPickerButtonClicked() const;
-	FText GetSelectedClassText() const;
-	FText GetSelectedClassToolTipText() const;
+	FName GetCurrentViewModelName() const;
+
+	TSharedRef<SWidget> MakeAssignmentMenu();
+	void SetSelectedAssignment(FMDViewModelAssignment Assignment) const;
+	
+	FText GetSelectedAssignmentText() const;
 
 	TSharedPtr<IPropertyHandle> StructHandle;
 	TSharedPtr<IPropertyHandle> ClassHandle;

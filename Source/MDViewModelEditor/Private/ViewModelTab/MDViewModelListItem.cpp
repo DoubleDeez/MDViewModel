@@ -8,6 +8,7 @@
 #include "Styling/StyleColors.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "ViewModel/MDViewModelBase.h"
+#include "ViewModelProviders/MDViewModelProviderBase.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
@@ -28,9 +29,7 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, TSharedPtr<FMDVie
 	ButtonStyle.NormalPadding = FMargin(2.f);
 	ButtonStyle.PressedPadding = FMargin(2.f);
 
-	const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
-	const TSharedPtr<FMDViewModelProviderBase> Provider = ViewModelModule.GetViewModelProvider(Assignment->Assignment.ProviderTag);
-	check(Provider.IsValid());
+	const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(Assignment->Assignment.ProviderTag);
 
 	const FText SourceText = [Item]()
 	{
@@ -150,7 +149,7 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, TSharedPtr<FMDVie
 				[
 					SNew(STextBlock)
 					.Text(FText::FromName(Item->Assignment.ViewModelName))
-					.ToolTipText(INVTEXT("The name of this view model instance. It must be unique for all view models of the same class on this widget."))
+					.ToolTipText(INVTEXT("The name of this view model instance. It must be unique for all view models on this widget.\r\n'Default' is an exception, and can be used once per View Model Class on this widget."))
 				]
 				+SHorizontalBox::Slot()
 				.FillWidth(1.f)
@@ -165,8 +164,8 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, TSharedPtr<FMDVie
 				[
 					SNew(STextBlock)
 					.Font(IDetailLayoutBuilder::GetDetailFontItalic())
-					.Text(Provider->GetDisplayName())
-					.ToolTipText(Provider->GetDescription())
+					.Text(IsValid(Provider) ? Provider->GetDisplayName() : INVTEXT("Invalid Provider"))
+					.ToolTipText(IsValid(Provider) ? Provider->GetDescription() : INVTEXT("The selected provider is not valid, it may have been deleted or is in an unloaded module."))
 				]
 			]
 		]
@@ -175,7 +174,7 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, TSharedPtr<FMDVie
 
 EVisibility SMDViewModelListItem::GetButtonVisibility() const
 {
-	if (IsHovered() && !Assignment->bIsNative && !Assignment->bIsSuper)
+	if (/*IsHovered() && */!Assignment->bIsNative && !Assignment->bIsSuper)
 	{
 		return EVisibility::Visible;
 	}

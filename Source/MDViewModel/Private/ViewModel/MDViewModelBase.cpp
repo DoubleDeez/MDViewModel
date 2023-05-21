@@ -6,6 +6,13 @@ void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& Vi
 	InitializeViewModel(ViewModelSettings);
 }
 
+void UMDViewModelBase::ShutdownViewModelFromProvider()
+{
+	ShutdownViewModel();
+	
+	OnViewModelShutDown.Broadcast();
+}
+
 UWorld* UMDViewModelBase::GetWorld() const
 {
 	if (const UObject* Context = GetContextObject<UObject>())

@@ -5,6 +5,7 @@
 #include "Blueprint/UserWidget.h"
 #include "UObject/Package.h"
 #include "ViewModel/MDViewModelBase.h"
+#include "ViewModelProviders/MDViewModelProviderBase.h"
 
 void UMDViewModelWidgetExtension::Initialize()
 {
@@ -15,12 +16,14 @@ void UMDViewModelWidgetExtension::Initialize()
 
 void UMDViewModelWidgetExtension::BeginDestroy()
 {
-	Super::BeginDestroy();
-
 	if (!HasAnyFlags(RF_ClassDefaultObject))
 	{
 		CleanUpViewModels();
+
+		OnBeginDestroy.Broadcast();
 	}
+	
+	Super::BeginDestroy();
 }
 
 UMDViewModelWidgetExtension* UMDViewModelWidgetExtension::GetOrCreate(UUserWidget* Widget)
@@ -121,8 +124,8 @@ void UMDViewModelWidgetExtension::OnProviderViewModelUpdated(TSubclassOf<UMDView
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
 	ViewModelModule.SearchViewModelAssignments(Assignments, GetUserWidget()->GetClass(), ViewModelClass, ProviderTag);
 
-	const TSharedPtr<FMDViewModelProviderBase> Provider = ViewModelModule.GetViewModelProvider(ProviderTag);
-	if (!Provider.IsValid())
+	UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(ProviderTag);
+	if (!IsValid(Provider))
 	{
 		return;
 	}
@@ -256,8 +259,8 @@ void UMDViewModelWidgetExtension::PopulateViewModels()
 
 	for (const auto& Pair : Assignments)
 	{
-		TSharedPtr<FMDViewModelProviderBase> Provider = ViewModelModule.GetViewModelProvider(Pair.Key.ProviderTag);
-		if (ensureMsgf(Provider.IsValid(), TEXT("A View Model Provider with tag [%s] was not found"), *Pair.Key.ProviderTag.ToString()))
+		UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(Pair.Key.ProviderTag);
+		if (ensureMsgf(IsValid(Provider), TEXT("A View Model Provider with tag [%s] was not found"), *Pair.Key.ProviderTag.ToString()))
 		{
 			Provider->SetViewModel(*Widget, Pair.Key, Pair.Value);
 			Provider->OnViewModelUpdated.AddUObject(this, &UMDViewModelWidgetExtension::OnProviderViewModelUpdated, Pair.Key.ProviderTag);

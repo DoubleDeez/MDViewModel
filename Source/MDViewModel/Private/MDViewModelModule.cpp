@@ -13,30 +13,11 @@
 
 void FMDViewModelModule::StartupModule()
 {
-	FWorldDelegates::OnStartGameInstance.AddRaw(this, &FMDViewModelModule::OnGameStarted);
 }
 
 void FMDViewModelModule::ShutdownModule()
 {
-	ViewModelProviders.Reset();
 	NativelyAssignedViewModels.Reset();
-
-	FWorldDelegates::OnStartGameInstance.RemoveAll(this);
-}
-
-void FMDViewModelModule::RegisterViewModelProvider(const FGameplayTag& ProviderTag, TSharedRef<FMDViewModelProviderBase> Provider)
-{
-	ensureMsgf(!ViewModelProviders.Contains(ProviderTag), TEXT("A Provider with Tag [%s] has already been registered and will be overridden"), *ProviderTag.ToString());
-
-	if (ensure(ProviderTag.IsValid()))
-	{
-		ViewModelProviders.Add(ProviderTag, Provider);
-	}
-}
-
-void FMDViewModelModule::UnregisterViewModelProvider(const FGameplayTag& ProviderTag)
-{
-	ViewModelProviders.Remove(ProviderTag);
 }
 
 void FMDViewModelModule::RegisterNativeAssignment(TSubclassOf<UUserWidget> WidgetClass, FMDViewModelAssignment&& Assignment, FMDViewModelAssignmentData&& Data)
@@ -215,22 +196,6 @@ bool FMDViewModelModule::DoesClassOrSuperClassHaveAssignments(TSubclassOf<UUserW
 	}
 
 	return false;
-}
-
-TSharedPtr<FMDViewModelProviderBase> FMDViewModelModule::GetViewModelProvider(const FGameplayTag& ProviderTag) const
-{
-	return ViewModelProviders.FindRef(ProviderTag);
-}
-
-void FMDViewModelModule::OnGameStarted(UGameInstance* GameInstance)
-{
-	for (auto Pair : ViewModelProviders)
-	{
-		if (const TSharedPtr<FMDViewModelProviderBase>& Provider = Pair.Value)
-		{
-			Provider->InitializeProvider(GameInstance);
-		}
-	}
 }
 
 void FMDViewModelModule::RequestNativeAssignments() const

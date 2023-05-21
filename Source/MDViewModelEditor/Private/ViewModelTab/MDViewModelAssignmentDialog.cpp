@@ -4,6 +4,7 @@
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
 #include "Editor.h"
+#include "Engine/Engine.h"
 #include "IDetailCustomization.h"
 #include "MDViewModelModule.h"
 #include "PropertyEditorModule.h"
@@ -15,6 +16,7 @@
 #include "Kismet2/SClassPickerDialog.h"
 #include "Misc/FeedbackContext.h"
 #include "ViewModel/MDViewModelBase.h"
+#include "ViewModelProviders/MDViewModelProviderBase.h"
 #include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
 #include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
 #include "Widgets/Input/SComboButton.h"
@@ -24,9 +26,9 @@ class FMDViewModelProviderClassFilter : public IClassViewerFilter
 {
 
 public:
-	FMDViewModelProviderClassFilter(const TSharedPtr<FMDViewModelProviderBase>& Provider)
+	FMDViewModelProviderClassFilter(UMDViewModelProviderBase* Provider)
 	{
-		if (Provider.IsValid())
+		if (IsValid(Provider))
 		{
 			Provider->GetSupportedViewModelClasses(ProviderSupportedViewModelClasses);
 		}
@@ -89,6 +91,7 @@ public:
 		const FResetToDefaultOverride HideResetToDefault = FResetToDefaultOverride::Hide();
 
 		const TSharedRef<IPropertyHandle> ProviderTagHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ViewModelProvider), UMDViewModelAssignmentEditorObject::StaticClass());
+		
 		DetailBuilder.EditDefaultProperty(ProviderTagHandle)->OverrideResetToDefault(HideResetToDefault).CustomWidget()
 		.NameContent()
 		[
@@ -106,15 +109,15 @@ public:
 			]
 		];
 
-		if (const UMDViewModelAssignmentEditorObject* EditorObject = EditorObjectPtr.Get())
+		if (UMDViewModelAssignmentEditorObject* EditorObject = EditorObjectPtr.Get())
 		{
 			const TSharedRef<IPropertyHandle> ViewModelClassHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ViewModelClass), UMDViewModelAssignmentEditorObject::StaticClass());
-			const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
-			const TSharedPtr<FMDViewModelProviderBase> Provider = ViewModelModule.GetViewModelProvider(EditorObject->ViewModelProvider);
+			const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider);
 
 			const TSharedRef<IPropertyHandle> ProviderSettingsHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ProviderSettings), UMDViewModelAssignmentEditorObject::StaticClass());
-			if (Provider.IsValid() && EditorObject->ProviderSettings.IsValid())
+			if (IsValid(Provider) && EditorObject->ProviderSettings.IsValid())
 			{
+				ProviderSettingsHandle->SetOnChildPropertyValueChanged(FSimpleDelegate::CreateSP(this, &FEditorObjectCustomization::RefreshDetails));
 				DetailBuilder.EditDefaultProperty(ProviderSettingsHandle)->ShouldAutoExpand(true).OverrideResetToDefault(HideResetToDefault);
 			}
 			else
@@ -123,10 +126,11 @@ public:
 			}
 
 			const TSharedRef<IPropertyHandle> ViewModelSettingsHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ViewModelSettings), UMDViewModelAssignmentEditorObject::StaticClass());
-			if (Provider.IsValid() && EditorObject->ViewModelSettings.IsValid())
+			if (IsValid(Provider) && EditorObject->ViewModelSettings.IsValid())
 			{
 				if (Provider->DoesSupportViewModelSettings())
 				{
+					ViewModelSettingsHandle->SetOnChildPropertyValueChanged(FSimpleDelegate::CreateSP(this, &FEditorObjectCustomization::RefreshDetails));
 					DetailBuilder.EditDefaultProperty(ViewModelSettingsHandle)->ShouldAutoExpand(true).OverrideResetToDefault(HideResetToDefault);
 				}
 				else
@@ -145,8 +149,10 @@ public:
 				DetailBuilder.HideProperty(ViewModelSettingsHandle);
 			}
 
-			if (Provider.IsValid())
+			if (IsValid(Provider))
 			{
+				Provider->OnProviderSettingsInitializedInEditor(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint());
+				
 				DetailBuilder.EditDefaultProperty(ViewModelClassHandle)->CustomWidget()
 				.NameContent()
 				[
@@ -161,10 +167,51 @@ public:
 					.Text(this, &FEditorObjectCustomization::GetSelectedClassText)
 					.ToolTipText(this, &FEditorObjectCustomization::GetSelectedClassToolTipText)
 				];
+
+				TArray<FText> ProviderIssues;
+				Provider->ValidateProviderSettings(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint(), ProviderIssues);
+
+				if (!ProviderIssues.IsEmpty())
+				{
+					IDetailCategoryBuilder& ProviderValidationCategory = DetailBuilder.EditCategory(TEXT("Provider Validation"));
+					ProviderValidationCategory.SetSortOrder(9001);
+
+					for (const FText& Issue : ProviderIssues)
+					{
+						ProviderValidationCategory.AddCustomRow(Issue).WholeRowContent()
+						[
+							SNew(STextBlock)
+							.Text(Issue)
+							.AutoWrapText(true)
+						];
+					}
+				}
 			}
 			else
 			{
 				DetailBuilder.HideProperty(ViewModelClassHandle);
+			}
+
+			if (const UMDViewModelBase* ViewModelCDO = EditorObject->ViewModelClass.GetDefaultObject())
+			{
+				TArray<FText> ViewModelIssues;
+				ViewModelCDO->ValidateViewModelSettings(EditorObject->ViewModelSettings, Dialog->GetWidgetBlueprint(), ViewModelIssues);
+
+				if (!ViewModelIssues.IsEmpty())
+				{
+					IDetailCategoryBuilder& ViewModelValidationCategory = DetailBuilder.EditCategory(TEXT("View Model Validation"));
+					ViewModelValidationCategory.SetSortOrder(9002);
+
+					for (const FText& Issue : ViewModelIssues)
+					{
+						ViewModelValidationCategory.AddCustomRow(Issue).WholeRowContent()
+						[
+							SNew(STextBlock)
+							.Text(Issue)
+							.AutoWrapText(true)
+						];
+					}
+				}
 			}
 		}
 
@@ -181,8 +228,7 @@ private:
 	{
 		if (const UMDViewModelAssignmentEditorObject* EditorObject = EditorObjectPtr.Get())
 		{
-			const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
-			if (TSharedPtr<FMDViewModelProviderBase> Provider = ViewModelModule.GetViewModelProvider(EditorObject->ViewModelProvider))
+			if (const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider))
 			{
 				return Provider->GetDisplayName();
 			}
@@ -200,7 +246,7 @@ private:
 		if (const UMDViewModelAssignmentEditorObject* EditorObject = EditorObjectPtr.Get())
 		{
 			const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
-			if (const TSharedPtr<FMDViewModelProviderBase> Provider = ViewModelModule.GetViewModelProvider(EditorObject->ViewModelProvider))
+			if (const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider))
 			{
 				return Provider->GetDescription();
 			}
@@ -217,30 +263,27 @@ private:
 	{
 		FMenuBuilder MenuBuilder(true, nullptr);
 
-		const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
-		TMap<FGameplayTag, TSharedPtr<FMDViewModelProviderBase>> ViewModelProviders = ViewModelModule.GetViewModelProviders();
-
-		ViewModelProviders.ValueSort([](const TSharedPtr<FMDViewModelProviderBase>& A, const TSharedPtr<FMDViewModelProviderBase>& B)
+		if (GEngine != nullptr)
 		{
-			if (A.IsValid() != B.IsValid())
-			{
-				return A.IsValid();
-			}
+			TArray<UMDViewModelProviderBase*> ViewModelProviders = GEngine->GetEngineSubsystemArray<UMDViewModelProviderBase>();
 
-			return A->GetDisplayName().CompareTo(B->GetDisplayName()) < 0;
-		});
-
-		for (const auto& Pair : ViewModelProviders)
-		{
-			if (const TSharedPtr<FMDViewModelProviderBase> Provider = Pair.Value)
+			ViewModelProviders.Sort([](const UMDViewModelProviderBase& A, const UMDViewModelProviderBase& B)
 			{
-				MenuBuilder.AddMenuEntry(
-					Provider->GetDisplayName(),
-					Provider->GetDescription(),
-					FSlateIcon(),
-					FUIAction(
-						FExecuteAction::CreateSP(this, &FEditorObjectCustomization::OnProviderSelected, Pair.Key)
-					));
+				return A.GetDisplayName().CompareTo(B.GetDisplayName()) < 0;
+			});
+
+			for (const UMDViewModelProviderBase* Provider : ViewModelProviders)
+			{
+				if (IsValid(Provider))
+				{
+					MenuBuilder.AddMenuEntry(
+						Provider->GetDisplayName(),
+						Provider->GetDescription(),
+						FSlateIcon(),
+						FUIAction(
+							FExecuteAction::CreateSP(this, &FEditorObjectCustomization::OnProviderSelected, Provider->GetProviderTag())
+						));
+				}
 			}
 		}
 
@@ -252,10 +295,10 @@ private:
 		if (UMDViewModelAssignmentEditorObject* EditorObject = EditorObjectPtr.Get())
 		{
 			EditorObject->ViewModelProvider = Tag;
-			const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
-			if (const TSharedPtr<FMDViewModelProviderBase> Provider = ViewModelModule.GetViewModelProvider(Tag))
+			if (UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider))
 			{
 				EditorObject->ProviderSettings.InitializeAs(Provider->GetProviderSettingsStruct());
+				Provider->OnProviderSettingsInitializedInEditor(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint());
 			}
 			else
 			{
@@ -264,10 +307,7 @@ private:
 				EditorObject->ProviderSettings.Reset();
 			}
 
-			if (IDetailLayoutBuilder* LayoutBuilder = CachedDetailBuilder.Pin().Get())
-			{
-				LayoutBuilder->ForceRefreshDetails();
-			}
+			RefreshDetails();
 		}
 	}
 
@@ -287,10 +327,7 @@ private:
 				}
 			}
 
-			if (IDetailLayoutBuilder* LayoutBuilder = CachedDetailBuilder.Pin().Get())
-			{
-				LayoutBuilder->ForceRefreshDetails();
-			}
+			RefreshDetails();
 		}
 	}
 
@@ -309,7 +346,7 @@ private:
 		if (const UMDViewModelAssignmentEditorObject* EditorObject = EditorObjectPtr.Get())
 		{
 			const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
-			if (const TSharedPtr<FMDViewModelProviderBase> Provider = ViewModelModule.GetViewModelProvider(EditorObject->ViewModelProvider))
+			if (UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider))
 			{
 				FClassViewerInitializationOptions ClassPickerOptions;
 				ClassPickerOptions.bShowNoneOption = false;
@@ -347,6 +384,14 @@ private:
 		return INVTEXT("Select a ViewModel Class...");
 	}
 
+	void RefreshDetails() const
+	{
+		if (IDetailLayoutBuilder* LayoutBuilder = CachedDetailBuilder.Pin().Get())
+		{
+			LayoutBuilder->ForceRefreshDetails();
+		}
+	}
+
 	TWeakPtr<IDetailLayoutBuilder> CachedDetailBuilder;
 	TWeakObjectPtr<UMDViewModelAssignmentEditorObject> EditorObjectPtr;
 	TSharedRef<SMDViewModelAssignmentDialog> Dialog;
@@ -363,7 +408,7 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 	EditorObject = TStrongObjectPtr<UMDViewModelAssignmentEditorObject>(NewObject<UMDViewModelAssignmentEditorObject>());
 	if (EditorItem.IsValid())
 	{
-		EditorObject->PopulateFromAssignment(*EditorItem.Get());
+		EditorObject->PopulateFromAssignment(*EditorItem.Get(), GetWidgetBlueprint());
 		OriginalAssignmentName = EditorObject->ViewModelInstanceName;
 	}
 
@@ -400,36 +445,14 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 				SNew(SPrimaryButton)
 				.Text(INVTEXT("Add View Model"))
 				.Icon(FAppStyle::Get().GetBrush(TEXT("EditableComboBox.Add")))
-				.Visibility_Lambda([this]()
-				{
-					if (!bIsEditMode && EditorObject.IsValid())
-					{
-						if (IsAssignmentUnique() && EditorObject->ViewModelProvider.IsValid() && EditorObject->ViewModelInstanceName != NAME_None && EditorObject->ViewModelClass != nullptr)
-						{
-							return EVisibility::Visible;
-						}
-					}
-
-					return EVisibility::Collapsed;
-				})
+				.Visibility(this, &SMDViewModelAssignmentDialog::GetAddVisibility)
 				.OnClicked(this, &SMDViewModelAssignmentDialog::OnAddClicked)
 			]
 			+SUniformGridPanel::Slot(0,0)
 			[
 				SNew(SPrimaryButton)
 				.Text(INVTEXT("Save Changes"))
-				.Visibility_Lambda([this]()
-				{
-					if (bIsEditMode && EditorObject.IsValid())
-					{
-						if (IsAssignmentUnique() && EditorObject->ViewModelProvider.IsValid() && EditorObject->ViewModelInstanceName != NAME_None)
-						{
-							return EVisibility::Visible;
-						}
-					}
-
-					return EVisibility::Collapsed;
-				})
+				.Visibility(this, &SMDViewModelAssignmentDialog::GetSaveVisibility)
 				.OnClicked(this, &SMDViewModelAssignmentDialog::OnSaveClicked)
 			]
 			+SUniformGridPanel::Slot(1,0)
@@ -449,6 +472,16 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 			]
 		]
 	];
+}
+
+UWidgetBlueprint* SMDViewModelAssignmentDialog::GetWidgetBlueprint() const
+{
+	if (const UMDViewModelWidgetBlueprintExtension* BPExtension = BPExtensionPtr.Get())
+	{
+		return BPExtension->GetWidgetBlueprint();
+	}
+
+	return nullptr;
 }
 
 void SMDViewModelAssignmentDialog::OpenAssignmentDialog(UMDViewModelWidgetBlueprintExtension* BPExtension)
@@ -485,6 +518,60 @@ void SMDViewModelAssignmentDialog::OpenEditDialog(UMDViewModelWidgetBlueprintExt
 	PickerWindow->SetContent(AssignmentDialog);
 
 	GEditor->EditorAddModalWindow(PickerWindow);
+}
+
+EVisibility SMDViewModelAssignmentDialog::GetAddVisibility() const
+{
+	if (bIsEditMode || !EditorObject.IsValid())
+	{
+		return EVisibility::Collapsed;
+	}
+
+	if (EditorObject->ViewModelInstanceName == NAME_None || EditorObject->ViewModelClass == nullptr)
+	{
+		return EVisibility::Collapsed;
+	}
+	
+	if (!IsAssignmentUnique() || !EditorObject->ViewModelProvider.IsValid())
+	{
+		return EVisibility::Collapsed;
+	}
+	
+	const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider);
+	TArray<FText> UnusedIssues;
+	if (!Provider->ValidateProviderSettings(EditorObject->ProviderSettings, GetWidgetBlueprint(), UnusedIssues))
+	{
+		return EVisibility::Collapsed;
+	}
+	
+	return EVisibility::Visible;
+}
+
+EVisibility SMDViewModelAssignmentDialog::GetSaveVisibility() const
+{
+	if (!bIsEditMode || !EditorObject.IsValid())
+	{
+		return EVisibility::Collapsed;
+	}
+
+	if (EditorObject->ViewModelInstanceName == NAME_None || EditorObject->ViewModelClass == nullptr)
+	{
+		return EVisibility::Collapsed;
+	}
+	
+	if (!IsAssignmentUnique() || !EditorObject->ViewModelProvider.IsValid())
+	{
+		return EVisibility::Collapsed;
+	}
+	
+	const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider);
+	TArray<FText> UnusedIssues;
+	if (!Provider->ValidateProviderSettings(EditorObject->ProviderSettings, GetWidgetBlueprint(), UnusedIssues))
+	{
+		return EVisibility::Collapsed;
+	}
+	
+	return EVisibility::Visible;
 }
 
 FReply SMDViewModelAssignmentDialog::OnAddClicked() const

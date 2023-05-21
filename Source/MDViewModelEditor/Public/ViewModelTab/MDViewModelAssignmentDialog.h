@@ -4,6 +4,7 @@
 #include "UObject/StrongObjectPtr.h"
 #include "Widgets/SCompoundWidget.h"
 
+class UWidgetBlueprint;
 struct FMDViewModelEditorAssignment;
 class UMDViewModelWidgetBlueprintExtension;
 struct FMDViewModelClassItem;
@@ -29,10 +30,15 @@ public:
 	/** Constructs this widget with InArgs */
 	void Construct(const FArguments& InArgs, const TSharedRef<SWindow>& InParentWindow);
 
+	UWidgetBlueprint* GetWidgetBlueprint() const;
+
 	static void OpenAssignmentDialog(UMDViewModelWidgetBlueprintExtension* BPExtension);
 	static void OpenEditDialog(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem);
 
 protected:
+	EVisibility GetAddVisibility() const;
+	EVisibility GetSaveVisibility() const;
+	
 	FReply OnAddClicked() const;
 	FReply OnSaveClicked() const;
 

@@ -32,12 +32,12 @@ protected:
 	virtual bool HasChildren() const override;
 
 	virtual void GatherChildrenBase(TArray<FDebugTreeItemPtr>& OutChildren, const FString& InSearchString, bool bRespectSearch) override;
+	
+	virtual TSharedRef<SWidget> GenerateNameWidget(TSharedPtr<FString> InSearchString) override;
 
 	virtual FText GetDisplayName() const override;
 
 	virtual FText GetDescription() const override;
-
-	int32 GetDisplayFieldNotifyIndex() const;
 
 	mutable TOptional<TArray<FDebugTreeItemPtr>> CachedChildren;
 

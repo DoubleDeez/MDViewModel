@@ -4,6 +4,7 @@
 #include "EdGraphSchema_K2.h"
 #include "EdGraphSchema_K2_Actions.h"
 #include "MDViewModelEditorModule.h"
+#include "PropertyInfoViewStyle.h"
 #include "WidgetBlueprint.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetDebugUtilities.h"
@@ -38,6 +39,18 @@ void FMDViewModelDebugLineItemBase::GatherChildrenBase(TArray<FDebugTreeItemPtr>
 	}
 
 	OutChildren.Append(CachedChildren.GetValue());
+}
+
+TSharedRef<SWidget> FMDViewModelDebugLineItemBase::GenerateNameWidget(TSharedPtr<FString> InSearchString)
+{
+	return SNew(PropertyInfoViewStyle::STextHighlightOverlay)
+		.FullText(this, &FMDViewModelDebugLineItemBase::GetDisplayName)
+		.HighlightText(this, &FDebugLineItem::GetHighlightText, InSearchString)
+		[
+			SNew(STextBlock)
+				.ToolTipText(this, &FDebugLineItem::GetDescription)
+				.Text(this, &FMDViewModelDebugLineItemBase::GetDisplayName)
+		];
 }
 
 FText FMDViewModelDebugLineItemBase::GetDisplayName() const

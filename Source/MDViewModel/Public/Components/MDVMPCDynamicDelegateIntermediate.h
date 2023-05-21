@@ -2,20 +2,21 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "MDViewModelPawnPossessionListenerComponent.generated.h"
+#include "MDVMPCDynamicDelegateIntermediate.generated.h"
 
 class APawn;
+class APlayerController;
 
 /*
- * Specific component used to be notified when a player's pawn has changed
+ * Specific component used as an intermediate for dynamic delegates on APlayerController
  */
 UCLASS()
-class MDVIEWMODEL_API UMDViewModelPawnPossessionListenerComponent : public UActorComponent
+class MDVIEWMODEL_API UMDVMPCDynamicDelegateIntermediate : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:
-	static UMDViewModelPawnPossessionListenerComponent* FindOrAddListener(APlayerController* Owner);
+	static UMDVMPCDynamicDelegateIntermediate* FindOrAddListener(APlayerController* Owner);
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

@@ -31,6 +31,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Get or Create View Model Extension", meta = (DefaultToSelf = "Widget"))
 	static UMDViewModelWidgetExtension* GetOrCreate(UUserWidget* Widget);
 
+	FSimpleMulticastDelegate OnBeginDestroy;
+
 private:
 	void PopulateViewModels();
 	void CleanUpViewModels();

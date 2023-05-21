@@ -9,9 +9,10 @@
 #include "MDViewModelAssignmentEditorObject.generated.h"
 
 class UMDViewModelBase;
+class UWidgetBlueprint;
 
 /**
- *
+ * Editor-time object used a proxy to display the settings when assigning a view model to a widget
  */
 UCLASS(CollapseCategories)
 class MDVIEWMODELEDITOR_API UMDViewModelAssignmentEditorObject : public UObject
@@ -19,7 +20,7 @@ class MDVIEWMODELEDITOR_API UMDViewModelAssignmentEditorObject : public UObject
 	GENERATED_BODY()
 
 public:
-	void PopulateFromAssignment(const FMDViewModelEditorAssignment& Assignment);
+	void PopulateFromAssignment(const FMDViewModelEditorAssignment& Assignment, UWidgetBlueprint* WidgetBlueprint);
 
 	FMDViewModelEditorAssignment CreateAssignment() const;
 

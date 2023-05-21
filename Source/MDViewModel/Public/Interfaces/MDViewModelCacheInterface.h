@@ -35,4 +35,7 @@ protected:
 	virtual UObject* GetViewModelOwner() const = 0;
 
 	virtual TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& GetViewModelCache() = 0;
+
+private:
+	bool bIsShutdown = false;
 };
