@@ -11,7 +11,10 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const FName& 
 	}
 	
 	const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
-	check(Key.IsValid());
+	if (!ensure(Key.IsValid()))
+	{
+		return nullptr;
+	}
 
 	TObjectPtr<UMDViewModelBase>& ViewModel = GetViewModelCache().FindOrAdd(Key);
 	if (!IsValid(ViewModel))

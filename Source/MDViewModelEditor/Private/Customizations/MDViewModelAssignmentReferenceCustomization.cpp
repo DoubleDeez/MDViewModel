@@ -84,26 +84,6 @@ UClass* FMDViewModelAssignmentReferenceCustomization::GetWidgetOwnerClass() cons
 	return nullptr;
 }
 
-UClass* FMDViewModelAssignmentReferenceCustomization::GetCurrentViewModelClass() const
-{
-	if (const FMDViewModelAssignmentReference* VMAssignment = GetAssignmentReference())
-	{
-		return VMAssignment->ViewModelClass.LoadSynchronous();
-	}
-
-	return nullptr;
-}
-
-FName FMDViewModelAssignmentReferenceCustomization::GetCurrentViewModelName() const
-{
-	if (const FMDViewModelAssignmentReference* VMAssignment = GetAssignmentReference())
-	{
-		return VMAssignment->ViewModelName;
-	}
-
-	return NAME_None;
-}
-
 TSharedRef<SWidget> FMDViewModelAssignmentReferenceCustomization::MakeAssignmentMenu()
 {
 	FMenuBuilder MenuBuilder(true, NULL);
@@ -131,8 +111,11 @@ void FMDViewModelAssignmentReferenceCustomization::SetSelectedAssignment(FMDView
 {
 	if (FMDViewModelAssignmentReference* VMAssignment = GetAssignmentReference())
 	{
+		StructHandle->NotifyPreChange();
 		VMAssignment->ViewModelClass = Assignment.ViewModelClass;
 		VMAssignment->ViewModelName = Assignment.ViewModelName;
+		StructHandle->NotifyPostChange(EPropertyChangeType::ValueSet);
+		StructHandle->NotifyFinishedChangingProperties();
 	}
 }
 
@@ -140,7 +123,7 @@ FText FMDViewModelAssignmentReferenceCustomization::GetSelectedAssignmentText() 
 {
 	if (const FMDViewModelAssignmentReference* VMAssignment = GetAssignmentReference())
 	{
-		if (VMAssignment->ViewModelClass != nullptr)
+		if (!VMAssignment->ViewModelClass.IsNull() && IsValid(VMAssignment->ViewModelClass.Get()))
 		{
 			return FText::Format(INVTEXT("{0} ({1})"), VMAssignment->ViewModelClass->GetDisplayNameText(), FText::FromName(VMAssignment->ViewModelName));
 		}

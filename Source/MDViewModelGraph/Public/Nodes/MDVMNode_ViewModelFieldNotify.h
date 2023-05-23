@@ -4,6 +4,8 @@
 #include "K2Node_Event.h"
 #include "MDVMNode_ViewModelFieldNotify.generated.h"
 
+class UMDViewModelBase;
+
 /**
  * Custom node for binding to Field Notify properties/functions on View Models
  */

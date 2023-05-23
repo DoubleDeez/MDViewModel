@@ -54,7 +54,7 @@ FText UMDVMNode_ViewModelFieldNotify::GetNodeTitle(ENodeTitleType::Type TitleTyp
 	{
 		FFormatNamedArguments Args;
 		Args.Add(TEXT("FieldNotifyName"), GetTargetFieldNotifyDisplayName());
-		Args.Add(TEXT("ViewModelClass"), ViewModelClass->GetDisplayNameText());
+		Args.Add(TEXT("ViewModelClass"), ViewModelClass != nullptr ? ViewModelClass->GetDisplayNameText() : INVTEXT("NULL"));
 		Args.Add(TEXT("ViewModelName"), FText::FromString(ViewModelName.ToString()));
 
 		CachedNodeTitle.SetCachedText(FText::Format(INVTEXT("{FieldNotifyName} ({ViewModelClass} - {ViewModelName})"), Args), this);

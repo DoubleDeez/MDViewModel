@@ -22,8 +22,6 @@ public:
 protected:
 	FMDViewModelAssignmentReference* GetAssignmentReference() const;
 	UClass* GetWidgetOwnerClass() const;
-	UClass* GetCurrentViewModelClass() const;
-	FName GetCurrentViewModelName() const;
 
 	TSharedRef<SWidget> MakeAssignmentMenu();
 	void SetSelectedAssignment(FMDViewModelAssignment Assignment) const;

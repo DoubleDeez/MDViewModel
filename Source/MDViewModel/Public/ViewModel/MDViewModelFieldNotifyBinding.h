@@ -6,6 +6,9 @@
 #include "Templates/SubclassOf.h"
 #include "MDViewModelFieldNotifyBinding.generated.h"
 
+class UMDViewModelBase;
+class UUserWidget;
+
 /** Entry for a field notify to assign after a blueprint has been instanced */
 USTRUCT()
 struct MDVIEWMODEL_API FMDViewModelFieldNotifyBindingEntry

@@ -70,6 +70,8 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, TSharedPtr<FMDVie
 		return FText::GetEmpty();
 	}();
 
+	const bool bIsViewModelClassValid = Item->Assignment.ViewModelClass != nullptr;
+
 	ChildSlot
 	[
 		SNew(SBorder)
@@ -85,9 +87,9 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, TSharedPtr<FMDVie
 				.VAlign(VAlign_Center)
 				[
 					SNew(STextBlock)
-					.Text(Item->Assignment.ViewModelClass->GetDisplayNameText())
+					.Text(bIsViewModelClassValid ? Item->Assignment.ViewModelClass->GetDisplayNameText() : INVTEXT("NULL"))
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
-					.ToolTipText(Item->Assignment.ViewModelClass->GetToolTipText())
+					.ToolTipText(bIsViewModelClassValid ? Item->Assignment.ViewModelClass->GetToolTipText() : INVTEXT("This view model is invalid, the class may have been renamed or deleted"))
 				]
 				+SHorizontalBox::Slot()
 				.AutoWidth()
