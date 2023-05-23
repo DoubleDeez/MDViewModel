@@ -566,7 +566,7 @@ EVisibility SMDViewModelAssignmentDialog::GetSaveVisibility() const
 	
 	const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider);
 	TArray<FText> UnusedIssues;
-	if (!Provider->ValidateProviderSettings(EditorObject->ProviderSettings, GetWidgetBlueprint(), UnusedIssues))
+	if (!IsValid(Provider) || !Provider->ValidateProviderSettings(EditorObject->ProviderSettings, GetWidgetBlueprint(), UnusedIssues))
 	{
 		return EVisibility::Collapsed;
 	}
