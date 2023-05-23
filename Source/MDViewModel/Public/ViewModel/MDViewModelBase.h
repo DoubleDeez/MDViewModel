@@ -117,6 +117,9 @@ protected:
 		return true;
 	}
 
+	// Specialization for FText since it doesn't implement ==
+	bool SetFieldNotifyValue(FText& Value, const FText& NewValue, UE::FieldNotification::FFieldId FieldId);
+
 	// Broadcast that the specified field has changed
 	UFUNCTION(BlueprintCallable, Category="FieldNotify", meta = (DisplayName="Broadcast Field Value Changed", ScriptName="BroadcastFieldValueChanged"))
 	void K2_BroadcastFieldValueChanged(FFieldNotificationId FieldId);

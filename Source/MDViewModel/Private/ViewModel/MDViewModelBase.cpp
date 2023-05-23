@@ -120,6 +120,18 @@ void UMDViewModelBase::BroadcastFieldValueChanged(UE::FieldNotification::FFieldI
 	}
 }
 
+bool UMDViewModelBase::SetFieldNotifyValue(FText& Value, const FText& NewValue, UE::FieldNotification::FFieldId FieldId)
+{
+	if (Value.EqualTo(NewValue))
+	{
+		return false;
+	}
+
+	Value = NewValue;
+	BroadcastFieldValueChanged(FieldId);
+	return true;
+}
+
 void UMDViewModelBase::K2_BroadcastFieldValueChanged(FFieldNotificationId InFieldId)
 {
 	if (InFieldId.IsValid())
