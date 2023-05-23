@@ -112,6 +112,11 @@ void UMDViewModelBase::K2_RemoveFieldValueChangedDelegate(FFieldNotificationId I
 	}
 }
 
+UObject* UMDViewModelBase::GetContextObject() const
+{
+	return GetContextObject<UObject>();
+}
+
 void UMDViewModelBase::BroadcastFieldValueChanged(UE::FieldNotification::FFieldId InFieldId)
 {
 	if (InFieldId.IsValid() && EnabledFieldNotifications.IsValidIndex(InFieldId.GetIndex()) && EnabledFieldNotifications[InFieldId.GetIndex()])

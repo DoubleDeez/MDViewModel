@@ -80,7 +80,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "FieldNotify", meta = (DisplayName = "Remove Field Value Changed Delegate", ScriptName="RemoveFieldValueChangedDelegate"))
 	void K2_RemoveFieldValueChangedDelegate(FFieldNotificationId FieldId, FFieldValueChangedDynamicDelegate Delegate);
 
-	template<typename T = UObject>
+	UFUNCTION(BlueprintCallable, Category = "View Model", meta = (DisplayName = "Get View Model Context Object"))
+	UObject* GetContextObject() const;
+
+	template<typename T>
 	T* GetContextObject() const
 	{
 		if (ContextObject.IsValid())
