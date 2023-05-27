@@ -5,6 +5,7 @@
 #include "FieldNotification/FieldNotificationDeclaration.h"
 #include "FieldNotification/IFieldValueChanged.h"
 #include "UObject/Object.h"
+#include "UObject/Package.h"
 #include "MDViewModelBase.generated.h"
 
 struct FInstancedStruct;
@@ -57,7 +58,7 @@ public:
 	virtual UScriptStruct* GetViewModelSettingsStruct() const { return nullptr; }
 	virtual bool ValidateViewModelSettings(const FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint, TArray<FText>& OutIssues) const { return true; }
 #endif
-	
+
 	struct MDVIEWMODEL_API FFieldNotificationClassDescriptor : public ::UE::FieldNotification::IClassDescriptor
 	{
 	};
@@ -102,7 +103,7 @@ protected:
 
 	// Called by view model providers when they stop referencing the view model object
 	virtual void ShutdownViewModel() {}
-	
+
 	void BroadcastFieldValueChanged(UE::FieldNotification::FFieldId InFieldId);
 
 	// Helper that changes for equality before setting and broadcasting the specified field. Uses operator==.
@@ -130,7 +131,7 @@ protected:
 private:
 	UPROPERTY(Transient)
 	TWeakObjectPtr<UObject> ContextObject;
-	
+
 	UE::FieldNotification::FFieldMulticastDelegate FieldNotifyDelegates;
 	TBitArray<> EnabledFieldNotifications;
 };

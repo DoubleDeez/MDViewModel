@@ -54,7 +54,7 @@ UMDViewModelBase* UMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 	TRACE_CPUPROFILER_EVENT_SCOPE(UMDViewModelProvider_Cached::SetViewModel);
 
 	BindOnWidgetDestroy(Widget);
-	
+
 	const FMDViewModelProvider_Cached_Settings* Settings = Data.ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
 	if (ensure(Settings))
 	{
@@ -117,12 +117,12 @@ UMDViewModelBase* UMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 			{
 				UMDViewModelFunctionLibrary::ClearViewModel(&Widget, Assignment.ViewModelClass, Assignment.ViewModelName);
 			}
-			
+
 			if (!ViewModelCache->OnViewModelCacheShuttingDown.IsBoundToObject(this))
 			{
 				ViewModelCache->OnViewModelCacheShuttingDown.AddUObject(this, &UMDViewModelProvider_Cached::OnViewModelCacheShutdown, TWeakInterfacePtr<IMDViewModelCacheInterface>(ViewModelCache));
 			}
-			
+
 			BoundAssignments.FindOrAdd(Assignment).Add(&Widget, TWeakInterfacePtr<IMDViewModelCacheInterface>(ViewModelCache));
 
 			return ViewModelInstance;
@@ -139,7 +139,7 @@ UMDViewModelBase* UMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 #if WITH_EDITOR
 bool UMDViewModelProvider_Cached::ValidateProviderSettings(const FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint, TArray<FText>& OutIssues) const
 {
-	const FMDViewModelProvider_Cached_Settings* SettingsPtr = Settings.GetMutablePtr<FMDViewModelProvider_Cached_Settings>();
+	const FMDViewModelProvider_Cached_Settings* SettingsPtr = Settings.GetPtr<FMDViewModelProvider_Cached_Settings>();
 	if (SettingsPtr == nullptr)
 	{
 		OutIssues.Add(INVTEXT("Provider Settings are not valid"));
@@ -154,7 +154,7 @@ bool UMDViewModelProvider_Cached::ValidateProviderSettings(const FInstancedStruc
 			return false;
 		}
 	}
-	
+
 	return Super::ValidateProviderSettings(Settings, WidgetBlueprint, OutIssues);
 }
 
@@ -215,7 +215,7 @@ void UMDViewModelProvider_Cached::OnWidgetDestroy(TWeakObjectPtr<UUserWidget> Wi
 	CleanUpBindingKeyMap(WidgetDelegateHandles);
 	CleanUpBindingKeyMap(ViewTargetDelegateHandles);
 	CleanUpBindingKeyMap(RelativeViewModelDelegateHandles);
-	
+
 	// Clean up BoundAssignments of all WidgetPtr instances and empty inner maps
 	{
 		for (auto It = BoundAssignments.CreateIterator(); It; ++It)
@@ -357,7 +357,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveHUDCacheAndBindD
 
 		WidgetDelegateHandles.Remove(BindingKey);
 	}
-	
+
 	if (IsValid(PlayerController))
 	{
 		if (IsValid(Poller) && !WidgetDelegateHandles.Contains(BindingKey))
@@ -392,7 +392,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePawnCacheAndBind
 
 		WidgetDelegateHandles.Remove(BindingKey);
 	}
-	
+
 	if (IsValid(PlayerController))
 	{
 		if (IsValid(Intermediate) && !WidgetDelegateHandles.Contains(BindingKey))
@@ -402,7 +402,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePawnCacheAndBind
 			Handle.Handle = Intermediate->OnPawnChanged.AddUObject(this, &UMDViewModelProvider_Cached::RefreshViewModel, MakeWeakObjectPtr(&Widget), Assignment, Data);
 			WidgetDelegateHandles.Emplace(MoveTemp(BindingKey), MoveTemp(Handle));
 		}
-	
+
 		return ResolveActorCache(PlayerController->GetPawn());
 	}
 
@@ -415,7 +415,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePawnCacheAndBind
 	UMDVMPSDynamicDelegateIntermediate* Intermediate = IsValid(PlayerState)
 		? UMDVMPSDynamicDelegateIntermediate::FindOrAddListener(PlayerState)
 		: nullptr;
-	
+
 	FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
 	if (WidgetDelegateHandles.Contains(BindingKey) && WidgetDelegateHandles[BindingKey].DelegateOwner != Intermediate)
 	{
@@ -426,7 +426,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePawnCacheAndBind
 
 		WidgetDelegateHandles.Remove(BindingKey);
 	}
-	
+
 	if (IsValid(PlayerState))
 	{
 		if (IsValid(Intermediate) && !WidgetDelegateHandles.Contains(BindingKey))
@@ -436,7 +436,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePawnCacheAndBind
 			Handle.Handle = Intermediate->OnPawnChanged.AddUObject(this, &UMDViewModelProvider_Cached::RefreshViewModel, MakeWeakObjectPtr(&Widget), Assignment, Data);
 			WidgetDelegateHandles.Emplace(MoveTemp(BindingKey), MoveTemp(Handle));
 		}
-	
+
 		return ResolveActorCache(PlayerState->GetPawn());
 	}
 
@@ -460,7 +460,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePlayerStateCache
 
 		WidgetDelegateHandles.Remove(BindingKey);
 	}
-	
+
 	if (IsValid(PlayerController))
 	{
 		if (IsValid(Poller) && !WidgetDelegateHandles.Contains(BindingKey))
@@ -471,7 +471,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePlayerStateCache
 			Handle.Handle = Poller->BindOnPlayerStateChanged(MoveTemp(Delegate));
 			WidgetDelegateHandles.Emplace(MoveTemp(BindingKey), MoveTemp(Handle));
 		}
-		
+
 		return ResolveActorCache(PlayerController->PlayerState);
 	}
 
@@ -495,7 +495,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePlayerStateCache
 
 		WidgetDelegateHandles.Remove(BindingKey);
 	}
-	
+
 	if (IsValid(Pawn))
 	{
 		if (IsValid(Poller) && !WidgetDelegateHandles.Contains(BindingKey))
@@ -506,7 +506,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePlayerStateCache
 			Handle.Handle = Poller->BindOnPlayerStateChanged(MoveTemp(Delegate));
 			WidgetDelegateHandles.Emplace(MoveTemp(BindingKey), MoveTemp(Handle));
 		}
-			
+
 		return ResolveActorCache(Pawn->GetPlayerState());
 	}
 
@@ -526,7 +526,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveGameStateCacheAn
 
 		WidgetDelegateHandles.Remove(BindingKey);
 	}
-	
+
 	if (IsValid(World))
 	{
 		if (!WidgetDelegateHandles.Contains(BindingKey))
@@ -536,7 +536,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveGameStateCacheAn
 			Handle.Handle = World->GameStateSetEvent.AddUObject(this, &UMDViewModelProvider_Cached::OnGameStateChanged, MakeWeakObjectPtr(&Widget), Assignment, Data);
 			WidgetDelegateHandles.Emplace(MoveTemp(BindingKey), MoveTemp(Handle));
 		}
-		
+
 		return ResolveActorCache(World->GetGameState());
 	}
 
@@ -547,7 +547,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveViewTargetCacheA
 	UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
 	BindViewTargetDelegates(Widget, Assignment, Data);
-	
+
 	if (IsValid(PlayerController))
 	{
 		// We don't need to detect CameraManager changes since FGameDelegates::Get().GetViewTargetChangedDelegate() is global
@@ -565,7 +565,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveViewTargetPlayer
 	UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
 	BindViewTargetDelegates(Widget, Assignment, Data);
-	
+
 	if (IsValid(PlayerController))
 	{
 		// We don't need to detect CameraManager changes since FGameDelegates::Get().GetViewTargetChangedDelegate() is global
@@ -586,11 +586,11 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveRelativeViewMode
 	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(&Widget);
 	if (IsValid(Extension) && !RelativeViewModelDelegateHandles.Contains(BindingKey))
 	{
-		auto Delegate = FMDVMOnViewModelSet::FDelegate::CreateUObject(this, &UMDViewModelProvider_Cached::OnRelativeViewModelChanged, MakeWeakObjectPtr(&Widget), Assignment, Data); 
+		auto Delegate = FMDVMOnViewModelSet::FDelegate::CreateUObject(this, &UMDViewModelProvider_Cached::OnRelativeViewModelChanged, MakeWeakObjectPtr(&Widget), Assignment, Data);
 		FDelegateHandle Handle = Extension->ListenForChanges(MoveTemp(Delegate), Reference.ViewModelClass.Get(), Reference.ViewModelName);
 		RelativeViewModelDelegateHandles.Add(MoveTemp(BindingKey), MoveTemp(Handle));
 	}
-	
+
 	const UMDViewModelBase* RelativeViewModel = Reference.ResolveViewModelAssignment(&Widget);
 	if (IsValid(RelativeViewModel))
 	{
