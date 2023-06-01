@@ -24,15 +24,15 @@ void FMDViewModelEditorModule::StartupModule()
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditorModule.RegisterCustomPropertyTypeLayout(FMDViewModelAssignmentReference::StaticStruct()->GetFName(), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FMDViewModelAssignmentReferenceCustomization::MakeInstance));
 
-	CompilerExtension = NewObject<UMDViewModelBlueprintCompilerExtension>();
-	CompilerExtension->AddToRoot();
+	CompilerExtensionPtr = NewObject<UMDViewModelBlueprintCompilerExtension>();
+	CompilerExtensionPtr->AddToRoot();
 
-	FBlueprintCompilationManager::RegisterCompilerExtension(UWidgetBlueprint::StaticClass(), CompilerExtension);
+	FBlueprintCompilationManager::RegisterCompilerExtension(UWidgetBlueprint::StaticClass(), CompilerExtensionPtr.Get());
 }
 
 void FMDViewModelEditorModule::ShutdownModule()
 {
-	if (IsValid(CompilerExtension))
+	if (UMDViewModelBlueprintCompilerExtension* CompilerExtension = CompilerExtensionPtr.Get())
 	{
 		CompilerExtension->RemoveFromRoot();
 		CompilerExtension = nullptr;

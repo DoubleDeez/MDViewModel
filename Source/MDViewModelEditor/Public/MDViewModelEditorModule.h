@@ -22,5 +22,6 @@ private:
 
 	void HandleDeactivateMode(FWidgetBlueprintApplicationMode& InDesignerMode);
 
-	UMDViewModelBlueprintCompilerExtension* CompilerExtension = nullptr;
+	// Use a weak ptr even though we add it to root, it can be destroyed before the module shuts down
+	TWeakObjectPtr<UMDViewModelBlueprintCompilerExtension> CompilerExtensionPtr = nullptr;
 };
