@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "MDViewModelModule.h"
 #include "MDViewModelAssignmentData.h"
 #include "Util/MDViewModelUtils.h"

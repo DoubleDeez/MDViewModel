@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "CoreMinimal.h"
 #include "Templates/SubclassOf.h"
 #include "Modules/ModuleManager.h"
 

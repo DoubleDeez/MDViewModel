@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "MDViewModelUtils.h"
 #include "Templates/SubclassOf.h"

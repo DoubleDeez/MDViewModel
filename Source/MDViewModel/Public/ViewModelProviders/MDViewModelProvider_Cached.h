@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "MDViewModelProviderBase.h"
 #include "NativeGameplayTags.h"
 #include "UObject/WeakInterfacePtr.h"
@@ -89,7 +88,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Provider")
 	EMDViewModelProvider_CacheLifetime ViewModelLifetime = EMDViewModelProvider_CacheLifetime::Global;
 
-	// For Relative lifetime, this view model's lifetime and context object will be tied to the view model assignment selected here 
+	// For Relative lifetime, this view model's lifetime and context object will be tied to the view model assignment selected here
 	UPROPERTY(EditAnywhere, Category = "Provider", meta = (EditCondition = "ViewModelLifetime == EMDViewModelProvider_CacheLifetime::Relative", EditConditionHides))
 	FMDViewModelAssignmentReference RelativeViewModel;
 };
@@ -103,13 +102,13 @@ UCLASS()
 class MDVIEWMODEL_API UMDViewModelProvider_Cached : public UMDViewModelProviderBase
 {
 	GENERATED_BODY()
-	
+
 public:
 	// Use this to make use of a view model cache for manually assigned view models
 	template<typename T>
 	static T* FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings);
 	static UMDViewModelBase* FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings);
-		
+
 	virtual void Deinitialize() override;
 
 	virtual FGameplayTag GetProviderTag() const override { return TAG_MDVMProvider_Cached; }
@@ -130,7 +129,7 @@ protected:
 
 	void BindOnWidgetDestroy(UUserWidget& Widget);
 	void OnWidgetDestroy(TWeakObjectPtr<UUserWidget> WidgetPtr);
-	
+
 	void RefreshViewModel(TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 
 	void OnGameStateChanged(AGameStateBase* GameState, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
@@ -150,21 +149,21 @@ protected:
 	// Only local pawns can be bound to via the player controller, remote pawns must be bound through the player state
 	IMDViewModelCacheInterface* ResolvePawnCacheAndBindDelegates(APlayerController* PlayerController, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 	IMDViewModelCacheInterface* ResolvePawnCacheAndBindDelegates(APlayerState* PlayerState, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
-	
+
 	IMDViewModelCacheInterface* ResolvePlayerStateCacheAndBindDelegates(APlayerController* PlayerController, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 	IMDViewModelCacheInterface* ResolvePlayerStateCacheAndBindDelegates(APawn* Pawn, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
 	IMDViewModelCacheInterface* ResolveGameStateCacheAndBindDelegates(UWorld* World, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
-	
+
 	IMDViewModelCacheInterface* ResolveViewTargetCacheAndBindDelegates(const APlayerController* PlayerController, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 	IMDViewModelCacheInterface* ResolveViewTargetPlayerStateCacheAndBindDelegates(const APlayerController* PlayerController, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
-	
+
 	IMDViewModelCacheInterface* ResolveRelativeViewModelCacheAndBindDelegates(const FMDViewModelAssignmentReference& Reference, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
-	
+
 	IMDViewModelCacheInterface* ResolveObjectCacheAndBindDelegates(UObject* Object, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
 	void BindViewTargetDelegates(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
-	
+
 	TMap<FMDVMCachedProviderBindingKey, FMDWrappedDelegateHandle> WidgetDelegateHandles;
 	TMap<FMDVMCachedProviderBindingKey, FDelegateHandle> ViewTargetDelegateHandles;
 	TMap<FMDVMCachedProviderBindingKey, FDelegateHandle> RelativeViewModelDelegateHandles;

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "InstancedStruct.h"
 #include "MDViewModelAssignment.h"
 #include "MDViewModelAssignmentData.generated.h"

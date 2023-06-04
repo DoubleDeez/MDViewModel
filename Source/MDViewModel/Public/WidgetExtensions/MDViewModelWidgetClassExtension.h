@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "MDViewModelWidgetExtension.h"
 #include "Extensions/WidgetBlueprintGeneratedClassExtension.h"
 #include "Util/MDViewModelAssignmentData.h"

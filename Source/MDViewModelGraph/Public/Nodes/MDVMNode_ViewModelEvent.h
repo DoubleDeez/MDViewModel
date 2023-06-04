@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "K2Node_Event.h"
 #include "MDVMNode_ViewModelEvent.generated.h"
 

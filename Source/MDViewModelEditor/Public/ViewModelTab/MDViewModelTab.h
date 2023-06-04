@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 
 #include "WorkflowOrientedApp/WorkflowTabFactory.h"
 

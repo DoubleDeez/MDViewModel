@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Extensions/UserWidgetExtension.h"
 #include "Templates/SubclassOf.h"
 #include "UObject/Package.h"

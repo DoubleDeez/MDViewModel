@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Components/DynamicEntryBox.h"
 #include "Util/MDViewModelUtils.h"
 #include "MDVMDynamicEntryBox.generated.h"
@@ -22,7 +21,7 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, Category = "View Model")
 	FName ViewModelName = MDViewModelUtils::DefaultViewModelName;
-	
+
 	UPROPERTY(Transient)
 	TArray<TSubclassOf<UMDViewModelBase>> AssignedViewModelClasses;
 };

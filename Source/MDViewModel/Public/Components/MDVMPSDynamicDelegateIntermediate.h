@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "MDVMPSDynamicDelegateIntermediate.generated.h"
 

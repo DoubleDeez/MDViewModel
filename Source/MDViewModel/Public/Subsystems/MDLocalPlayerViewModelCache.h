@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Interfaces/MDViewModelCacheInterface.h"
 #include "Subsystems/LocalPlayerSubsystem.h"
 #include "Util/MDViewModelInstanceKey.h"

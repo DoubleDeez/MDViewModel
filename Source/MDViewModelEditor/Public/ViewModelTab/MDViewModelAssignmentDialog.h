@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "UObject/StrongObjectPtr.h"
 #include "Widgets/SCompoundWidget.h"
 
@@ -38,7 +37,7 @@ public:
 protected:
 	EVisibility GetAddVisibility() const;
 	EVisibility GetSaveVisibility() const;
-	
+
 	FReply OnAddClicked() const;
 	FReply OnSaveClicked() const;
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Components/WidgetSwitcher.h"
 #include "UObject/Object.h"
 #include "MDViewModelSwitcher.generated.h"

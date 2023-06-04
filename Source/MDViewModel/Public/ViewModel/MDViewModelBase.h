@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "FieldNotification/FieldMulticastDelegate.h"
 #include "FieldNotification/FieldNotificationDeclaration.h"
 #include "FieldNotification/IFieldValueChanged.h"

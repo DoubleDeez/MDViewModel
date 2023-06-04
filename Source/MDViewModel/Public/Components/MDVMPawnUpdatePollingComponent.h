@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "MDVMPawnUpdatePollingComponent.generated.h"
 
@@ -31,7 +30,7 @@ public:
 
 protected:
 	void UpdateShouldTick();
-	
+
 	FSimpleMulticastDelegate OnPlayerStateChanged;
 	TWeakObjectPtr<UObject> CachedPlayerStateObject;
 };

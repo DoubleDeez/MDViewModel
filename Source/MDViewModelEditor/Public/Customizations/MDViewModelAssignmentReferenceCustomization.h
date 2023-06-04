@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "IPropertyTypeCustomization.h"
 #include "Input/Reply.h"
 #include "Util/MDViewModelAssignment.h"
@@ -15,7 +14,7 @@ class MDVIEWMODELEDITOR_API FMDViewModelAssignmentReferenceCustomization : publi
 {
 public:
 	static TSharedRef<IPropertyTypeCustomization> MakeInstance();
-	
+
 	virtual void CustomizeHeader(TSharedRef<IPropertyHandle> PropertyHandle, FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
 	virtual void CustomizeChildren(TSharedRef<IPropertyHandle> PropertyHandle, IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
 
@@ -25,7 +24,7 @@ protected:
 
 	TSharedRef<SWidget> MakeAssignmentMenu();
 	void SetSelectedAssignment(FMDViewModelAssignment Assignment) const;
-	
+
 	FText GetSelectedAssignmentText() const;
 
 	TSharedPtr<IPropertyHandle> StructHandle;

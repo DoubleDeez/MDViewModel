@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "Subsystems/EngineSubsystem.h"
 #include "Templates/SubclassOf.h"
@@ -62,5 +61,5 @@ public:
 protected:
 	// Call this when you need all assigned widgets to know that a view model has updated
 	void BroadcastViewModelUpdated(TSubclassOf<UMDViewModelBase> ViewModelClass) const;
-	
+
 };

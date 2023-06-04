@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "SPinValueInspector.h"
 #include "Templates/SubclassOf.h"
 #include "UObject/UnrealType.h"
@@ -32,7 +31,7 @@ protected:
 	virtual bool HasChildren() const override;
 
 	virtual void GatherChildrenBase(TArray<FDebugTreeItemPtr>& OutChildren, const FString& InSearchString, bool bRespectSearch) override;
-	
+
 	virtual TSharedRef<SWidget> GenerateNameWidget(TSharedPtr<FString> InSearchString) override;
 
 	virtual FText GetDisplayName() const override;

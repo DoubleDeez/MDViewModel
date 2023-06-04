@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Interfaces/MDViewModelCacheInterface.h"
 #include "MDViewModelCacheComponent.generated.h"
@@ -20,7 +19,7 @@ public:
 protected:
 	virtual UObject* GetViewModelOwner() const override;
 	virtual TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& GetViewModelCache() override { return CachedViewModels; }
-	
+
 private:
 	UPROPERTY(VisibleAnywhere, Transient, Category = "View Model")
 	TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>> CachedViewModels;

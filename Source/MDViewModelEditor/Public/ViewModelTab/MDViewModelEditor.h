@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "EditorUndoClient.h"
 #include "Templates/SubclassOf.h"
 #include "Widgets/SCompoundWidget.h"

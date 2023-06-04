@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Styling/SlateBrush.h"
 #include "Styling/SlateTypes.h"
 #include "Widgets/SCompoundWidget.h"

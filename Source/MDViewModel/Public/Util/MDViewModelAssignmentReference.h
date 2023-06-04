@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "MDViewModelUtils.h"
 #include "UObject/Object.h"
 #include "MDViewModelAssignmentReference.generated.h"

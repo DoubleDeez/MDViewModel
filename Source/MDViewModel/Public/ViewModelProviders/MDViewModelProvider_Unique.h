@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "MDViewModelProviderBase.h"
 #include "NativeGameplayTags.h"
 #include "MDViewModelProvider_Unique.generated.h"
@@ -14,7 +13,7 @@ UCLASS()
 class MDVIEWMODEL_API UMDViewModelProvider_Unique : public UMDViewModelProviderBase
 {
 	GENERATED_BODY()
-	
+
 public:
 	virtual UMDViewModelBase* SetViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data) override;
 
