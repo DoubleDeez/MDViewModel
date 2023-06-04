@@ -1,18 +1,19 @@
 #include "ViewModelTab/MDViewModelList.h"
 
-#include "MDViewModelModule.h"
-#include "ScopedTransaction.h"
-#include "WidgetBlueprint.h"
-#include "Launch/Resources/Version.h"
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
+#include "Launch/Resources/Version.h"
+#include "MDViewModelModule.h"
+#include "ScopedTransaction.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "ViewModelTab/MDViewModelAssignmentDialog.h"
+#include "ViewModelTab/MDViewmodelAssignmentEditorObject.h"
 #include "ViewModelTab/MDViewModelListItem.h"
-#include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
-#include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Views/SListView.h"
+#include "WidgetBlueprint.h"
+#include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
+#include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
 
 SMDViewModelList::~SMDViewModelList()
 {

@@ -8,10 +8,9 @@ const FName FMDViewModelSummoner::TabID(TEXT("MDViewModelTab"));
 const FName FMDViewModelSummoner::DrawerID(TEXT("MDViewModelDrawer"));
 
 
-FMDViewModelSummoner::FMDViewModelSummoner(TSharedPtr<FWidgetBlueprintEditor> BlueprintEditor, bool bInIsDrawerTab)
+FMDViewModelSummoner::FMDViewModelSummoner(TSharedPtr<FWidgetBlueprintEditor> BlueprintEditor)
 	: FWorkflowTabFactory(TabID, BlueprintEditor)
 	, WeakWidgetBlueprintEditor(BlueprintEditor)
-	, bIsDrawerTab(bInIsDrawerTab)
 {
 	TabLabel = LOCTEXT("ViewModels", "View Models");
 	TabIcon = FSlateIcon(FAppStyle::GetAppStyleSetName(),TEXT("FontEditor.Tabs.PageProperties"));

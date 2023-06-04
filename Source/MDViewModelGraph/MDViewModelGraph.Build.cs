@@ -6,11 +6,14 @@ public class MDViewModelGraph : ModuleRules
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
+        bUseUnity = false;
+
         PublicDependencyModuleNames.AddRange(
             new string[]
             {
                 "Core",
-                "BlueprintGraph"
+                "BlueprintGraph",
+                "Kismet"
             }
         );
 
@@ -23,14 +26,11 @@ public class MDViewModelGraph : ModuleRules
                 "MDViewModel",
                 "Slate",
                 "SlateCore",
+                "StructUtils",
+                "UMG",
                 "UMGEditor",
                 "UnrealEd"
             }
         );
-
-        if (Target.Type == TargetType.Editor)
-        {
-	        PrivateDependencyModuleNames.Add("MDViewModelEditor");
-        }
     }
 }

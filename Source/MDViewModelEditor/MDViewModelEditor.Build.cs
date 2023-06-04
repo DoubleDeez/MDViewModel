@@ -6,6 +6,7 @@ public class MDViewModelEditor : ModuleRules
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
+        bUseUnity = false;
         PublicDependencyModuleNames.AddRange(
             new string[]
             {
@@ -23,6 +24,7 @@ public class MDViewModelEditor : ModuleRules
                 "Engine",
                 "InputCore",
                 "Kismet",
+                "MDViewModelGraph",
                 "PropertyEditor",
                 "Slate",
                 "SlateCore",

@@ -53,7 +53,7 @@ void FMDViewModelEditorModule::HandleRegisterBlueprintEditorTab(const FWidgetBlu
 {
 	if (ApplicationMode.LayoutExtender)
 	{
-		TabFactories.RegisterFactory(MakeShared<FMDViewModelSummoner>(ApplicationMode.GetBlueprintEditor(), false));
+		TabFactories.RegisterFactory(MakeShared<FMDViewModelSummoner>(ApplicationMode.GetBlueprintEditor()));
 
 		const FName RelativeTab = ApplicationMode.GetModeName() == FWidgetBlueprintApplicationModes::DesignerMode
 			? TEXT("Animations")
@@ -72,15 +72,14 @@ void FMDViewModelEditorModule::HandleActivateMode(FWidgetBlueprintApplicationMod
 	{
 		if (!BP->GetExternalEditorWidget(FMDViewModelSummoner::DrawerID))
 		{
-			constexpr bool bIsDrawerTab = true;
-			const FMDViewModelSummoner MVVMDrawerSummoner(BP, bIsDrawerTab);
+			const FMDViewModelSummoner MDVMDrawerSummoner(BP);
 			const FWorkflowTabSpawnInfo SpawnInfo;
-			BP->AddExternalEditorWidget(FMDViewModelSummoner::DrawerID, MVVMDrawerSummoner.CreateTabBody(SpawnInfo));
+			BP->AddExternalEditorWidget(FMDViewModelSummoner::DrawerID, MDVMDrawerSummoner.CreateTabBody(SpawnInfo));
 		}
 
-		FWidgetDrawerConfig MVVMDrawer(FMDViewModelSummoner::DrawerID);
+		FWidgetDrawerConfig MDVMDrawer(FMDViewModelSummoner::DrawerID);
 		TWeakPtr<FWidgetBlueprintEditor> WeakBP = BP;
-		MVVMDrawer.GetDrawerContentDelegate.BindLambda([WeakBP]()
+		MDVMDrawer.GetDrawerContentDelegate.BindLambda([WeakBP]()
 		{
 			if (TSharedPtr<FWidgetBlueprintEditor> BP = WeakBP.Pin())
 			{
@@ -92,24 +91,24 @@ void FMDViewModelEditorModule::HandleActivateMode(FWidgetBlueprintApplicationMod
 
 			return SNullWidget::NullWidget;
 		});
-		MVVMDrawer.OnDrawerOpenedDelegate.BindLambda([WeakBP](FName StatusBarWithDrawerName)
+		MDVMDrawer.OnDrawerOpenedDelegate.BindLambda([WeakBP](FName StatusBarWithDrawerName)
 		{
 			if (TSharedPtr<FWidgetBlueprintEditor> BP = WeakBP.Pin())
 			{
 				FSlateApplication::Get().SetUserFocus(FSlateApplication::Get().GetUserIndexForKeyboard(), BP->GetExternalEditorWidget(FMDViewModelSummoner::DrawerID));
 			}
 		});
-		MVVMDrawer.OnDrawerDismissedDelegate.BindLambda([WeakBP](const TSharedPtr<SWidget>& NewlyFocusedWidget)
+		MDVMDrawer.OnDrawerDismissedDelegate.BindLambda([WeakBP](const TSharedPtr<SWidget>& NewlyFocusedWidget)
 		{
 			if (TSharedPtr<FWidgetBlueprintEditor> BP = WeakBP.Pin())
 			{
 				BP->SetKeyboardFocus();
 			}
 		});
-		MVVMDrawer.ButtonText = LOCTEXT("ViewsModels", "View Models");
-		MVVMDrawer.ToolTipText = LOCTEXT("ViewsModelsToolTip", "Modify which view models are assigned to this widget");
-		MVVMDrawer.Icon = FAppStyle::GetBrush(TEXT("FontEditor.Tabs.PageProperties"));
-		BP->RegisterDrawer(MoveTemp(MVVMDrawer), 1);
+		MDVMDrawer.ButtonText = LOCTEXT("ViewsModels", "View Models");
+		MDVMDrawer.ToolTipText = LOCTEXT("ViewsModelsToolTip", "Modify which view models are assigned to this widget");
+		MDVMDrawer.Icon = FAppStyle::GetBrush(TEXT("FontEditor.Tabs.PageProperties"));
+		BP->RegisterDrawer(MoveTemp(MDVMDrawer), INDEX_NONE);
 	}
 }
 

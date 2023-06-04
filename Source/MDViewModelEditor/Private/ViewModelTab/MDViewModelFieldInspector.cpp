@@ -3,12 +3,12 @@
 #include "BlueprintEditor.h"
 #include "EdGraphSchema_K2.h"
 #include "EdGraphSchema_K2_Actions.h"
-#include "MDViewModelEditorModule.h"
 #include "PropertyInfoViewStyle.h"
 #include "WidgetBlueprint.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetDebugUtilities.h"
 #include "Kismet2/KismetEditorUtilities.h"
+#include "MDViewModelGraph.h"
 #include "UObject/WeakFieldPtr.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "Widgets/Images/SLayeredImage.h"
@@ -372,10 +372,9 @@ FReply FMDViewModelFieldDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 {
 	check(bIsFieldNotify);
 
-	const FMDViewModelEditorModule& ViewModelEditorModule = FModuleManager::LoadModuleChecked<FMDViewModelEditorModule>(TEXT("MDViewModelEditor"));
-	if (ViewModelEditorModule.OnViewModelFieldNotifyRequestedForBlueprint.IsBound() && PropertyPtr.IsValid())
+	if (PropertyPtr.IsValid())
 	{
-		ViewModelEditorModule.OnViewModelFieldNotifyRequestedForBlueprint.Execute(WidgetBP.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName);
+		FMDViewModelGraphModule::OnViewModelFieldNotifyRequestedForBlueprint(WidgetBP.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName);
 	}
 
 	return FReply::Handled();
@@ -385,9 +384,7 @@ int32 FMDViewModelFieldDebugLineItem::GetAddOrViewBoundFunctionIndex() const
 {
 	check(bIsFieldNotify);
 
-	const FMDViewModelEditorModule& ViewModelEditorModule = FModuleManager::LoadModuleChecked<FMDViewModelEditorModule>(TEXT("MDViewModelEditor"));
-	return (!ViewModelEditorModule.DoesBlueprintBindToViewModelFieldNotify.IsBound() || !PropertyPtr.IsValid() ||
-		ViewModelEditorModule.DoesBlueprintBindToViewModelFieldNotify.Execute(WidgetBP.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName))
+	return (!PropertyPtr.IsValid() || FMDViewModelGraphModule::DoesBlueprintBindToViewModelFieldNotify(WidgetBP.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName))
 		? 0 : 1;
 }
 
@@ -490,10 +487,9 @@ FReply FMDViewModelFunctionDebugLineItem::OnAddOrViewBoundFieldNotifyFunctionCli
 {
 	check(bIsFieldNotify);
 
-	const FMDViewModelEditorModule& ViewModelEditorModule = FModuleManager::LoadModuleChecked<FMDViewModelEditorModule>(TEXT("MDViewModelEditor"));
-	if (ViewModelEditorModule.OnViewModelFieldNotifyRequestedForBlueprint.IsBound() && FunctionPtr.IsValid())
+	if (FunctionPtr.IsValid())
 	{
-		ViewModelEditorModule.OnViewModelFieldNotifyRequestedForBlueprint.Execute(WidgetBP.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName);
+		FMDViewModelGraphModule::OnViewModelFieldNotifyRequestedForBlueprint(WidgetBP.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName);
 	}
 
 	return FReply::Handled();
@@ -503,9 +499,7 @@ int32 FMDViewModelFunctionDebugLineItem::GetAddOrViewBoundFieldNotifyFunctionInd
 {
 	check(bIsFieldNotify);
 
-	const FMDViewModelEditorModule& ViewModelEditorModule = FModuleManager::LoadModuleChecked<FMDViewModelEditorModule>(TEXT("MDViewModelEditor"));
-	return (!ViewModelEditorModule.DoesBlueprintBindToViewModelFieldNotify.IsBound() || !FunctionPtr.IsValid() ||
-		ViewModelEditorModule.DoesBlueprintBindToViewModelFieldNotify.Execute(WidgetBP.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName))
+	return (!FunctionPtr.IsValid() || FMDViewModelGraphModule::DoesBlueprintBindToViewModelFieldNotify(WidgetBP.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName))
 		? 0 : 1;
 }
 
@@ -536,10 +530,9 @@ TSharedRef<SWidget> FMDViewModelEventDebugLineItem::GenerateValueWidget(TSharedP
 
 FReply FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 {
-	const FMDViewModelEditorModule& ViewModelEditorModule = FModuleManager::LoadModuleChecked<FMDViewModelEditorModule>(TEXT("MDViewModelEditor"));
-	if (ViewModelEditorModule.OnViewModelEventRequestedForBlueprint.IsBound() && WeakDelegateProp.IsValid())
+	if (WeakDelegateProp.IsValid())
 	{
-		ViewModelEditorModule.OnViewModelEventRequestedForBlueprint.Execute(WidgetBP.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName);
+		FMDViewModelGraphModule::OnViewModelEventRequestedForBlueprint(WidgetBP.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName);
 	}
 
 	return FReply::Handled();
@@ -547,9 +540,7 @@ FReply FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 
 int32 FMDViewModelEventDebugLineItem::GetAddOrViewBoundFunctionIndex() const
 {
-	const FMDViewModelEditorModule& ViewModelEditorModule = FModuleManager::LoadModuleChecked<FMDViewModelEditorModule>(TEXT("MDViewModelEditor"));
-	return (!ViewModelEditorModule.DoesBlueprintBindToViewModelEvent.IsBound() || !WeakDelegateProp.IsValid() ||
-		ViewModelEditorModule.DoesBlueprintBindToViewModelEvent.Execute(WidgetBP.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName))
+	return (!WeakDelegateProp.IsValid() || FMDViewModelGraphModule::DoesBlueprintBindToViewModelEvent(WidgetBP.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName))
 		? 0 : 1;
 }
 

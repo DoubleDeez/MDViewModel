@@ -4,7 +4,7 @@
 #include "MDViewModelModule.h"
 #include "WidgetBlueprintExtension.h"
 #include "Kismet2/BlueprintEditorUtils.h"
-#include "MDViewModel/Public/ViewModel/MDViewModelBase.h"
+#include "ViewModel/MDViewModelBase.h"
 #include "ViewModel/MDViewModelDelegateBinding.h"
 #include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
 

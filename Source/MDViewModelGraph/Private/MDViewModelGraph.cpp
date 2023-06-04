@@ -1,7 +1,6 @@
 ﻿#include "MDViewModelGraph.h"
 
 #include "EdGraphSchema_K2_Actions.h"
-#include "MDViewModelEditorModule.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Nodes/MDVMNode_ViewModelEvent.h"
@@ -12,26 +11,10 @@
 
 void FMDViewModelGraphModule::StartupModule()
 {
-#if WITH_EDITOR
-	FMDViewModelEditorModule& ViewModelEditorModule = FModuleManager::LoadModuleChecked<FMDViewModelEditorModule>(TEXT("MDViewModelEditor"));
-	ViewModelEditorModule.DoesBlueprintBindToViewModelEvent.BindStatic(&FMDViewModelGraphModule::DoesBlueprintBindToViewModelEvent);
-	ViewModelEditorModule.OnViewModelEventRequestedForBlueprint.BindStatic(&FMDViewModelGraphModule::OnViewModelEventRequestedForBlueprint);
-	ViewModelEditorModule.DoesBlueprintBindToViewModelFieldNotify.BindStatic(&FMDViewModelGraphModule::DoesBlueprintBindToViewModelFieldNotify);
-	ViewModelEditorModule.OnViewModelFieldNotifyRequestedForBlueprint.BindStatic(&FMDViewModelGraphModule::OnViewModelFieldNotifyRequestedForBlueprint);
-#endif
 }
 
 void FMDViewModelGraphModule::ShutdownModule()
 {
-#if WITH_EDITOR
-    if (FMDViewModelEditorModule* ViewModelEditorModule = FModuleManager::GetModulePtr<FMDViewModelEditorModule>(TEXT("MDViewModelEditor")))
-    {
-    	ViewModelEditorModule->DoesBlueprintBindToViewModelEvent.Unbind();
-    	ViewModelEditorModule->OnViewModelEventRequestedForBlueprint.Unbind();
-    	ViewModelEditorModule->DoesBlueprintBindToViewModelFieldNotify.Unbind();
-    	ViewModelEditorModule->OnViewModelFieldNotifyRequestedForBlueprint.Unbind();
-    }
-#endif
 }
 
 bool FMDViewModelGraphModule::DoesBlueprintBindToViewModelEvent(const UBlueprint* BP, const FName& EventName, TSubclassOf<UMDViewModelBase> ViewModelClass,

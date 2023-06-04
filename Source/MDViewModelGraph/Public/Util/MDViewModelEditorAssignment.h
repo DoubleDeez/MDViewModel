@@ -9,7 +9,7 @@
  *
  */
 USTRUCT()
-struct MDVIEWMODELEDITOR_API FMDViewModelEditorAssignment
+struct MDVIEWMODELGRAPH_API FMDViewModelEditorAssignment
 {
 	GENERATED_BODY()
 

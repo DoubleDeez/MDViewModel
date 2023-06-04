@@ -2,6 +2,7 @@
 
 #include "Brushes/SlateColorBrush.h"
 #include "ViewModelTab/MDViewModelFieldInspector.h"
+#include "WidgetBlueprint.h"
 
 void SMDViewModelDetails::Construct(const FArguments& InArgs)
 {

@@ -8,7 +8,7 @@
  * Blueprint Compiler Extension to inject MDViewModelClassExtensions when compiling widgets with super classes that have view model assignments
  */
 UCLASS()
-class MDVIEWMODELEDITOR_API UMDViewModelBlueprintCompilerExtension : public UBlueprintCompilerExtension
+class MDVIEWMODELGRAPH_API UMDViewModelBlueprintCompilerExtension : public UBlueprintCompilerExtension
 {
 	GENERATED_BODY()
 

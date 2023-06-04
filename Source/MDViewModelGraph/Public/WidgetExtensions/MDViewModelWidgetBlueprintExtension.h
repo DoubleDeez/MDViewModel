@@ -12,7 +12,7 @@ struct FMDViewModelEditorAssignment;
  * Editor-only class that holds design-time assigned view models
  */
 UCLASS()
-class MDVIEWMODELEDITOR_API UMDViewModelWidgetBlueprintExtension : public UWidgetBlueprintExtension
+class MDVIEWMODELGRAPH_API UMDViewModelWidgetBlueprintExtension : public UWidgetBlueprintExtension
 {
 	GENERATED_BODY()
 
