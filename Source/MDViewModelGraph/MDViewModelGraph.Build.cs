@@ -6,8 +6,6 @@ public class MDViewModelGraph : ModuleRules
     {
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
-        bUseUnity = false;
-
         PublicDependencyModuleNames.AddRange(
             new string[]
             {

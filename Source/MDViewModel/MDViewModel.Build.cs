@@ -8,8 +8,6 @@ public class MDViewModel : ModuleRules
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
-
-		bUseUnity = false;
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
