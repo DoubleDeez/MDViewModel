@@ -658,7 +658,7 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 		}
 		else
 		{
-			VMChangedItem->UpdateViewModelName(ViewModelName);
+			VMChangedItem->UpdateViewModel(ViewModelName, ViewModelClass);
 		}
 
 		AddTreeItemUnique(VMChangedItem);

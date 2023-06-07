@@ -32,8 +32,8 @@ void IMDViewModelCacheInterface::BroadcastShutdown()
 	
 	// Empty out the cache before we shutdown
 	TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& Cache = GetViewModelCache();
-	TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>> ShutdownViewModels = MoveTemp(Cache);
+	const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>> ShutdownViewModels = MoveTemp(Cache);
 	Cache.Reset();
 	
-	OnViewModelCacheShuttingDown.Broadcast(Cache);
+	OnViewModelCacheShuttingDown.Broadcast(ShutdownViewModels);
 }
