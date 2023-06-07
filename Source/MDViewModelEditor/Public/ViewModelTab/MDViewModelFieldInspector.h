@@ -25,7 +25,7 @@ public:
 	}
 
 	// TODO - Add DebugViewModel
-	void UpdateViewModelName(const FName& InViewModelName);
+	void UpdateViewModel(const FName& InViewModelName, TSubclassOf<UMDViewModelBase> InViewModelClass);
 
 	virtual uint32 GetHash() override
 	{

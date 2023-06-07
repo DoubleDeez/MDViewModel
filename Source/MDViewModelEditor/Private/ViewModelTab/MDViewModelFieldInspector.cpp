@@ -16,9 +16,10 @@
 #include "Widgets/Layout/SWidgetSwitcher.h"
 
 
-void FMDViewModelDebugLineItemBase::UpdateViewModelName(const FName& InViewModelName)
+void FMDViewModelDebugLineItemBase::UpdateViewModel(const FName& InViewModelName, TSubclassOf<UMDViewModelBase> InViewModelClass)
 {
 	ViewModelName = InViewModelName;
+	ViewModelClass = InViewModelClass;
 }
 
 bool FMDViewModelDebugLineItemBase::HasChildren() const
@@ -694,7 +695,7 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 				}
 				else
 				{
-					Item->UpdateViewModelName(ViewModelName);
+					Item->UpdateViewModel(ViewModelName, ViewModelClass);
 					Item->UpdateValuePtr(ValuePtr);
 				}
 
@@ -711,7 +712,7 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 					}
 					else
 					{
-						Item->UpdateViewModelName(ViewModelName);
+						Item->UpdateViewModel(ViewModelName, ViewModelClass);
 					}
 
 					AddTreeItemUnique(Item);
@@ -760,7 +761,7 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 				}
 				else
 				{
-					Item->UpdateViewModelName(ViewModelName);
+					Item->UpdateViewModel(ViewModelName, ViewModelClass);
 				}
 
 				Item->UpdateIsDebugging(bIsDebugging);
