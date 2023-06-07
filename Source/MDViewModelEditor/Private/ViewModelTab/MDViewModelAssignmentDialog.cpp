@@ -38,11 +38,15 @@ public:
 
 	virtual bool IsClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const UClass* InClass, TSharedRef< class FClassViewerFilterFuncs > InFilterFuncs ) override
 	{
-		for (const FMDViewModelSupportedClass& SupportedClass : ProviderSupportedViewModelClasses)
+		const bool bHasValidFlags = !InClass->HasAnyClassFlags(CLASS_Abstract | CLASS_Hidden | CLASS_HideDropDown | CLASS_Deprecated);
+		if (bHasValidFlags)
 		{
-			if (SupportedClass.Class == InClass || (SupportedClass.bAllowChildClasses && InClass->IsChildOf(SupportedClass.Class)))
+			for (const FMDViewModelSupportedClass& SupportedClass : ProviderSupportedViewModelClasses)
 			{
-				return true;
+				if (SupportedClass.Class == InClass || (SupportedClass.bAllowChildClasses && InClass->IsChildOf(SupportedClass.Class)))
+				{
+					return true;
+				}
 			}
 		}
 
@@ -51,11 +55,15 @@ public:
 
 	virtual bool IsUnloadedClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const TSharedRef< const class IUnloadedBlueprintData > InUnloadedClassData, TSharedRef< class FClassViewerFilterFuncs > InFilterFuncs) override
 	{
-		for (const FMDViewModelSupportedClass& SupportedClass : ProviderSupportedViewModelClasses)
+		const bool bHasValidFlags = !InUnloadedClassData->HasAnyClassFlags(CLASS_Abstract | CLASS_Hidden | CLASS_HideDropDown | CLASS_Deprecated);
+		if (bHasValidFlags)
 		{
-			if (SupportedClass.bAllowChildClasses && InUnloadedClassData->IsChildOf(SupportedClass.Class))
+			for (const FMDViewModelSupportedClass& SupportedClass : ProviderSupportedViewModelClasses)
 			{
-				return true;
+				if (SupportedClass.bAllowChildClasses && InUnloadedClassData->IsChildOf(SupportedClass.Class))
+				{
+					return true;
+				}
 			}
 		}
 
