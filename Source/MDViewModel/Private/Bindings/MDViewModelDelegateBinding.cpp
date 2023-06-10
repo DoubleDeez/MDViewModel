@@ -1,4 +1,4 @@
-#include "ViewModel/MDViewModelDelegateBinding.h"
+#include "Bindings/MDViewModelDelegateBinding.h"
 
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"

@@ -1,11 +1,11 @@
 #include "Nodes/MDVMNode_ViewModelEvent.h"
 
+#include "Bindings/MDViewModelDelegateBinding.h"
 #include "EdGraphSchema_K2.h"
 #include "MDViewModelModule.h"
-#include "WidgetBlueprintExtension.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "ViewModel/MDViewModelBase.h"
-#include "ViewModel/MDViewModelDelegateBinding.h"
+#include "WidgetBlueprintExtension.h"
 #include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
 
 bool UMDVMNode_ViewModelEvent::Modify(bool bAlwaysMarkDirty)

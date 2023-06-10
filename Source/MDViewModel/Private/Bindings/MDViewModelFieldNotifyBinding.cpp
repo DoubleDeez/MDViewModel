@@ -1,4 +1,4 @@
-#include "ViewModel/MDViewModelFieldNotifyBinding.h"
+#include "Bindings/MDViewModelFieldNotifyBinding.h"
 
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"

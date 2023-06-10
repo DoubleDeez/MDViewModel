@@ -1,12 +1,12 @@
 #include "Nodes/MDVMNode_ViewModelFieldNotify.h"
 
+#include "Bindings/MDViewModelFieldNotifyBinding.h"
 #include "EdGraphSchema_K2.h"
 #include "K2Node_FunctionEntry.h"
-#include "MDViewModelModule.h"
-#include "WidgetBlueprint.h"
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "MDViewModelModule.h"
 #include "ViewModel/MDViewModelBase.h"
-#include "ViewModel/MDViewModelFieldNotifyBinding.h"
+#include "WidgetBlueprint.h"
 #include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
 
 bool UMDVMNode_ViewModelFieldNotify::Modify(bool bAlwaysMarkDirty)
