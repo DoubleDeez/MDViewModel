@@ -1,8 +1,8 @@
-#include "Components/MDViewModelSwitcher.h"
+#include "Widgets/MDViewModelSwitcher.h"
 
-#include "Components/MDViewModelSwitcherSlot.h"
 #include "Util/MDViewModelFunctionLibrary.h"
 #include "ViewModel/MDViewModelBase.h"
+#include "Widgets/MDViewModelSwitcherSlot.h"
 
 #if WITH_EDITOR
 #include "Editor/WidgetCompilerLog.h"

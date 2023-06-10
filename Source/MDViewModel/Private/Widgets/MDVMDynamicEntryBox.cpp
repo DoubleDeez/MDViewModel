@@ -1,4 +1,4 @@
-#include "Components/MDVMDynamicEntryBox.h"
+#include "Widgets/MDVMDynamicEntryBox.h"
 
 #include "Util/MDViewModelFunctionLibrary.h"
 #include "ViewModel/MDViewModelBase.h"
@@ -25,7 +25,7 @@ void UMDVMDynamicEntryBox::PopulateItems(const TArray<UMDViewModelBase*>& ViewMo
         		UMDViewModelFunctionLibrary::ClearViewModel(Widget, AssignedViewModelClasses[i], ViewModelName);
         		AssignedViewModelClasses[i] = nullptr;
         	}
-        	
+
         	RemoveEntry(Widget);
         }
 	}
