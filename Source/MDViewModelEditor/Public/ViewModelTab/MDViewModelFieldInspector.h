@@ -12,18 +12,25 @@ class UMDViewModelBase;
 class FMDViewModelDebugLineItemBase : public FDebugLineItem
 {
 public:
-	FMDViewModelDebugLineItemBase(const FText& DisplayName, const FText& Description, bool bIsFieldNotify = false, UWidgetBlueprint* WidgetBP = nullptr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
+	FMDViewModelDebugLineItemBase(const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, bool bIsFieldNotify = false, UWidgetBlueprint* WidgetBP = nullptr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
 		: FDebugLineItem(DLT_Watch)
 		, DisplayName(DisplayName)
 		, Description(Description)
 		, bIsFieldNotify(bIsFieldNotify)
 		, WidgetBP(WidgetBP)
 		, ViewModelClass(ViewModelClass)
+		, DebugViewModel(DebugViewModel)
 		, ViewModelName(ViewModelName)
 	{
 	}
 
+	// TODO - Add DebugViewModel
 	void UpdateViewModelName(const FName& InViewModelName);
+
+	virtual uint32 GetHash() override
+	{
+		return HashCombine(GetTypeHash(ViewModelName), GetTypeHash(ViewModelClass));
+	}
 
 protected:
 	virtual void UpdateCachedChildren() const {};
@@ -47,14 +54,15 @@ protected:
 	bool bIsFieldNotify = false;
 	TWeakObjectPtr<UWidgetBlueprint> WidgetBP;
 	TSubclassOf<UMDViewModelBase> ViewModelClass;
+	TWeakObjectPtr<UMDViewModelBase> DebugViewModel;
 	FName ViewModelName = NAME_None;
 };
 
 class FMDViewModelFieldDebugLineItem : public FMDViewModelDebugLineItemBase
 {
 public:
-	FMDViewModelFieldDebugLineItem(const FProperty* Property, void* InValuePtr, const FText& DisplayName, const FText& Description, bool bIsFieldNotify = false, UWidgetBlueprint* WidgetBP = nullptr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
-		: FMDViewModelDebugLineItemBase(DisplayName, Description, bIsFieldNotify, WidgetBP, ViewModelClass, ViewModelName)
+	FMDViewModelFieldDebugLineItem(const FProperty* Property, void* InValuePtr, const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, bool bIsFieldNotify = false, UWidgetBlueprint* WidgetBP = nullptr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
+		: FMDViewModelDebugLineItemBase(DisplayName, Description, DebugViewModel, bIsFieldNotify, WidgetBP, ViewModelClass, ViewModelName)
 		, PropertyPtr(Property)
 		, ValuePtr(InValuePtr)
 	{
@@ -84,7 +92,7 @@ protected:
 
 	virtual FDebugLineItem* Duplicate() const override
 	{
-		return new FMDViewModelFieldDebugLineItem(PropertyPtr.Get(), ValuePtr, DisplayName, Description, bIsFieldNotify, WidgetBP.Get(), ViewModelClass, ViewModelName);
+		return new FMDViewModelFieldDebugLineItem(PropertyPtr.Get(), ValuePtr, DisplayName, Description, DebugViewModel, bIsFieldNotify, WidgetBP.Get(), ViewModelClass, ViewModelName);
 	}
 
 private:
@@ -99,8 +107,8 @@ private:
 class FMDViewModelFunctionDebugLineItem : public FMDViewModelDebugLineItemBase
 {
 public:
-	FMDViewModelFunctionDebugLineItem(const UFunction* Function, const FText& DisplayName, const FText& Description, bool bIsFieldNotify = false, UWidgetBlueprint* WidgetBP = nullptr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
-		: FMDViewModelDebugLineItemBase(DisplayName, Description, bIsFieldNotify, WidgetBP, ViewModelClass, ViewModelName)
+	FMDViewModelFunctionDebugLineItem(const UFunction* Function, const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, bool bIsFieldNotify = false, UWidgetBlueprint* WidgetBP = nullptr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
+		: FMDViewModelDebugLineItemBase(DisplayName, Description, DebugViewModel, bIsFieldNotify, WidgetBP, ViewModelClass, ViewModelName)
 		, FunctionPtr(Function)
 	{
 	}
@@ -129,7 +137,7 @@ protected:
 
 	virtual FDebugLineItem* Duplicate() const override
 	{
-		return new FMDViewModelFunctionDebugLineItem(FunctionPtr.Get(), DisplayName, Description, bIsFieldNotify, WidgetBP.Get(), ViewModelClass, ViewModelName);
+		return new FMDViewModelFunctionDebugLineItem(FunctionPtr.Get(), DisplayName, Description, DebugViewModel, bIsFieldNotify, WidgetBP.Get(), ViewModelClass, ViewModelName);
 	}
 
 private:
@@ -141,11 +149,40 @@ private:
 	bool bIsDebugging = false;
 };
 
+class FMDViewModelChangedDebugLineItem : public FMDViewModelDebugLineItemBase
+{
+public:
+	FMDViewModelChangedDebugLineItem(UWidgetBlueprint* WidgetBP = nullptr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
+		: FMDViewModelDebugLineItemBase(INVTEXT("On View Model Changed"), INVTEXT("Bind to when this view model is changed"), nullptr, false, WidgetBP, ViewModelClass, ViewModelName)
+	{
+	}
+
+	virtual bool Compare(const FDebugLineItem* BaseOther) const override;
+
+	virtual bool CanHaveChildren() override { return false; }
+
+	virtual bool HasChildren() const override { return false; }
+
+	virtual TSharedRef<SWidget> GetNameIcon() override;
+
+	virtual TSharedRef<SWidget> GenerateValueWidget(TSharedPtr<FString> InSearchString) override;
+
+protected:
+	virtual FDebugLineItem* Duplicate() const override
+	{
+		return new FMDViewModelChangedDebugLineItem(WidgetBP.Get(), ViewModelClass, ViewModelName);
+	}
+
+private:
+	FReply OnAddOrViewBoundVMChangedFunctionClicked() const;
+	int32 GetAddOrViewBoundVMChangedFunctionIndex() const;
+};
+
 class FMDViewModelEventDebugLineItem : public FMDViewModelFunctionDebugLineItem
 {
 public:
-	FMDViewModelEventDebugLineItem(const FMulticastDelegateProperty* Prop, bool bIsFieldNotify = false, UWidgetBlueprint* WidgetBP = nullptr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
-		: FMDViewModelFunctionDebugLineItem(Prop->SignatureFunction, Prop->GetDisplayNameText(), Prop->GetToolTipText(), bIsFieldNotify, WidgetBP, ViewModelClass, ViewModelName)
+	FMDViewModelEventDebugLineItem(const FMulticastDelegateProperty* Prop, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, bool bIsFieldNotify = false, UWidgetBlueprint* WidgetBP = nullptr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
+		: FMDViewModelFunctionDebugLineItem(Prop->SignatureFunction, Prop->GetDisplayNameText(), Prop->GetToolTipText(), DebugViewModel, bIsFieldNotify, WidgetBP, ViewModelClass, ViewModelName)
 		, WeakDelegateProp(Prop)
 	{
 	}
@@ -155,7 +192,7 @@ public:
 protected:
 	virtual FDebugLineItem* Duplicate() const override
 	{
-		return new FMDViewModelEventDebugLineItem(WeakDelegateProp.Get(), bIsFieldNotify, WidgetBP.Get(), ViewModelClass, ViewModelName);
+		return new FMDViewModelEventDebugLineItem(WeakDelegateProp.Get(), DebugViewModel, bIsFieldNotify, WidgetBP.Get(), ViewModelClass, ViewModelName);
 	}
 
 private:
@@ -200,6 +237,7 @@ private:
 	TMap<const FProperty*, TSharedPtr<FMDViewModelFieldDebugLineItem>> PropertyTreeItems;
 	TMap<const UFunction*, TSharedPtr<FMDViewModelFunctionDebugLineItem>> FunctionTreeItems;
 	TMap<const FMulticastDelegateProperty*, TSharedPtr<FMDViewModelEventDebugLineItem>> EventTreeItems;
+	TSharedPtr<FMDViewModelChangedDebugLineItem> VMChangedItem;
 	TSubclassOf<UMDViewModelBase> ViewModelClass;
 	TWeakObjectPtr<UMDViewModelBase> DebugViewModel;
 	bool bIsDebugging = false;

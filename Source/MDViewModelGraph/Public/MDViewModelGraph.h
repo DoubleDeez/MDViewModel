@@ -3,6 +3,7 @@
 #include "Modules/ModuleManager.h"
 #include "Templates/SubclassOf.h"
 
+class UMDVMNode_ViewModelChanged;
 class UMDVMNode_ViewModelEvent;
 class UMDVMNode_ViewModelFieldNotify;
 class UMDViewModelBase;
@@ -21,4 +22,8 @@ public:
 	MDVIEWMODELGRAPH_API static bool DoesBlueprintBindToViewModelFieldNotify(const UBlueprint* BP, const FName& FieldNotifyName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);
 	MDVIEWMODELGRAPH_API static void OnViewModelFieldNotifyRequestedForBlueprint(const UBlueprint* BP, const FName& FieldNotifyName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);
 	MDVIEWMODELGRAPH_API static UMDVMNode_ViewModelFieldNotify* FindExistingViewModelFieldNotifyNode(const UBlueprint* BP, const FName& FieldNotifyName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);
+
+	MDVIEWMODELGRAPH_API static bool DoesBlueprintBindToViewModelChanged(const UBlueprint* BP, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);
+	MDVIEWMODELGRAPH_API static void OnViewModelChangedRequestedForBlueprint(const UBlueprint* BP, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);
+	MDVIEWMODELGRAPH_API static UMDVMNode_ViewModelChanged* FindExistingViewModelChangedNode(const UBlueprint* BP, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);
 };

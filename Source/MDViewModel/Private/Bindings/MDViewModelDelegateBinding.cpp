@@ -28,7 +28,7 @@ void UMDViewModelDelegateBinding::BindDynamicDelegates(UObject* InInstance) cons
 
 void UMDViewModelDelegateBinding::UnbindDynamicDelegates(UObject* InInstance) const
 {
-	if (UUserWidget* Widget = Cast<UUserWidget>(InInstance))
+	if (const UUserWidget* Widget = Cast<UUserWidget>(InInstance))
 	{
 		UMDViewModelWidgetExtension* Extension = Widget->GetExtension<UMDViewModelWidgetExtension>();
 		if (IsValid(Extension))

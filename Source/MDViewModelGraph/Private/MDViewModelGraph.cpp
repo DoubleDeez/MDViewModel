@@ -3,6 +3,7 @@
 #include "EdGraphSchema_K2_Actions.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
+#include "Nodes/MDVMNode_ViewModelChanged.h"
 #include "Nodes/MDVMNode_ViewModelEvent.h"
 #include "Nodes/MDVMNode_ViewModelFieldNotify.h"
 #include "ViewModel/MDViewModelBase.h"
@@ -121,6 +122,61 @@ UMDVMNode_ViewModelFieldNotify* FMDViewModelGraphModule::FindExistingViewModelFi
 	{
 		UMDVMNode_ViewModelFieldNotify* BoundEvent = *NodeIter;
 		if (BoundEvent->ViewModelClass == ViewModelClass && BoundEvent->ViewModelName == ViewModelName && BoundEvent->FieldNotifyName == FieldNotifyName)
+		{
+			return BoundEvent;
+		}
+	}
+
+	return nullptr;
+}
+
+bool FMDViewModelGraphModule::DoesBlueprintBindToViewModelChanged(const UBlueprint* BP, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+{
+	return FindExistingViewModelChangedNode(BP, ViewModelClass, ViewModelName) != nullptr;
+}
+
+void FMDViewModelGraphModule::OnViewModelChangedRequestedForBlueprint(const UBlueprint* BP, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+{
+	if (BP == nullptr)
+	{
+		return;
+	}
+
+	const UMDVMNode_ViewModelChanged* Node = FindExistingViewModelChangedNode(BP, ViewModelClass, ViewModelName);
+	if (Node == nullptr)
+	{
+		if (UEdGraph* TargetGraph = BP->GetLastEditedUberGraph())
+		{
+			const FVector2D NewNodePos = TargetGraph->GetGoodPlaceForNewNode();
+
+			Node = FEdGraphSchemaAction_K2NewNode::SpawnNode<UMDVMNode_ViewModelChanged>(
+				TargetGraph,
+				NewNodePos,
+				EK2NewNodeFlags::SelectNewNode,
+				[&](UMDVMNode_ViewModelChanged* NewInstance)
+				{
+					NewInstance->InitializeViewModelChangedParams(ViewModelClass, ViewModelName);
+				}
+			);
+		}
+	}
+
+	FKismetEditorUtilities::BringKismetToFocusAttentionOnObject(Node);
+}
+
+UMDVMNode_ViewModelChanged* FMDViewModelGraphModule::FindExistingViewModelChangedNode(const UBlueprint* BP, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+{
+	if (BP == nullptr)
+	{
+		return nullptr;
+	}
+
+	TArray<UMDVMNode_ViewModelChanged*> EventNodes;
+	FBlueprintEditorUtils::GetAllNodesOfClass(BP, EventNodes);
+	for (auto NodeIter = EventNodes.CreateIterator(); NodeIter; ++NodeIter)
+	{
+		UMDVMNode_ViewModelChanged* BoundEvent = *NodeIter;
+		if (BoundEvent->ViewModelClass == ViewModelClass && BoundEvent->ViewModelName == ViewModelName)
 		{
 			return BoundEvent;
 		}
