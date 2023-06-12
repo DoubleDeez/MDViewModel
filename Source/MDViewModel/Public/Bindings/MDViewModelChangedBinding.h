@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Engine/DynamicBlueprintBinding.h"
 #include "Templates/SubclassOf.h"
 #include "MDViewModelChangedBinding.generated.h"
