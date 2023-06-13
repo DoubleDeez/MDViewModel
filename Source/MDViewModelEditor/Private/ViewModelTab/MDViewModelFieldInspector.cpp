@@ -369,7 +369,8 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 
 int32 FMDViewModelFieldDebugLineItem::GetShouldDisplayFieldNotifyIndex() const
 {
-	return (!DebugViewModel.IsValid() || (ValuePtr == nullptr && bIsFieldNotify)) ? 0 : 1;
+	const bool bHasFieldNotifyValue = !DebugViewModel.IsValid() && ValuePtr == nullptr && bIsFieldNotify; 
+	return bHasFieldNotifyValue ? 0 : 1;
 }
 
 FReply FMDViewModelFieldDebugLineItem::OnAddOrViewBoundFunctionClicked() const
