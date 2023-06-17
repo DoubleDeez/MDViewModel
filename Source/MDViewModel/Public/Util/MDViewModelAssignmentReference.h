@@ -31,6 +31,8 @@ public:
 
 	UMDViewModelBase* ResolveViewModelAssignment(const UUserWidget* Widget) const;
 
+	bool IsAssignmentValid() const;
+
 #if WITH_EDITOR
 	// Only used for editor customization
 	FMDViewModelReferenceGetWidgetClass OnGetWidgetClass;

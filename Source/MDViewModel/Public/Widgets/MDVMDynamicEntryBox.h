@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Components/DynamicEntryBox.h"
-#include "Util/MDViewModelUtils.h"
+#include "Util/MDViewModelAssignmentReference.h"
 #include "MDVMDynamicEntryBox.generated.h"
 
 class UMDViewModelBase;
@@ -9,19 +9,29 @@ class UMDViewModelBase;
 /**
  * A dynamic entry box that can be populated by a list of view models
  */
-UCLASS()
+UCLASS(meta = (DisplayName = "Dynamic Entry Box (View Model)"))
 class MDVIEWMODEL_API UMDVMDynamicEntryBox : public UDynamicEntryBox
 {
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable , Category = "DynamicEntryBox")
+	virtual void PostInitProperties() override;
+
+#if WITH_EDITOR
+	virtual const FText GetPaletteCategory() override;
+	virtual void ValidateCompiledDefaults(class IWidgetCompilerLog& CompileLog) const override;
+#endif
+
+	UFUNCTION(BlueprintCallable, Category = "DynamicEntryBox")
 	void PopulateItems(const TArray<UMDViewModelBase*>& ViewModels);
 
 protected:
 	UPROPERTY(EditAnywhere, Category = "View Model")
-	FName ViewModelName = MDViewModelUtils::DefaultViewModelName;
+	FMDViewModelAssignmentReference ViewModelAssignment;
 
-	UPROPERTY(Transient)
-	TArray<TSubclassOf<UMDViewModelBase>> AssignedViewModelClasses;
+private:
+#if WITH_EDITOR
+	UClass* GetEditorTimeEntryWidgetClass() const;
+#endif
+
 };

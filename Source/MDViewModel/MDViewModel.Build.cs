@@ -24,6 +24,7 @@ public class MDViewModel : ModuleRules
 			{
 				"CoreUObject",
 				"Engine",
+				"InputCore",
 				"Slate",
 				"SlateCore"
 			}

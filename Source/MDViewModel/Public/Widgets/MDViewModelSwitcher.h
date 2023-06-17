@@ -9,7 +9,7 @@ class UMDViewModelBase;
  * Widget that will switch to the first child that accepts the provided view model
  * Using this widget requires knowledge of which types of viewmodels will be passed to it to be used effectively.
  */
-UCLASS()
+UCLASS(meta = (DisplayName = "Widget Switcher (View Model)"))
 class MDVIEWMODEL_API UMDViewModelSwitcher : public UWidgetSwitcher
 {
 	GENERATED_BODY()
