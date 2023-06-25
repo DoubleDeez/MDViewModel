@@ -1,6 +1,9 @@
 #include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
 
+#include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
+#include "Engine/World.h"
+#include "GameFramework/Actor.h"
 #include "MDViewModelModule.h"
 #include "UObject/UObjectIterator.h"
 #include "ViewModel/MDViewModelBase.h"
