@@ -105,10 +105,15 @@ UMDViewModelBase* UMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 		{
 			ViewModelCache = ResolveRelativeViewModelCacheAndBindDelegates(Settings->RelativeViewModel, Widget, Assignment, Data);
 		}
+		else if (Settings->ViewModelLifetime == EMDViewModelProvider_CacheLifetime::RelativeProperty)
+		{
+			ViewModelCache = ResolveRelativePropertyCacheAndBindDelegates(Settings->RelativePropertyReference, Widget, Assignment, Data);
+		}
 
 		if (ViewModelCache != nullptr)
 		{
-			UMDViewModelBase* ViewModelInstance = ViewModelCache->GetOrCreateViewModel(Assignment.ViewModelName, Assignment.ViewModelClass, Data.ViewModelSettings);
+			const FName& ViewModelKey = Settings->bOverrideCachedViewModelKey ? Settings->CachedViewModelKeyOverride : Assignment.ViewModelName;
+			UMDViewModelBase* ViewModelInstance = ViewModelCache->GetOrCreateViewModel(ViewModelKey, Assignment.ViewModelClass, Data.ViewModelSettings);
 			if (IsValid(ViewModelInstance))
 			{
 				UMDViewModelFunctionLibrary::SetViewModel(&Widget, ViewModelInstance, Assignment.ViewModelClass, Assignment.ViewModelName);
@@ -154,6 +159,14 @@ bool UMDViewModelProvider_Cached::ValidateProviderSettings(const FInstancedStruc
 			return false;
 		}
 	}
+	else if (SettingsPtr->ViewModelLifetime == EMDViewModelProvider_CacheLifetime::RelativeProperty)
+	{
+		if (SettingsPtr->RelativePropertyName == NAME_None)
+		{
+			OutIssues.Add(INVTEXT("A valid Relative Property is required to use the Relative Property life time option."));
+			return false;
+		}
+	}
 
 	return Super::ValidateProviderSettings(Settings, WidgetBlueprint, OutIssues);
 }
@@ -169,6 +182,43 @@ void UMDViewModelProvider_Cached::OnProviderSettingsInitializedInEditor(FInstanc
 			{
 				return IsValid(WidgetBlueprint) ? Cast<UClass>(WidgetBlueprint->GeneratedClass) : nullptr;
 			});
+
+			const UFunction* Function = SettingsPtr->RelativePropertyReference.ResolveMember<UFunction>(WidgetBlueprint->SkeletonGeneratedClass);
+			const FObjectPropertyBase* Property = SettingsPtr->RelativePropertyReference.ResolveMember<FObjectPropertyBase>(WidgetBlueprint->SkeletonGeneratedClass);
+			SettingsPtr->RelativePropertyName = (Function != nullptr) ? Function->GetFName() : ((Property != nullptr) ? Property->GetFName() : NAME_None);
+		}
+	}
+}
+
+void UMDViewModelProvider_Cached::OnProviderSettingsPropertyChanged(FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint) const
+{
+	if (IsValid(WidgetBlueprint) && IsValid(WidgetBlueprint->SkeletonGeneratedClass))
+	{
+		FMDViewModelProvider_Cached_Settings* SettingsPtr = Settings.GetMutablePtr<FMDViewModelProvider_Cached_Settings>();
+		if (ensure(SettingsPtr))
+		{
+#if WITH_EDITORONLY_DATA
+			if (SettingsPtr->ViewModelLifetime == EMDViewModelProvider_CacheLifetime::RelativeProperty)
+			{
+				if (const FProperty* Property = WidgetBlueprint->SkeletonGeneratedClass->FindPropertyByName(SettingsPtr->RelativePropertyName))
+				{
+					SettingsPtr->RelativePropertyReference.SetFromField<FProperty>(Property, WidgetBlueprint->SkeletonGeneratedClass);
+				}
+				else if (const UFunction* Function = WidgetBlueprint->SkeletonGeneratedClass->FindFunctionByName(SettingsPtr->RelativePropertyName))
+				{
+					SettingsPtr->RelativePropertyReference.SetFromField<UFunction>(Function, WidgetBlueprint->SkeletonGeneratedClass);
+				}
+				else
+				{
+					SettingsPtr->RelativePropertyReference = {};
+				}
+			}
+			else
+			{
+				SettingsPtr->RelativePropertyReference = {};
+				SettingsPtr->RelativePropertyName = NAME_None;
+			}
+#endif
 		}
 	}
 }
@@ -264,6 +314,12 @@ void UMDViewModelProvider_Cached::OnViewTargetChanged(APlayerController* PC, AAc
 
 void UMDViewModelProvider_Cached::OnRelativeViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel,
 	TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data)
+{
+	RefreshViewModel(WidgetPtr, Assignment, Data);
+}
+
+void UMDViewModelProvider_Cached::OnFieldValueChanged(UObject* Widget, UE::FieldNotification::FFieldId FieldId, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment,
+	FMDViewModelAssignmentData Data)
 {
 	RefreshViewModel(WidgetPtr, Assignment, Data);
 }
@@ -600,8 +656,53 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveRelativeViewMode
 	return nullptr;
 }
 
-IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCacheAndBindDelegates(UObject* Object, UUserWidget& Widget,
+IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveRelativePropertyCacheAndBindDelegates(const FMemberReference& Reference, UUserWidget& Widget,
 	const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
+{
+	const FMDViewModelProvider_Cached_Settings* Settings = Data.ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
+	if (Settings == nullptr)
+	{
+		return nullptr;
+	}
+
+	UFunction* Function = Settings->RelativePropertyReference.ResolveMember<UFunction>(Widget.GetClass());
+	const FObjectPropertyBase* Property = Settings->RelativePropertyReference.ResolveMember<FObjectPropertyBase>(Widget.GetClass());
+	const FName FieldName = (Function != nullptr) ? Function->GetFName() : ((Property != nullptr) ? Property->GetFName() : NAME_None);
+	if (FieldName == NAME_None)
+	{
+		return nullptr;
+	}
+
+	const UE::FieldNotification::FFieldId FieldId = Widget.GetFieldNotificationDescriptor().GetField(Widget.GetClass(), FieldName);
+
+	FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
+	if (!WidgetDelegateHandles.Contains(BindingKey))
+	{
+		FMDWrappedDelegateHandle Handle;
+		Handle.DelegateOwner = &Widget;
+		const auto Delegate = INotifyFieldValueChanged::FFieldValueChangedDelegate::CreateUObject(this, &UMDViewModelProvider_Cached::OnFieldValueChanged, MakeWeakObjectPtr(&Widget), Assignment, Data);
+		Handle.Handle = Widget.AddFieldValueChangedDelegate(FieldId, Delegate);
+		WidgetDelegateHandles.Emplace(MoveTemp(BindingKey), MoveTemp(Handle));
+	}
+
+	UObject* ContextObject = nullptr;
+	if (Property != nullptr)
+	{
+		ContextObject = Property->GetObjectPropertyValue_InContainer(&Widget);
+	}
+	else if (Function != nullptr)
+	{
+		const FObjectPropertyBase* ReturnProp = CastField<FObjectPropertyBase>(Function->GetReturnProperty());
+		checkf(ReturnProp != nullptr && Function->NumParms == 1 && Function->ParmsSize == sizeof(ContextObject),
+			TEXT("Function [%s] on [%s] is no longer a valid RelativeProperty function, update the view model assignment to fix this"), *Function->GetName(), *Widget.GetName());
+		Widget.ProcessEvent(Function, &ContextObject);
+	}
+
+	return ResolveObjectCache(ContextObject);
+}
+
+IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCacheAndBindDelegates(UObject* Object, UUserWidget& Widget,
+                                                                                            const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
 	if (const UGameInstance* GameInstance = Cast<UGameInstance>(Object))
 	{

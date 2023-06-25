@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Engine/MemberReference.h"
+#include "FieldNotification/FieldId.h"
 #include "MDViewModelProviderBase.h"
 #include "NativeGameplayTags.h"
 #include "UObject/WeakInterfacePtr.h"
@@ -73,6 +75,8 @@ enum class EMDViewModelProvider_CacheLifetime
 	ViewTargetPlayerState,
 	// View model lifetime will be tied to another view model on the widget and share its context object
 	Relative,
+	// View model lifetime will be tied to a FieldNotify property or function on the widget, using the property as its context object (must be an Actor or other supported type)
+	RelativeProperty,
 	// TODO - Allow external systems to bind to the cached provider to allow custom lifetimes,
 	// will need to expose an FName or Tag to indicate which custom lifetime should be used
 	Custom UMETA(Hidden),
@@ -84,6 +88,14 @@ struct FMDViewModelProvider_Cached_Settings
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditAnywhere, Category = "Provider", meta = (InlineEditConditionToggle))
+	bool bOverrideCachedViewModelKey = false;
+
+	// By default, the cached viewmodel is keyed by the view model assignment name.
+	// It can be desirable to use a different view model assignment name than the cached name so this property allows that.
+	UPROPERTY(EditAnywhere, Category = "Provider", meta = (EditCondition = "bOverrideCachedViewModelKey"))
+	FName CachedViewModelKeyOverride = MDViewModelUtils::DefaultViewModelName;
+
 	// What is the desired lifetime of the cached view model? This also determines the View Model's Outer object
 	UPROPERTY(EditAnywhere, Category = "Provider")
 	EMDViewModelProvider_CacheLifetime ViewModelLifetime = EMDViewModelProvider_CacheLifetime::Global;
@@ -91,6 +103,14 @@ public:
 	// For Relative lifetime, this view model's lifetime and context object will be tied to the view model assignment selected here
 	UPROPERTY(EditAnywhere, Category = "Provider", meta = (EditCondition = "ViewModelLifetime == EMDViewModelProvider_CacheLifetime::Relative", EditConditionHides))
 	FMDViewModelAssignmentReference RelativeViewModel;
+
+#if WITH_EDITORONLY_DATA
+	UPROPERTY(EditAnywhere, Category = "Provider", meta = (EditCondition = "ViewModelLifetime == EMDViewModelProvider_CacheLifetime::RelativeProperty", EditConditionHides, GetOptions = "GetRelativePropertyNames"))
+	FName RelativePropertyName;
+#endif
+
+	UPROPERTY()
+	FMemberReference RelativePropertyReference;
 };
 
 /**
@@ -122,6 +142,7 @@ public:
 	virtual UScriptStruct* GetProviderSettingsStruct() const override { return FMDViewModelProvider_Cached_Settings::StaticStruct(); }
 	virtual bool ValidateProviderSettings(const FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint, TArray<FText>& OutIssues) const override;
 	virtual void OnProviderSettingsInitializedInEditor(FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint) const override;
+	virtual void OnProviderSettingsPropertyChanged(FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint) const override;
 #endif
 
 protected:
@@ -135,6 +156,8 @@ protected:
 	void OnGameStateChanged(AGameStateBase* GameState, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 	void OnViewTargetChanged(APlayerController* PC, AActor* OldViewTarget, AActor* NewViewTarget, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 	void OnRelativeViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
+
+	void OnFieldValueChanged(UObject* Widget, UE::FieldNotification::FFieldId FieldId, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 
 	void OnViewModelCacheShutdown(const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& ViewModelCache, TWeakInterfacePtr<IMDViewModelCacheInterface> BoundCache);
 
@@ -159,6 +182,8 @@ protected:
 	IMDViewModelCacheInterface* ResolveViewTargetPlayerStateCacheAndBindDelegates(const APlayerController* PlayerController, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
 	IMDViewModelCacheInterface* ResolveRelativeViewModelCacheAndBindDelegates(const FMDViewModelAssignmentReference& Reference, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+
+	IMDViewModelCacheInterface* ResolveRelativePropertyCacheAndBindDelegates(const FMemberReference& Reference, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
 	IMDViewModelCacheInterface* ResolveObjectCacheAndBindDelegates(UObject* Object, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 

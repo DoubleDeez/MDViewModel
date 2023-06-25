@@ -45,4 +45,10 @@ public:
 	UPROPERTY(EditAnywhere, NoClear, Category = "View Model", meta = (StructTypeConst))
 	FInstancedStruct ViewModelSettings;
 
+	// TODO - This function shouldn't be here but 5.1 doesn't support static functions for GetOptions
+	UFUNCTION()
+	TArray<FName> GetRelativePropertyNames() const;
+
+	UPROPERTY(Transient)
+	TSubclassOf<UObject> WidgetSkeletonClass = nullptr;
 };

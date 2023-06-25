@@ -3,14 +3,14 @@
 #include "Util/MDViewModelInstanceKey.h"
 #include "ViewModel/MDViewModelBase.h"
 
-UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
+UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
 {
 	if (bIsShutdown)
 	{
 		return nullptr;
 	}
-	
-	const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
+
+	const FMDViewModelInstanceKey Key = { CachedViewModelKey, ViewModelClass };
 	if (!ensure(Key.IsValid()))
 	{
 		return nullptr;
@@ -29,11 +29,11 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const FName& 
 void IMDViewModelCacheInterface::BroadcastShutdown()
 {
 	bIsShutdown = true;
-	
+
 	// Empty out the cache before we shutdown
 	TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& Cache = GetViewModelCache();
 	const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>> ShutdownViewModels = MoveTemp(Cache);
 	Cache.Reset();
-	
+
 	OnViewModelCacheShuttingDown.Broadcast(ShutdownViewModels);
 }
