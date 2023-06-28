@@ -3,6 +3,8 @@
 #include "K2Node_Event.h"
 #include "MDVMNode_ViewModelChanged.generated.h"
 
+class UMDViewModelBase;
+
 /**
  * Custom node for binding to view models changing
  */
