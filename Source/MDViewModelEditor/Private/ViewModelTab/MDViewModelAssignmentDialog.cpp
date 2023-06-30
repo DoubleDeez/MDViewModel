@@ -13,9 +13,11 @@
 #include "Components/VerticalBox.h"
 #include "Customizations/MDViewModelAssignmentEditorObjectCustomization.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "MDViewModelEditorModule.h"
 #include "Misc/FeedbackContext.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
+#include "ViewModelProviders/MDViewModelProvider_Cached.h"
 #include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
 #include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
@@ -117,7 +119,7 @@ void SMDViewModelAssignmentDialog::OpenAssignmentDialog(UMDViewModelWidgetBluepr
 	const TSharedRef<SWindow> PickerWindow = SNew(SWindow)
 		.Title(INVTEXT("Add a View Model"))
 		.SizingRule( ESizingRule::UserSized )
-		.ClientSize( FVector2D( 500.f, 600.f ))
+		.ClientSize( FVector2D( 700.f, 600.f ))
 		.SupportsMaximize(false)
 		.SupportsMinimize(false);
 
@@ -134,7 +136,7 @@ void SMDViewModelAssignmentDialog::OpenEditDialog(UMDViewModelWidgetBlueprintExt
 	const TSharedRef<SWindow> PickerWindow = SNew(SWindow)
 		.Title(INVTEXT("Add a View Model"))
 		.SizingRule( ESizingRule::UserSized )
-		.ClientSize( FVector2D( 500.f, 600.f ))
+		.ClientSize( FVector2D( 700.f, 600.f ))
 		.SupportsMaximize(false)
 		.SupportsMinimize(false);
 

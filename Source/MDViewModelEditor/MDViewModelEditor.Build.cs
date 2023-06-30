@@ -11,7 +11,8 @@ public class MDViewModelEditor : ModuleRules
             {
                 "Core",
                 "GameplayTags",
-                "MDViewModel"
+                "MDViewModel",
+                "StructUtilsEditor"
             }
         );
 

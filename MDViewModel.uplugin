@@ -4,7 +4,7 @@
 	"VersionName": "1.0",
 	"FriendlyName": "MDViewModel",
 	"Description": "A generic viewmodel framework for UMG widgets",
-	"Category": "Other",
+	"Category": "UI",
 	"CreatedBy": "DoubleDeez",
 	"CreatedByURL": "https://github.com/DoubleDeez",
 	"DocsURL": "",

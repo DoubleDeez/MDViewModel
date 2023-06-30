@@ -22,16 +22,28 @@ class ULocalPlayer;
 class UWorld;
 
 MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached);
+MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_Global);
+MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_LocalPlayer);
+MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_World);
+MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_OwningPlayerController);
+MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_OwningHUD);
+MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_OwningPawn);
+MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_OwningPlayerState);
+MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_GameState);
+MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_ViewTarget);
+MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_ViewTargetPlayerState);
+MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_Relative);
+MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty);
 
 // Wrapped on DelegateHandle to track which object the handle was for
-struct FMDWrappedDelegateHandle
+struct MDVIEWMODEL_API FMDWrappedDelegateHandle
 {
 	FDelegateHandle Handle;
 	TWeakObjectPtr<UObject> DelegateOwner;
 };
 
 // Each assignment on a widget needs an individual binding, we track that use this struct as a key
-struct FMDVMCachedProviderBindingKey
+struct MDVIEWMODEL_API FMDVMCachedProviderBindingKey
 {
 	FMDViewModelAssignment Assignment;
 
@@ -77,13 +89,12 @@ enum class EMDViewModelProvider_CacheLifetime
 	Relative,
 	// View model lifetime will be tied to a FieldNotify property or function on the widget, using the property as its context object (must be an Actor or other supported type)
 	RelativeProperty,
-	// TODO - Allow external systems to bind to the cached provider to allow custom lifetimes,
-	// will need to expose an FName or Tag to indicate which custom lifetime should be used
+	// To support custom lifetimes, ViewModelLifetimeTag was added in place of this enum
 	Custom UMETA(Hidden),
 };
 
 USTRUCT(DisplayName = "Cached Provider Settings")
-struct FMDViewModelProvider_Cached_Settings
+struct MDVIEWMODEL_API FMDViewModelProvider_Cached_Settings
 {
 	GENERATED_BODY()
 
@@ -97,20 +108,32 @@ public:
 	FName CachedViewModelKeyOverride = MDViewModelUtils::DefaultViewModelName;
 
 	// What is the desired lifetime of the cached view model? This also determines the View Model's Outer object
-	UPROPERTY(EditAnywhere, Category = "Provider")
+	UPROPERTY(EditAnywhere, Category = "Provider", meta = (Categories = "MDVM.Provider.Cached.Lifetimes"))
+	FGameplayTag ViewModelLifetimeTag;
+
+	UE_DEPRECATED(All, "The lifetime enum is deprecated, use ViewModelLifetimeTag instead.");
+	UPROPERTY()
 	EMDViewModelProvider_CacheLifetime ViewModelLifetime = EMDViewModelProvider_CacheLifetime::Global;
 
-	// For Relative lifetime, this view model's lifetime and context object will be tied to the view model assignment selected here
-	UPROPERTY(EditAnywhere, Category = "Provider", meta = (EditCondition = "ViewModelLifetime == EMDViewModelProvider_CacheLifetime::Relative", EditConditionHides))
+	// For Relative lifetime (MDVM.Provider.Cached.Lifetimes.Relative), this view model's lifetime and context object will be tied to the view model assignment selected here
+	UPROPERTY(EditAnywhere, Category = "Provider|Relative", meta = (EditCondition = "bIsRelative", EditConditionHides))
 	FMDViewModelAssignmentReference RelativeViewModel;
 
 #if WITH_EDITORONLY_DATA
-	UPROPERTY(EditAnywhere, Category = "Provider", meta = (EditCondition = "ViewModelLifetime == EMDViewModelProvider_CacheLifetime::RelativeProperty", EditConditionHides, GetOptions = "GetRelativePropertyNames"))
+	// For Relative Property lifetime (MDVM.Provider.Cached.Lifetimes.RelativeProperty), this is the FieldNotify property or function on the widget that will be used at the context for the view model (must be an Actor or other supported type)
+	UPROPERTY(EditAnywhere, Category = "Provider|Relative Property", meta = (GetOptions = "GetRelativePropertyNames", EditCondition = "bIsRelativeProperty", EditConditionHides))
 	FName RelativePropertyName;
+
+	UPROPERTY(Transient)
+	bool bIsRelative = false;
+	UPROPERTY(Transient)
+	bool bIsRelativeProperty = false;
 #endif
 
 	UPROPERTY()
 	FMemberReference RelativePropertyReference;
+
+	const FGameplayTag& GetLifetimeTag() const;
 };
 
 /**
@@ -146,6 +169,8 @@ public:
 #endif
 
 protected:
+	virtual IMDViewModelCacheInterface* ResolveAndBindViewModelCache(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data, const FMDViewModelProvider_Cached_Settings& Settings);
+	
 	UMDViewModelBase* FindOrCreateCachedViewModel_Internal(UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings);
 
 	void BindOnWidgetDestroy(UUserWidget& Widget);
@@ -185,13 +210,10 @@ protected:
 
 	IMDViewModelCacheInterface* ResolveRelativePropertyCacheAndBindDelegates(const FMemberReference& Reference, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
-	IMDViewModelCacheInterface* ResolveObjectCacheAndBindDelegates(UObject* Object, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
-
 	void BindViewTargetDelegates(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
 	TMap<FMDVMCachedProviderBindingKey, FMDWrappedDelegateHandle> WidgetDelegateHandles;
 	TMap<FMDVMCachedProviderBindingKey, FDelegateHandle> ViewTargetDelegateHandles;
-	TMap<FMDVMCachedProviderBindingKey, FDelegateHandle> RelativeViewModelDelegateHandles;
 	TMap<FMDViewModelAssignment, TMap<TWeakObjectPtr<UUserWidget>, TWeakInterfacePtr<IMDViewModelCacheInterface>>> BoundAssignments;
 };
 

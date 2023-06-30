@@ -23,7 +23,6 @@ void FMDViewModelEditorModule::StartupModule()
 
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditorModule.RegisterCustomPropertyTypeLayout(FMDViewModelAssignmentReference::StaticStruct()->GetFName(), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FMDViewModelAssignmentReferenceCustomization::MakeInstance));
-
 	CompilerExtensionPtr = NewObject<UMDViewModelBlueprintCompilerExtension>();
 	CompilerExtensionPtr->AddToRoot();
 

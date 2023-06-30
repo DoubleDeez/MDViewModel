@@ -21,7 +21,7 @@ void UMDViewModelAssignmentEditorObject::PopulateFromAssignment(const FMDViewMod
 
 	ProviderSettings = Assignment.Data.ProviderSettings;
 
-	if (UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(ViewModelProvider))
+	if (const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(ViewModelProvider))
 	{
 		if (ProviderSettings.GetScriptStruct() != Provider->GetProviderSettingsStruct())
 		{

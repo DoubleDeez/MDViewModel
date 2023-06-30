@@ -32,7 +32,13 @@ public class MDViewModel : ModuleRules
 
 		if (Target.Type == TargetType.Editor)
 		{
-			PublicDependencyModuleNames.Add("UMGEditor");
+			PublicDependencyModuleNames.AddRange(
+				new string[]
+				{
+					"UMGEditor",
+					"UnrealEd"
+				}
+			);
 		}
 	}
 }
