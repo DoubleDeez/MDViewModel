@@ -6,6 +6,12 @@ void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& Vi
 	InitializeViewModel(ViewModelSettings);
 }
 
+void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, const UObject* InContextObject)
+{
+	// TODO - Determine a way to support both const and non-const context objects
+	InitializeViewModelWithContext(ViewModelSettings, const_cast<UObject*>(InContextObject));
+}
+
 void UMDViewModelBase::ShutdownViewModelFromProvider()
 {
 	ShutdownViewModel();

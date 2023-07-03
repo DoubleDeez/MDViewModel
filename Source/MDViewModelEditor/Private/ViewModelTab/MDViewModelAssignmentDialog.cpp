@@ -3,7 +3,7 @@
 #include "ClassViewerFilter.h"
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
-#include "Editor.h"
+//#include "Editor.h"
 #include "Engine/Engine.h"
 #include "MDViewModelModule.h"
 #include "PropertyEditorModule.h"
@@ -128,7 +128,18 @@ void SMDViewModelAssignmentDialog::OpenAssignmentDialog(UMDViewModelWidgetBluepr
 
 	PickerWindow->SetContent(AssignmentDialog);
 
-	GEditor->EditorAddModalWindow(PickerWindow);
+	if (FSlateApplication::Get().GetActiveModalWindow().IsValid())
+	{
+		FSlateApplication::Get().AddWindowAsNativeChild(PickerWindow, FSlateApplication::Get().GetActiveModalWindow().ToSharedRef());
+	}
+	else if (FGlobalTabmanager::Get()->GetRootWindow().IsValid())
+	{
+		FSlateApplication::Get().AddWindowAsNativeChild(PickerWindow, FGlobalTabmanager::Get()->GetRootWindow().ToSharedRef());
+	}
+	else
+	{
+		FSlateApplication::Get().AddWindow(PickerWindow);
+	}
 }
 
 void SMDViewModelAssignmentDialog::OpenEditDialog(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem)
@@ -147,7 +158,18 @@ void SMDViewModelAssignmentDialog::OpenEditDialog(UMDViewModelWidgetBlueprintExt
 
 	PickerWindow->SetContent(AssignmentDialog);
 
-	GEditor->EditorAddModalWindow(PickerWindow);
+	if (FSlateApplication::Get().GetActiveModalWindow().IsValid())
+	{
+		FSlateApplication::Get().AddWindowAsNativeChild(PickerWindow, FSlateApplication::Get().GetActiveModalWindow().ToSharedRef());
+	}
+	else if (FGlobalTabmanager::Get()->GetRootWindow().IsValid())
+	{
+		FSlateApplication::Get().AddWindowAsNativeChild(PickerWindow, FGlobalTabmanager::Get()->GetRootWindow().ToSharedRef());
+	}
+	else
+	{
+		FSlateApplication::Get().AddWindow(PickerWindow);
+	}
 }
 
 EVisibility SMDViewModelAssignmentDialog::GetAddVisibility() const

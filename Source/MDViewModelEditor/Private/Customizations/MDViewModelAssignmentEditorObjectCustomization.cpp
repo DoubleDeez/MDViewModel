@@ -12,6 +12,22 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
 
+namespace MDViewModelAssignmentEditorObjectCustomization_Private
+{
+	bool DoesStructHaveEditableProperties(const UScriptStruct* Struct)
+	{
+		for (TFieldIterator<const FProperty> It(Struct); It; ++It)
+		{
+			if (It->HasAnyPropertyFlags(CPF_Edit))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+}
+
 
 class FMDViewModelProviderClassFilter : public IClassViewerFilter
 {
@@ -116,7 +132,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 		}
 
 		const TSharedRef<IPropertyHandle> ViewModelSettingsHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ViewModelSettings), UMDViewModelAssignmentEditorObject::StaticClass());
-		if (IsValid(Provider) && EditorObject->ViewModelSettings.IsValid())
+		if (IsValid(Provider) && EditorObject->ViewModelSettings.IsValid() && MDViewModelAssignmentEditorObjectCustomization_Private::DoesStructHaveEditableProperties(EditorObject->ViewModelSettings.GetScriptStruct()))
 		{
 			if (Provider->DoesSupportViewModelSettings())
 			{
