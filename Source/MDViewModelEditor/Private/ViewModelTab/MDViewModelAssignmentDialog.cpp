@@ -3,7 +3,6 @@
 #include "ClassViewerFilter.h"
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
-//#include "Editor.h"
 #include "Engine/Engine.h"
 #include "MDViewModelModule.h"
 #include "PropertyEditorModule.h"

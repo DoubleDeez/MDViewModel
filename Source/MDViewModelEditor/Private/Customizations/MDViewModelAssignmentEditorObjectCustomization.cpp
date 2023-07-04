@@ -348,6 +348,7 @@ FReply FMDViewModelAssignmentEditorObjectCustomization::OnClassPickerButtonClick
 			ClassPickerOptions.bShowNoneOption = false;
 			ClassPickerOptions.ClassFilters.Add(MakeShareable(new FMDViewModelProviderClassFilter(Provider)));
 			ClassPickerOptions.InitiallySelectedClass = GetCurrentViewModelClass();
+			ClassPickerOptions.NameTypeToDisplay = EClassViewerNameTypeToDisplay::Dynamic;
 
 			UClass* Class = nullptr;
 			if (SClassPickerDialog::PickClass(INVTEXT("Select the View Model Class"), ClassPickerOptions, Class, UClass::StaticClass()))
