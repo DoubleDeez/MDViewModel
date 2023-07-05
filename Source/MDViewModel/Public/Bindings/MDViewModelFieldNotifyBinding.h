@@ -52,5 +52,5 @@ private:
 
 	void OnFieldValueChanged(UObject* ViewModel, UE::FieldNotification::FFieldId Field, int32 EntryIndex, TWeakObjectPtr<UUserWidget> BoundWidget) const;
 
-	mutable TMap<TWeakObjectPtr<UUserWidget>, FDelegateHandle> BoundDelegates;
+	mutable TMap<TTuple<int32, TWeakObjectPtr<UUserWidget>>, FDelegateHandle> BoundDelegates;
 };

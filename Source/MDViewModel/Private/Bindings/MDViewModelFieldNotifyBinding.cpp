@@ -45,10 +45,11 @@ void UMDViewModelFieldNotifyBinding::OnViewModelChanged(UMDViewModelBase* OldVie
 	}
 
 	const FMDViewModelFieldNotifyBindingEntry& Entry = ViewModelFieldNotifyBindings[EntryIndex];
+	const TTuple<int32, TWeakObjectPtr<UUserWidget>> DelegateKey = { EntryIndex, BoundWidget };
 
 	if (IsValid(OldViewModel))
 	{
-		FDelegateHandle* HandlePtr = BoundDelegates.Find(BoundWidget);
+		FDelegateHandle* HandlePtr = BoundDelegates.Find(DelegateKey);
 		if (HandlePtr != nullptr && HandlePtr->IsValid())
 		{
 			const UE::FieldNotification::FFieldId FieldId = OldViewModel->GetFieldNotificationDescriptor().GetField(Entry.ViewModelClass, Entry.FieldNotifyName);
@@ -61,7 +62,7 @@ void UMDViewModelFieldNotifyBinding::OnViewModelChanged(UMDViewModelBase* OldVie
 	{
 		const UE::FieldNotification::FFieldId FieldId = NewViewModel->GetFieldNotificationDescriptor().GetField(Entry.ViewModelClass, Entry.FieldNotifyName);
 		const INotifyFieldValueChanged::FFieldValueChangedDelegate Delegate = INotifyFieldValueChanged::FFieldValueChangedDelegate::CreateUObject(this, &UMDViewModelFieldNotifyBinding::OnFieldValueChanged, EntryIndex, BoundWidget);
-		BoundDelegates.FindOrAdd(BoundWidget) = NewViewModel->AddFieldValueChangedDelegate(FieldId, Delegate);
+		BoundDelegates.FindOrAdd(DelegateKey) = NewViewModel->AddFieldValueChangedDelegate(FieldId, Delegate);
 
 		// Execute with the currently held value
 		OnFieldValueChanged(NewViewModel, FieldId, EntryIndex, BoundWidget);
