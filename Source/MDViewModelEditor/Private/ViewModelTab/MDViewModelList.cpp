@@ -131,12 +131,12 @@ void SMDViewModelList::PopulateAssignments()
 			MyAssignments = BPExtension->GetAssignments();
 		}
 
-		for (const auto* SuperClass = Cast<UWidgetBlueprintGeneratedClass>(WBGC->GetSuperClass()); IsValid(SuperClass); SuperClass = Cast<UWidgetBlueprintGeneratedClass>(SuperClass->GetSuperClass()))
+		for (auto* SuperClass = Cast<UWidgetBlueprintGeneratedClass>(WBGC->GetSuperClass()); IsValid(SuperClass); SuperClass = Cast<UWidgetBlueprintGeneratedClass>(SuperClass->GetSuperClass()))
 		{
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
-			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
+			if (const UMDViewModelWidgetClassExtension* ClassExtension = SuperClass->GetExtension<UMDViewModelWidgetClassExtension>())
 #else
-			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>(false))
+			if (const UMDViewModelWidgetClassExtension* ClassExtension = SuperClass->GetExtension<UMDViewModelWidgetClassExtension>(false))
 #endif
 			{
 				// TODO - how to handle collisions from super classes
