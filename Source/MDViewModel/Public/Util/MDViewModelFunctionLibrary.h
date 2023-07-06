@@ -28,7 +28,7 @@ public:
 	static UMDViewModelBase* SetViewModelOfClass(UUserWidget* Widget, UObject* ContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings, FName ViewModelName = TEXT("Default"));
 
 	template<typename T>
-	static T* SetViewModelOfClass(UUserWidget* Widget, FName ViewModelName = MDViewModelUtils::DefaultViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass());
+	static T* SetViewModelOfClass(UUserWidget* Widget, UObject* ContextObject, const FInstancedStruct& ViewModelSettings, FName ViewModelName = MDViewModelUtils::DefaultViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass());
 
 	UFUNCTION(BlueprintCallable, Category = "View Model", meta = (DefaultToSelf = "Widget", DeterminesOutputType="ViewModelClass"))
 	static UMDViewModelBase* GetViewModel(UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = TEXT("Default"));
@@ -50,10 +50,10 @@ public:
 };
 
 template <typename T>
-T* UMDViewModelFunctionLibrary::SetViewModelOfClass(UUserWidget* Widget, FName ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass)
+T* UMDViewModelFunctionLibrary::SetViewModelOfClass(UUserWidget* Widget, UObject* ContextObject, const FInstancedStruct& ViewModelSettings, FName ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass)
 {
 	static_assert(TIsDerivedFrom<T, UMDViewModelBase>::Value, "ViewModels must derive from UMDViewModelBase");
-	return Cast<T>(SetViewModelOfClass(Widget, ViewModelClass, ViewModelName));
+	return Cast<T>(SetViewModelOfClass(Widget, ContextObject, ViewModelClass, ViewModelSettings, ViewModelName));
 }
 
 template <typename T>

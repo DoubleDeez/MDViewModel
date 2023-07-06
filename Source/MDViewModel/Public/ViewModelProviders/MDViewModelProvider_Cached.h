@@ -111,7 +111,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Provider", meta = (Categories = "MDVM.Provider.Cached.Lifetimes"))
 	FGameplayTag ViewModelLifetimeTag;
 
-	UE_DEPRECATED(All, "The lifetime enum is deprecated, use ViewModelLifetimeTag instead.");
+	UE_DEPRECATED(All, "The lifetime enum is deprecated, use ViewModelLifetimeTag instead.")
 	UPROPERTY()
 	EMDViewModelProvider_CacheLifetime ViewModelLifetime = EMDViewModelProvider_CacheLifetime::Global;
 
