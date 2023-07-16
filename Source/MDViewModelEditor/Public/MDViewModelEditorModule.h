@@ -6,6 +6,7 @@
 class UBlueprint;
 class UMDViewModelBase;
 class UMDViewModelBlueprintCompilerExtension;
+class FMDViewModelGraphPanelPinFactory;
 class FWorkflowAllowedTabSet;
 class FWidgetBlueprintApplicationMode;
 
@@ -24,4 +25,6 @@ private:
 
 	// Use a weak ptr even though we add it to root, it can be destroyed before the module shuts down
 	TWeakObjectPtr<UMDViewModelBlueprintCompilerExtension> CompilerExtensionPtr = nullptr;
+	
+	TSharedPtr<FMDViewModelGraphPanelPinFactory> ViewModelGraphPanelPinFactory;
 };

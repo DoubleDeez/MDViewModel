@@ -22,6 +22,7 @@ public class MDViewModelEditor : ModuleRules
 	            "BlueprintGraph",
                 "CoreUObject",
                 "Engine",
+                "GraphEditor",
                 "InputCore",
                 "Kismet",
                 "MDViewModelGraph",

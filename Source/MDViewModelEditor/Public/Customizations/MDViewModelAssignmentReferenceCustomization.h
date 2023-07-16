@@ -2,15 +2,16 @@
 
 #include "IPropertyTypeCustomization.h"
 #include "Input/Reply.h"
+#include "SGraphPin.h"
 #include "Util/MDViewModelAssignment.h"
 
 class SWidget;
 struct FMDViewModelAssignmentReference;
 
 /**
- * Customizes FMDViewModelAssignmentReference to display a selector for the viewmodel
+ * Customizes FMDViewModelAssignmentReference properties to display a selector for the viewmodel
  */
-class MDVIEWMODELEDITOR_API FMDViewModelAssignmentReferenceCustomization : public IPropertyTypeCustomization
+class FMDViewModelAssignmentReferenceCustomization : public IPropertyTypeCustomization
 {
 public:
 	static TSharedRef<IPropertyTypeCustomization> MakeInstance();
@@ -29,4 +30,24 @@ protected:
 
 	TSharedPtr<IPropertyHandle> StructHandle;
 	TSharedPtr<IPropertyHandle> ClassHandle;
+};
+
+/**
+ * Customizes FMDViewModelAssignmentReference pins to display a selector for the viewmodel
+ */
+class SMDViewModelAssignmentReferenceGraphPin : public SGraphPin
+{
+public:
+	using SGraphPin::Construct;
+
+	virtual TSharedRef<SWidget>	GetDefaultValueWidget() override;
+
+private:
+	UClass* GetWidgetOwnerClass() const;
+	UClass* ResolveWidgetClassFromPin(const UEdGraphPin* Pin) const;
+
+	TSharedRef<SWidget> MakeAssignmentMenu();
+	void SetSelectedAssignment(FMDViewModelAssignment Assignment) const;
+
+	FText GetSelectedAssignmentText() const;
 };

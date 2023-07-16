@@ -15,11 +15,17 @@ void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& Vi
 
 void UMDViewModelBase::InitializeViewModelWithContext(UObject* InContextObject)
 {
+#if WITH_EDITOR
+	ensureMsgf(GetViewModelSettingsStruct() == nullptr, TEXT("Initializing View Model [%s] without settings but it expects settings of type [%s]"), *GetName(), *GetNameSafe(GetViewModelSettingsStruct()));
+#endif
 	InitializeViewModelWithContext({}, InContextObject);
 }
 
 void UMDViewModelBase::InitializeViewModelWithContext(const UObject* InContextObject)
 {
+#if WITH_EDITOR
+	ensureMsgf(GetViewModelSettingsStruct() == nullptr, TEXT("Initializing View Model [%s] without settings but it expects settings of type [%s]"), *GetName(), *GetNameSafe(GetViewModelSettingsStruct()));
+#endif
 	InitializeViewModelWithContext({}, InContextObject);
 }
 

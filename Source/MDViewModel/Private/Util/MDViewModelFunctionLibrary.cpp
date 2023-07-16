@@ -3,15 +3,25 @@
 #include "MDViewModelModule.h"
 #include "Blueprint/UserWidget.h"
 #include "UObject/Package.h"
+#include "Util/MDViewModelAssignmentReference.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetExtensions/MDViewModelWidgetExtension.h"
 
 UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModel(UUserWidget* Widget, UMDViewModelBase* ViewModel, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
+	FMDViewModelAssignmentReference AssignmentReference;
+	AssignmentReference.ViewModelClass = ViewModelClass;
+	AssignmentReference.ViewModelName = ViewModelName;
+	
+	return BP_SetViewModel(Widget, ViewModel, AssignmentReference);
+}
+
+UMDViewModelBase* UMDViewModelFunctionLibrary::BP_SetViewModel(UUserWidget* Widget, UMDViewModelBase* ViewModel, const FMDViewModelAssignmentReference& Assignment)
+{
 	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
 	if (IsValid(Extension))
 	{
-		return Extension->SetViewModel(ViewModel, ViewModelClass, ViewModelName);
+		return Extension->SetViewModel(ViewModel, Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
 	}
 
 	return nullptr;
@@ -19,12 +29,21 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModel(UUserWidget* Widget,
 
 void UMDViewModelFunctionLibrary::ClearViewModel(UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
+	FMDViewModelAssignmentReference AssignmentReference;
+	AssignmentReference.ViewModelClass = ViewModelClass;
+	AssignmentReference.ViewModelName = ViewModelName;
+
+	BP_ClearViewModel(Widget, AssignmentReference);
+}
+
+void UMDViewModelFunctionLibrary::BP_ClearViewModel(UUserWidget* Widget, const FMDViewModelAssignmentReference& Assignment)
+{
 	if (IsValid(Widget))
 	{
 		UMDViewModelWidgetExtension* Extension = Widget->GetExtension<UMDViewModelWidgetExtension>();
 		if (IsValid(Extension))
 		{
-			Extension->ClearViewModel(ViewModelClass, ViewModelName);
+			Extension->ClearViewModel(Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
 		}
 	}
 }
@@ -42,12 +61,21 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModelOfClass(UUserWidget* 
 
 UMDViewModelBase* UMDViewModelFunctionLibrary::GetViewModel(UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
+	FMDViewModelAssignmentReference AssignmentReference;
+	AssignmentReference.ViewModelClass = ViewModelClass;
+	AssignmentReference.ViewModelName = ViewModelName;
+	
+	return BP_GetViewModel(Widget, AssignmentReference);
+}
+
+UMDViewModelBase* UMDViewModelFunctionLibrary::BP_GetViewModel(UUserWidget* Widget, const FMDViewModelAssignmentReference& Assignment)
+{
 	if (IsValid(Widget))
 	{
 		const UMDViewModelWidgetExtension* Extension = Widget->GetExtension<UMDViewModelWidgetExtension>();
 		if (IsValid(Extension))
 		{
-			return Extension->GetViewModel(ViewModelClass, ViewModelName);
+			return Extension->GetViewModel(Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
 		}
 	}
 
@@ -78,25 +106,43 @@ bool UMDViewModelFunctionLibrary::DoesWidgetHaveViewModelClassAssigned(const UUs
 		}
 	}
 
-	OutAssignedViewModelClass= nullptr;
+	OutAssignedViewModelClass = nullptr;
 	return false;
 }
 
 void UMDViewModelFunctionLibrary::BindViewModelChangedEvent(UUserWidget* Widget, FMDVMOnViewModelSetDynamic Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
+	FMDViewModelAssignmentReference AssignmentReference;
+	AssignmentReference.ViewModelClass = ViewModelClass;
+	AssignmentReference.ViewModelName = ViewModelName;
+
+	BP_BindViewModelChangedEvent(Widget, Delegate, AssignmentReference);
+}
+
+void UMDViewModelFunctionLibrary::BP_BindViewModelChangedEvent(UUserWidget* Widget, FMDVMOnViewModelSetDynamic Delegate, const FMDViewModelAssignmentReference& Assignment)
+{
 	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
 	if (IsValid(Extension))
 	{
-		Extension->ListenForChanges(MoveTemp(Delegate), ViewModelClass, ViewModelName);
+		Extension->ListenForChanges(MoveTemp(Delegate), Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
 	}
 }
 
 void UMDViewModelFunctionLibrary::UnbindViewModelChangedEvent(UUserWidget* Widget, FMDVMOnViewModelSetDynamic Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
+	FMDViewModelAssignmentReference AssignmentReference;
+	AssignmentReference.ViewModelClass = ViewModelClass;
+	AssignmentReference.ViewModelName = ViewModelName;
+
+	BP_UnbindViewModelChangedEvent(Widget, Delegate, AssignmentReference);
+}
+
+void UMDViewModelFunctionLibrary::BP_UnbindViewModelChangedEvent(UUserWidget* Widget, FMDVMOnViewModelSetDynamic Delegate, const FMDViewModelAssignmentReference& Assignment)
+{
 	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
 	if (IsValid(Extension))
 	{
-		Extension->StopListeningForChanges(Delegate, ViewModelClass, ViewModelName);
+		Extension->StopListeningForChanges(Delegate, Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
 	}
 }
 

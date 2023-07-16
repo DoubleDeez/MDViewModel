@@ -15,7 +15,7 @@ DECLARE_DELEGATE_RetVal(UClass*, FMDViewModelReferenceGetWidgetClass);
  * Helper struct to store a reference to a widget's view model assignment.
  * Has an editor customization to make selecting the view model user-friendly
  */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct MDVIEWMODEL_API FMDViewModelAssignmentReference
 {
 	GENERATED_BODY()

@@ -9,12 +9,26 @@
 #include "BlueprintModes/WidgetBlueprintApplicationMode.h"
 #include "BlueprintModes/WidgetBlueprintApplicationModes.h"
 #include "Customizations/MDViewModelAssignmentReferenceCustomization.h"
+#include "EdGraphUtilities.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Util/MDViewModelAssignmentReference.h"
 #include "ViewModelTab/MDViewModelTab.h"
 #include "WidgetExtensions/MDViewModelBlueprintCompilerExtension.h"
 
 #define LOCTEXT_NAMESPACE "FMDViewModelEditorModule"
+
+class FMDViewModelGraphPanelPinFactory : public FGraphPanelPinFactory
+{
+	virtual TSharedPtr<SGraphPin> CreatePin(UEdGraphPin* InPin) const override
+	{
+		if (InPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Struct && InPin->PinType.PinSubCategoryObject == TBaseStructure<FMDViewModelAssignmentReference>::Get())
+		{
+			return SNew(SMDViewModelAssignmentReferenceGraphPin, InPin);
+		}
+
+		return nullptr;
+	}
+};
 
 void FMDViewModelEditorModule::StartupModule()
 {
@@ -27,10 +41,18 @@ void FMDViewModelEditorModule::StartupModule()
 	CompilerExtensionPtr->AddToRoot();
 
 	FBlueprintCompilationManager::RegisterCompilerExtension(UWidgetBlueprint::StaticClass(), CompilerExtensionPtr.Get());
+	
+	ViewModelGraphPanelPinFactory = MakeShareable(new FMDViewModelGraphPanelPinFactory());
+	FEdGraphUtilities::RegisterVisualPinFactory(ViewModelGraphPanelPinFactory);
 }
 
 void FMDViewModelEditorModule::ShutdownModule()
 {
+	if (ViewModelGraphPanelPinFactory.IsValid())
+	{
+		FEdGraphUtilities::UnregisterVisualPinFactory(ViewModelGraphPanelPinFactory);
+	}
+	
 	if (UMDViewModelBlueprintCompilerExtension* CompilerExtension = CompilerExtensionPtr.Get())
 	{
 		CompilerExtension->RemoveFromRoot();
