@@ -1,4 +1,5 @@
 #include "ViewModel/MDViewModelBase.h"
+#include "InstancedStruct.h"
 
 void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject)
 {
@@ -10,6 +11,16 @@ void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& Vi
 {
 	// TODO - Determine a way to support both const and non-const context objects
 	InitializeViewModelWithContext(ViewModelSettings, const_cast<UObject*>(InContextObject));
+}
+
+void UMDViewModelBase::InitializeViewModelWithContext(UObject* InContextObject)
+{
+	InitializeViewModelWithContext({}, InContextObject);
+}
+
+void UMDViewModelBase::InitializeViewModelWithContext(const UObject* InContextObject)
+{
+	InitializeViewModelWithContext({}, InContextObject);
 }
 
 void UMDViewModelBase::ShutdownViewModelFromProvider()

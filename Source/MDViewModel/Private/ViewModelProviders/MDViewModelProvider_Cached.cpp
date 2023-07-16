@@ -105,6 +105,18 @@ UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(UObje
 	return nullptr;
 }
 
+UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel(const UObject* CacheContextObject, const FName& ViewModelName,
+																   TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
+{
+	UMDViewModelProvider_Cached* Provider = IsValid(GEngine) ? GEngine->GetEngineSubsystem<UMDViewModelProvider_Cached>() : nullptr;
+	if (IsValid(Provider))
+	{
+		return Provider->FindCachedViewModel_Internal(CacheContextObject, ViewModelName, ViewModelClass, ViewModelSettings);
+	}
+
+	return nullptr;
+}
+
 void UMDViewModelProvider_Cached::Deinitialize()
 {
 	FGameDelegates::Get().GetViewTargetChangedDelegate().RemoveAll(this);
@@ -327,6 +339,17 @@ UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel_Inter
 	return nullptr;
 }
 
+UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel_Internal(const UObject* CacheContextObject, const FName& ViewModelName,
+																			TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings) const
+{
+	if (const IMDViewModelCacheInterface* ViewModelCache = ResolveObjectCache(CacheContextObject))
+	{
+		return ViewModelCache->GetViewModel(ViewModelName, ViewModelClass, ViewModelSettings);
+	}
+
+	return nullptr;
+}
+
 void UMDViewModelProvider_Cached::BindOnWidgetDestroy(UUserWidget& Widget)
 {
 	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(&Widget);
@@ -460,6 +483,16 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveActorCache(AActo
 	return UMDViewModelCacheComponent::FindOrAddCache(Actor);
 }
 
+const IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveActorCache(const AActor* Actor) const
+{
+	if (IsValid(Actor))
+	{
+		return Actor->FindComponentByClass<UMDViewModelCacheComponent>();
+	}
+
+	return nullptr;
+}
+
 IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCache(UObject* Object) const
 {
 	if (const UGameInstance* GameInstance = Cast<UGameInstance>(Object))
@@ -482,8 +515,30 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCache(UObj
 	return nullptr;
 }
 
+const IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCache(const UObject* Object) const
+{
+	if (const UGameInstance* GameInstance = Cast<UGameInstance>(Object))
+	{
+		return ResolveGlobalCache(GameInstance);
+	}
+	else if (const UWorld* World = Cast<UWorld>(Object))
+	{
+		return ResolveWorldCache(World);
+	}
+	else if (const ULocalPlayer* LocalPlayer = Cast<ULocalPlayer>(Object))
+	{
+		return ResolveLocalPlayerCache(LocalPlayer);
+	}
+	else if (const AActor* Actor = Cast<AActor>(Object))
+	{
+		return ResolveActorCache(Actor);
+	}
+
+	return nullptr;
+}
+
 IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveHUDCacheAndBindDelegates(APlayerController* PlayerController,
-	UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
+                                                                                         UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
 	UMDVMPCUpdatePollingComponent* Poller = IsValid(PlayerController)
 		? UMDVMPCUpdatePollingComponent::FindOrAddPollingComponent(PlayerController)

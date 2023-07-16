@@ -2,6 +2,7 @@
 
 #include "Engine/MemberReference.h"
 #include "FieldNotification/FieldId.h"
+#include "InstancedStruct.h"
 #include "MDViewModelProviderBase.h"
 #include "NativeGameplayTags.h"
 #include "UObject/WeakInterfacePtr.h"
@@ -149,8 +150,13 @@ class MDVIEWMODEL_API UMDViewModelProvider_Cached : public UMDViewModelProviderB
 public:
 	// Use this to make use of a view model cache for manually assigned view models
 	template<typename T>
-	static T* FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings);
-	static UMDViewModelBase* FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings);
+	static T* FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings = {});
+	static UMDViewModelBase* FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings = {});
+
+	// Try to find an existing view model for the given context object
+	template<typename T>
+	static T* FindCachedViewModel(const UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings = {});
+	static UMDViewModelBase* FindCachedViewModel(const UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings = {});
 
 	virtual void Deinitialize() override;
 
@@ -172,6 +178,7 @@ protected:
 	virtual IMDViewModelCacheInterface* ResolveAndBindViewModelCache(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data, const FMDViewModelProvider_Cached_Settings& Settings);
 	
 	UMDViewModelBase* FindOrCreateCachedViewModel_Internal(UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings);
+	UMDViewModelBase* FindCachedViewModel_Internal(const UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings) const;
 
 	void BindOnWidgetDestroy(UUserWidget& Widget);
 	void OnWidgetDestroy(TWeakObjectPtr<UUserWidget> WidgetPtr);
@@ -190,7 +197,9 @@ protected:
 	IMDViewModelCacheInterface* ResolveLocalPlayerCache(const ULocalPlayer* LocalPlayer) const;
 	IMDViewModelCacheInterface* ResolveWorldCache(const UWorld* World) const;
 	IMDViewModelCacheInterface* ResolveActorCache(AActor* Actor) const;
+	const IMDViewModelCacheInterface* ResolveActorCache(const AActor* Actor) const;
 	IMDViewModelCacheInterface* ResolveObjectCache(UObject* Object) const;
+	const IMDViewModelCacheInterface* ResolveObjectCache(const UObject* Object) const;
 
 	IMDViewModelCacheInterface* ResolveHUDCacheAndBindDelegates(APlayerController* PlayerController, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
@@ -222,4 +231,11 @@ T* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(UObject* CacheContex
 {
 	static_assert(TIsDerivedFrom<T, UMDViewModelBase>::Value, "T must derive from UMDViewModelBase");
 	return Cast<T>(FindOrCreateCachedViewModel(CacheContextObject, ViewModelName, ViewModelClass, ViewModelSettings));
+}
+
+template <typename T>
+T* UMDViewModelProvider_Cached::FindCachedViewModel(const UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
+{
+	static_assert(TIsDerivedFrom<T, UMDViewModelBase>::Value, "T must derive from UMDViewModelBase");
+	return Cast<T>(FindCachedViewModel(CacheContextObject, ViewModelName, ViewModelClass, ViewModelSettings));
 }

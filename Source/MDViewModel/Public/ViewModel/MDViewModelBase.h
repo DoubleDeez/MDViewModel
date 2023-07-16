@@ -47,6 +47,8 @@ public:
 	// Called by view model providers after they create the view model object
 	void InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject);
 	void InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, const UObject* InContextObject);
+	void InitializeViewModelWithContext(UObject* InContextObject);
+	void InitializeViewModelWithContext(const UObject* InContextObject);
 
 	// Called by view model providers when they stop referencing the view model object
 	void ShutdownViewModelFromProvider();
