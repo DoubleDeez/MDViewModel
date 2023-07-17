@@ -10,12 +10,13 @@
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetBlueprint.h"
 
-UMDViewModelCommandNodeSpawner* UMDViewModelCommandNodeSpawner::Create(const FMDViewModelAssignmentReference& Assignment, const UFunction* Function)
+UMDViewModelCommandNodeSpawner* UMDViewModelCommandNodeSpawner::Create(const FMDViewModelAssignmentReference& Assignment, const UFunction* Function, const UWidgetBlueprint* WidgetBP)
 {
 	UMDViewModelCommandNodeSpawner* Spawner = NewObject<UMDViewModelCommandNodeSpawner>();
 	Spawner->NodeClass = UMDVMNode_CallCommand::StaticClass();
 	Spawner->Assignment = Assignment;
 	Spawner->FunctionPtr = Function;
+	Spawner->WidgetBPPtr = WidgetBP;
 
 	const FText VMClassDisplayName = Assignment.ViewModelClass != nullptr ? Assignment.ViewModelClass->GetDisplayNameText() : FText::GetEmpty(); 
 
@@ -47,15 +48,15 @@ FBlueprintNodeSignature UMDViewModelCommandNodeSpawner::GetSpawnerSignature() co
 
 UEdGraphNode* UMDViewModelCommandNodeSpawner::Invoke(UEdGraph* ParentGraph, const FBindingSet& Bindings, const FVector2D Location) const
 {
-	auto InitNode = [](UEdGraphNode* NewNode, bool bIsTemplateNode, FMDViewModelAssignmentReference VMAssignment, const UFunction* Func)
+	auto InitNode = [](UEdGraphNode* NewNode, bool bIsTemplateNode, FMDViewModelAssignmentReference VMAssignment, const UFunction* Func, const UWidgetBlueprint* WidgetBP)
 	{
 		if (UMDVMNode_CallCommand* CommandNode = Cast<UMDVMNode_CallCommand>(NewNode))
 		{
-			CommandNode->InitializeViewModelCommandParams(VMAssignment, Func);
+			CommandNode->InitializeViewModelCommandParams(VMAssignment, Func, WidgetBP);
 		}
 	};
 
-	FCustomizeNodeDelegate InitNodeDelegate = FCustomizeNodeDelegate::CreateStatic(InitNode, Assignment, FunctionPtr.Get());
+	FCustomizeNodeDelegate InitNodeDelegate = FCustomizeNodeDelegate::CreateStatic(InitNode, Assignment, FunctionPtr.Get(), WidgetBPPtr.Get());
 	return SpawnNode<UEdGraphNode>(NodeClass, ParentGraph, Bindings, Location, MoveTemp(InitNodeDelegate));
 }
 
@@ -89,7 +90,7 @@ void UMDVMNode_CallCommand::GetMenuActions(FBlueprintActionDatabaseRegistrar& In
 						AssignmentReference.ViewModelClass = It.Key().ViewModelClass;
 						AssignmentReference.ViewModelName = It.Key().ViewModelName;
 						
-						UMDViewModelCommandNodeSpawner* NodeSpawner = UMDViewModelCommandNodeSpawner::Create(AssignmentReference, Func);
+						UMDViewModelCommandNodeSpawner* NodeSpawner = UMDViewModelCommandNodeSpawner::Create(AssignmentReference, Func, WidgetBP);
 						InActionRegistrar.AddBlueprintAction(WidgetBP, NodeSpawner);
 					}
 				}
@@ -103,7 +104,7 @@ bool UMDVMNode_CallCommand::IsActionFilteredOut(const FBlueprintActionFilter& Fi
 	for (const UBlueprint* Blueprint : Filter.Context.Blueprints)
 	{
 		const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(Blueprint);
-		if (WidgetBP == nullptr || WidgetBP->GeneratedClass == nullptr)
+		if (WidgetBP == nullptr || WidgetBP->GeneratedClass == nullptr || ExpectedWidgetBP != Blueprint)
 		{
 			return true;
 		}
@@ -177,6 +178,8 @@ void UMDVMNode_CallCommand::ExpandNode(FKismetCompilerContext& CompilerContext, 
 		CallFuncNode->SetFromFunction(Function);
 		CallFuncNode->AllocateDefaultPins();
 
+		// TODO - Add Is Valid branch with special exec out to handle null view model
+
 		// Connect GetViewModel return value to CallFunction self pin
 		UEdGraphPin* GetViewModelReturnValuePin = GetViewModelNode->GetReturnValuePin();
 		UEdGraphPin* CallFuncSelfPin = Schema->FindSelfPin(*CallFuncNode, EGPD_Input);
@@ -235,8 +238,9 @@ void UMDVMNode_CallCommand::ValidateNodeDuringCompilation(FCompilerResultsLog& M
 	}
 }
 
-void UMDVMNode_CallCommand::InitializeViewModelCommandParams(const FMDViewModelAssignmentReference& VMAssignment, const UFunction* Function)
+void UMDVMNode_CallCommand::InitializeViewModelCommandParams(const FMDViewModelAssignmentReference& VMAssignment, const UFunction* Function, const UWidgetBlueprint* WidgetBP)
 {
 	SetFromFunction(Function);
 	Assignment = VMAssignment;
+	ExpectedWidgetBP = WidgetBP;
 }

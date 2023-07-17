@@ -6,13 +6,15 @@
 
 #include "MDVMNode_CallCommand.generated.h"
 
+class UWidgetBlueprint;
+
 UCLASS(Transient)
 class UMDViewModelCommandNodeSpawner : public UBlueprintNodeSpawner
 {
 	GENERATED_BODY()
 
 public:
-	static UMDViewModelCommandNodeSpawner* Create(const FMDViewModelAssignmentReference& Assignment, const UFunction* Function);
+	static UMDViewModelCommandNodeSpawner* Create(const FMDViewModelAssignmentReference& Assignment, const UFunction* Function, const UWidgetBlueprint* WidgetBP);
 	
 	virtual FBlueprintNodeSignature GetSpawnerSignature() const override;
 	virtual UEdGraphNode* Invoke(UEdGraph* ParentGraph, const FBindingSet& Bindings, const FVector2D Location) const override;
@@ -23,6 +25,9 @@ protected:
 
 	UPROPERTY()
 	TWeakObjectPtr<const UFunction> FunctionPtr;
+
+	UPROPERTY()
+	TWeakObjectPtr<const UWidgetBlueprint> WidgetBPPtr;
 };
 
 /**
@@ -44,9 +49,12 @@ public:
 	virtual void ExpandNode(class FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph) override;
 	virtual void ValidateNodeDuringCompilation(class FCompilerResultsLog& MessageLog) const override;
 
-	void InitializeViewModelCommandParams(const FMDViewModelAssignmentReference& VMAssignment, const UFunction* Function);
+	void InitializeViewModelCommandParams(const FMDViewModelAssignmentReference& VMAssignment, const UFunction* Function, const UWidgetBlueprint* WidgetBP);
 
 private:
 	UPROPERTY()
 	FMDViewModelAssignmentReference Assignment;
+
+	UPROPERTY()
+	TWeakObjectPtr<const UWidgetBlueprint> ExpectedWidgetBP;
 };
