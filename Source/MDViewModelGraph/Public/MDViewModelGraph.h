@@ -3,6 +3,9 @@
 #include "Modules/ModuleManager.h"
 #include "Templates/SubclassOf.h"
 
+struct FMDViewModelAssignmentData;
+struct FMDViewModelAssignment;
+class UWidgetBlueprint;
 class UMDVMNode_ViewModelChanged;
 class UMDVMNode_ViewModelEvent;
 class UMDVMNode_ViewModelFieldNotify;
@@ -14,6 +17,8 @@ class FMDViewModelGraphModule : public IModuleInterface
 public:
     virtual void StartupModule() override;
     virtual void ShutdownModule() override;
+
+	static void GetViewModelAssignmentsForWidgetBlueprint(const UWidgetBlueprint* WidgetBP, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments);
 
 	MDVIEWMODELGRAPH_API static bool DoesBlueprintBindToViewModelEvent(const UBlueprint* BP, const FName& EventName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);
 	MDVIEWMODELGRAPH_API static void OnViewModelEventRequestedForBlueprint(const UBlueprint* BP, const FName& EventName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);

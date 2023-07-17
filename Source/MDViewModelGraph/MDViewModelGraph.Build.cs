@@ -21,6 +21,7 @@ public class MDViewModelGraph : ModuleRules
                 "CoreUObject",
                 "Engine",
                 "GameplayTags",
+                "KismetCompiler",
                 "MDViewModel",
                 "Slate",
                 "SlateCore",

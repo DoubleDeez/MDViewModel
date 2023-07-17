@@ -1,10 +1,33 @@
 #include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
 
+#include "BlueprintActionDatabase.h"
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "Launch/Resources/Version.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
 
+
+void UMDViewModelWidgetBlueprintExtension::GetBPAndParentClassAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments) const
+{
+	for (const FMDViewModelEditorAssignment& Assignment : Assignments)
+	{
+		OutViewModelAssignments.Add(Assignment.Assignment, Assignment.Data);
+	}
+
+	UClass* SuperClass = GetWidgetBlueprint()->SkeletonGeneratedClass->GetSuperClass();
+	if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(SuperClass))
+	{
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
+		if (UMDViewModelWidgetClassExtension* Extension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
+#else
+		if (UMDViewModelWidgetClassExtension* Extension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>(false))
+#endif
+		{
+			OutViewModelAssignments.Append(Extension->GetAssignments());
+		}
+	}
+}
 
 void UMDViewModelWidgetBlueprintExtension::AddAssignment(FMDViewModelEditorAssignment&& Assignment)
 {
@@ -14,6 +37,7 @@ void UMDViewModelWidgetBlueprintExtension::AddAssignment(FMDViewModelEditorAssig
 		OnAssignmentsChanged.Broadcast();
 
 		FBlueprintEditorUtils::MarkBlueprintAsModified(GetWidgetBlueprint());
+		FBlueprintActionDatabase::Get().RefreshAssetActions(GetWidgetBlueprint());
 	}
 }
 
@@ -35,6 +59,7 @@ void UMDViewModelWidgetBlueprintExtension::UpdateAssignment(const FMDViewModelEd
 		OnAssignmentsChanged.Broadcast();
 
 		FBlueprintEditorUtils::MarkBlueprintAsModified(GetWidgetBlueprint());
+		FBlueprintActionDatabase::Get().RefreshAssetActions(GetWidgetBlueprint());
 	}
 }
 
@@ -45,6 +70,7 @@ void UMDViewModelWidgetBlueprintExtension::RemoveAssignment(const FMDViewModelEd
 		OnAssignmentsChanged.Broadcast();
 		
 		FBlueprintEditorUtils::MarkBlueprintAsModified(GetWidgetBlueprint());
+		FBlueprintActionDatabase::Get().RefreshAssetActions(GetWidgetBlueprint());
 	}
 }
 

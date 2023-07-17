@@ -1,19 +1,13 @@
 #include "ViewModelTab/MDViewModelAssignmentDialog.h"
 
-#include "ClassViewerFilter.h"
-#include "DetailLayoutBuilder.h"
-#include "DetailWidgetRow.h"
 #include "Engine/Engine.h"
-#include "MDViewModelModule.h"
+#include "Customizations/MDViewModelAssignmentEditorObjectCustomization.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Framework/Docking/TabManager.h"
+#include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "PropertyEditorModule.h"
-#include "SClassViewer.h"
 #include "ScopedTransaction.h"
 #include "SPrimaryButton.h"
-#include "Components/VerticalBox.h"
-#include "Customizations/MDViewModelAssignmentEditorObjectCustomization.h"
-#include "Framework/MultiBox/MultiBoxBuilder.h"
-#include "MDViewModelEditorModule.h"
-#include "Misc/FeedbackContext.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
 #include "ViewModelProviders/MDViewModelProvider_Cached.h"
@@ -274,24 +268,9 @@ bool SMDViewModelAssignmentDialog::IsAssignmentUnique() const
 
 		if (const UMDViewModelWidgetBlueprintExtension* Extension = BPExtensionPtr.Get())
 		{
-			if (const UWidgetBlueprint* WidgetBP = Extension->GetWidgetBlueprint())
+			if (!Extension->DoesContainViewModelAssignment(EditorObject->ViewModelClass, FGameplayTag::EmptyTag, EditorObject->ViewModelInstanceName))
 			{
-				if (const TSubclassOf<UUserWidget> WidgetClass = Cast<UClass>(WidgetBP->GeneratedClass))
-				{
-					TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
-					const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
-					ViewModelModule.GetViewModelAssignmentsForWidgetClass(WidgetClass, ViewModelAssignments);
-
-					for (const auto& Pair : ViewModelAssignments)
-					{
-						if (Pair.Key.ViewModelClass == EditorObject->ViewModelClass && Pair.Key.ViewModelName == EditorObject->ViewModelInstanceName)
-						{
-							return false;
-						}
-					}
-
-					return true;
-				}
+				return true;
 			}
 		}
 	}

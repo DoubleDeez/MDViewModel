@@ -7,6 +7,8 @@
 #include "Nodes/MDVMNode_ViewModelEvent.h"
 #include "Nodes/MDVMNode_ViewModelFieldNotify.h"
 #include "ViewModel/MDViewModelBase.h"
+#include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
+#include "WidgetBlueprint.h"
 
 #define LOCTEXT_NAMESPACE "FMDViewModelGraphModule"
 
@@ -18,8 +20,27 @@ void FMDViewModelGraphModule::ShutdownModule()
 {
 }
 
+void FMDViewModelGraphModule::GetViewModelAssignmentsForWidgetBlueprint(const UWidgetBlueprint* WidgetBP, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments)
+{
+	if (WidgetBP != nullptr)
+	{
+		const TObjectPtr<UBlueprintExtension>* ExtensionPtr = WidgetBP->GetExtensions().FindByPredicate([](const TObjectPtr<UBlueprintExtension> BPExtension)
+		{
+			return BPExtension != nullptr && BPExtension->IsA<UMDViewModelWidgetBlueprintExtension>();
+		});
+
+		if (ExtensionPtr != nullptr)
+		{
+			if (const UMDViewModelWidgetBlueprintExtension* Extension = Cast<UMDViewModelWidgetBlueprintExtension>(ExtensionPtr->Get()))
+			{
+				Extension->GetBPAndParentClassAssignments(OutViewModelAssignments);
+			}
+		}
+	}
+}
+
 bool FMDViewModelGraphModule::DoesBlueprintBindToViewModelEvent(const UBlueprint* BP, const FName& EventName, TSubclassOf<UMDViewModelBase> ViewModelClass,
-	const FName& ViewModelName)
+                                                                const FName& ViewModelName)
 {
 	return FindExistingViewModelEventNode(BP, EventName, ViewModelClass, ViewModelName) != nullptr;
 }

@@ -37,6 +37,18 @@ void UMDVMNode_GetViewModel::GetMenuActions(FBlueprintActionDatabaseRegistrar& I
 	}
 }
 
+void UMDVMNode_GetViewModel::SetDefaultAssignment(const FMDViewModelAssignmentReference& Assignment)
+{
+	UEdGraphPin* AssignmentPin = FindPinChecked(TEXT("Assignment"));
+	FString AssignmentValue;
+	FMDViewModelAssignmentReference::StaticStruct()->ExportText(AssignmentValue, &Assignment, &Assignment, nullptr, PPF_SerializedAsImportText, nullptr);
+
+	if (AssignmentValue != AssignmentPin->GetDefaultAsString())
+	{
+		AssignmentPin->GetSchema()->TrySetDefaultValue(*AssignmentPin, AssignmentValue);
+	}
+}
+
 void UMDVMNode_GetViewModel::UpdateReturnPin() const
 {
 	// Change the return pin's class to the assigned view model class

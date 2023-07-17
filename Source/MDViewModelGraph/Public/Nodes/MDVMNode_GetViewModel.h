@@ -3,6 +3,8 @@
 #include "K2Node_CallFunction.h"
 #include "MDVMNode_GetViewModel.generated.h"
 
+struct FMDViewModelAssignmentReference;
+
 /**
  * Custom node for UMDViewModelFunctionLibrary::BP_GetViewModel to auto-cast the return value to the assigned view model class
  */
@@ -18,6 +20,8 @@ public:
 	virtual void PinDefaultValueChanged(UEdGraphPin* Pin) override;
 	
 	virtual void GetMenuActions(FBlueprintActionDatabaseRegistrar& InActionRegistrar) const override;
+
+	void SetDefaultAssignment(const FMDViewModelAssignmentReference& Assignment);
 
 private:
 	void UpdateReturnPin() const;

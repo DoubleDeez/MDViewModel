@@ -17,6 +17,7 @@ class MDVIEWMODELGRAPH_API UMDViewModelWidgetBlueprintExtension : public UWidget
 
 public:
 	const TArray<FMDViewModelEditorAssignment>& GetAssignments() const { return Assignments; }
+	void GetBPAndParentClassAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments) const;
 
 	void AddAssignment(FMDViewModelEditorAssignment&& Assignment);
 	void UpdateAssignment(const FMDViewModelEditorAssignment& Assignment, FMDViewModelEditorAssignment&& UpdatedAssignment);
