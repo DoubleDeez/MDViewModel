@@ -7,7 +7,6 @@
 #include "Runtime/Launch/Resources/Version.h"
 #include "Util/MDViewModelAssignment.h"
 #include "ViewModel/MDViewModelBase.h"
-#include "WidgetBlueprint.h"
 #include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
 
 #define LOCTEXT_NAMESPACE "FMDViewModelModule"
