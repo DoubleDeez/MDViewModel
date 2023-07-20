@@ -104,6 +104,9 @@ protected:
 	// Called by view model providers after they create the view model object
 	virtual void InitializeViewModel(const FInstancedStruct& ViewModelSettings) {};
 
+	// Override this to override the context object that's been passed to this view model during initialization
+	virtual UObject* RedirectContextObject(const FInstancedStruct& ViewModelSettings, UObject* InContextObject) const { return InContextObject; }
+
 	// Called by view model providers when they stop referencing the view model object
 	virtual void ShutdownViewModel() {}
 

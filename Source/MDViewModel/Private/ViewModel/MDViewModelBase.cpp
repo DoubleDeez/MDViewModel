@@ -3,7 +3,7 @@
 
 void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject)
 {
-	ContextObject = InContextObject;
+	ContextObject = RedirectContextObject(ViewModelSettings, InContextObject);
 	InitializeViewModel(ViewModelSettings);
 }
 
