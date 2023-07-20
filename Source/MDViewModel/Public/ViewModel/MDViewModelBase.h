@@ -5,6 +5,7 @@
 #include "FieldNotification/IFieldValueChanged.h"
 #include "UObject/Object.h"
 #include "UObject/Package.h"
+#include "Util/MDViewModelMetaUtils.h"
 #include "MDViewModelBase.generated.h"
 
 struct FInstancedStruct;
@@ -12,24 +13,6 @@ class UUserWidget;
 
 #if WITH_EDITOR
 class UWidgetBlueprint;
-#endif
-
-// Fix syntax highlighting caused by code analysis engine not detecting FieldNotify names
-#if defined(__RESHARPER__)
-// Broadcast that the specified field has changed
-#define MDVM_BROADCAST_FIELD(FIELD_NAME) [_ = FIELD_NAME](){}()
-#else
-// Broadcast that the specified field has changed
-#define MDVM_BROADCAST_FIELD(FIELD_NAME) BroadcastFieldValueChanged(ThisClass::FFieldNotificationClassDescriptor::FIELD_NAME)
-#endif
-
-// Fix syntax highlighting caused by code analysis engine not detecting FieldNotify names, attempts to maintain traits of SetFieldNotifyValue
-#if defined(__RESHARPER__)
-// Check if the field value is different than the passed in value then set it and broadcast if it changed.
-#define MDVM_SET_FIELD(FIELD_NAME, VALUE) [_ = FIELD_NAME, __ = VALUE](){ return FMath::RandBool(); }()
-#else
-// Check if the field value is different than the passed in value then set it and broadcast if it changed.
-#define MDVM_SET_FIELD(FIELD_NAME, VALUE) SetFieldNotifyValue(FIELD_NAME, VALUE, ThisClass::FFieldNotificationClassDescriptor::FIELD_NAME)
 #endif
 
 /**
@@ -71,6 +54,12 @@ public:
 	virtual int32 RemoveAllFieldValueChangedDelegates(const void* InUserObject) override;
 	virtual int32 RemoveAllFieldValueChangedDelegates(UE::FieldNotification::FFieldId InFieldId, const void* InUserObject) override;
 	virtual const UE::FieldNotification::IClassDescriptor& GetFieldNotificationDescriptor() const override;
+
+	template<typename T, typename U>
+	FDelegateHandle AddTypedFieldValueChangedDelegate(UE::FieldNotification::FFieldId InFieldId, TDelegate<void(U)>&& Delegate);
+
+	template<typename T>
+	bool GetFieldValue(UE::FieldNotification::FFieldId FieldId, T& OutValue); 
 
 	// These feel like an anti-pattern but they're here for flexibility
 	virtual void OnSetOnWidget(UUserWidget* Widget) {}
@@ -141,3 +130,44 @@ private:
 	UE::FieldNotification::FFieldMulticastDelegate FieldNotifyDelegates;
 	TBitArray<> EnabledFieldNotifications;
 };
+
+template <typename T, typename U>
+FDelegateHandle UMDViewModelBase::AddTypedFieldValueChangedDelegate(UE::FieldNotification::FFieldId InFieldId, TDelegate<void(U)>&& Delegate)
+{
+	UObject* BoundObject = Delegate.GetUObject();
+	auto WrapperDelegate = FFieldValueChangedDelegate::CreateWeakLambda(BoundObject,
+		[this, WeakThis = MakeWeakObjectPtr(this), InnerDelegate = MoveTemp(Delegate)](UObject* Object, UE::FieldNotification::FFieldId FieldId)
+		{
+			if (WeakThis.IsValid())
+			{
+				T FieldValue;
+				if (GetFieldValue(FieldId, FieldValue))
+				{
+					InnerDelegate.ExecuteIfBound(FieldValue);
+				}
+			}
+		}
+	);
+	return AddFieldValueChangedDelegate(InFieldId, MoveTemp(WrapperDelegate));
+}
+
+template <typename T>
+bool UMDViewModelBase::GetFieldValue(UE::FieldNotification::FFieldId FieldId, T& OutValue)
+{
+	UE::FieldNotification::FFieldVariant Field = FieldId.ToVariant(this);
+	if (UFunction* Func = Field.GetFunction())
+	{
+		checkf(Func->ParmsSize == sizeof(T), TEXT("Param type does not match function return value type"));
+		ProcessEvent(Func, &OutValue);
+
+		return true;
+	}
+	else if (const FProperty* Prop = Field.GetProperty())
+	{
+		checkf(Prop->GetSize() == sizeof(T), TEXT("Param type does not match field value type"));
+		Prop->GetValue_InContainer(this, &OutValue);
+		return true;
+	}
+
+	return false;
+}
