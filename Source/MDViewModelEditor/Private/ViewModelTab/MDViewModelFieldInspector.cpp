@@ -745,7 +745,7 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 					return true;
 				}
 
-				if (!bIsPure && bIncludeBlueprintCallable && Func->HasAnyFunctionFlags(FUNC_BlueprintCallable))
+				if (!bIsPure && bIncludeBlueprintCallable && Func->HasAnyFunctionFlags(FUNC_BlueprintCallable) && !Func->HasAnyFunctionFlags(FUNC_Static))
 				{
 					return true;
 				}

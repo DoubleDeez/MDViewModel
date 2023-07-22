@@ -43,6 +43,8 @@ public:
 	virtual bool IsActionFilteredOut(const FBlueprintActionFilter& Filter) override;
 
 	virtual void AllocateDefaultPins() override;
+	
+	virtual void GetPinHoverText(const UEdGraphPin& Pin, FString& HoverTextOut) const override;
 
 	virtual FText GetFunctionContextString() const override;
 	virtual class FNodeHandlingFunctor* CreateNodeHandler(class FKismetCompilerContext& CompilerContext) const override;
