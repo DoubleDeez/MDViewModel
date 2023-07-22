@@ -96,6 +96,11 @@ const FGameplayTag& FMDViewModelProvider_Cached_Settings::GetLifetimeTag() const
 UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& ViewModelName,
                                                                            TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
 {
+	return FindOrCreateCachedViewModel(CacheContextObject, ViewModelClass, ViewModelName, ViewModelSettings);
+}
+
+UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName, const FInstancedStruct& ViewModelSettings)
+{
 	UMDViewModelProvider_Cached* Provider = IsValid(GEngine) ? GEngine->GetEngineSubsystem<UMDViewModelProvider_Cached>() : nullptr;
 	if (IsValid(Provider))
 	{
@@ -105,10 +110,9 @@ UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(UObje
 	return nullptr;
 }
 
-UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel(const UObject* CacheContextObject, const FName& ViewModelName,
-																   TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
+UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel(const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName, const FInstancedStruct& ViewModelSettings)
 {
-	UMDViewModelProvider_Cached* Provider = IsValid(GEngine) ? GEngine->GetEngineSubsystem<UMDViewModelProvider_Cached>() : nullptr;
+	const UMDViewModelProvider_Cached* Provider = IsValid(GEngine) ? GEngine->GetEngineSubsystem<UMDViewModelProvider_Cached>() : nullptr;
 	if (IsValid(Provider))
 	{
 		return Provider->FindCachedViewModel_Internal(CacheContextObject, ViewModelName, ViewModelClass, ViewModelSettings);
@@ -512,6 +516,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCache(UObj
 		return ResolveActorCache(Actor);
 	}
 
+	ensureMsgf(IsValid(Object), TEXT("Object [%s] or type [%s] is not a supported View Model Cache type, supported types are GameInstance, World, LocalPlayer, and Actor"), *GetNameSafe(Object), *GetNameSafe(Object->GetClass()));
 	return nullptr;
 }
 
