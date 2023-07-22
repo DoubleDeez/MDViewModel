@@ -89,7 +89,7 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs)
 				[
 					SNew(STextBlock)
 					.Text(INVTEXT("View Model Commands"))
-					.ToolTipText(INVTEXT("Blueprint Callable functions from the selected view model that are not Pure functions."))
+					.ToolTipText(INVTEXT("Blueprint Callable functions from the selected view model that are not Pure or Static functions.\r\nYou can drag and drop these onto into your blueprint graph."))
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
 				]
 			]

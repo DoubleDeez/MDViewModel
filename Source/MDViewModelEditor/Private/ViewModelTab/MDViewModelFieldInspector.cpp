@@ -5,21 +5,183 @@
 #include "EdGraphSchema_K2_Actions.h"
 #include "PropertyInfoViewStyle.h"
 #include "WidgetBlueprint.h"
-#include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetDebugUtilities.h"
-#include "Kismet2/KismetEditorUtilities.h"
 #include "MDViewModelGraph.h"
+#include "Nodes/MDVMNode_CallCommand.h"
 #include "UObject/WeakFieldPtr.h"
+#include "Util/MDViewModelAssignmentReference.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "Widgets/Images/SLayeredImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 
+class SMDVMDragDropFunctionWrapper : public SButton
+{
+public:
+	SLATE_BEGIN_ARGS(SMDVMDragDropFunctionWrapper)
+	{}
+		SLATE_DEFAULT_SLOT(FArguments, Content)
+		SLATE_ATTRIBUTE(bool, bCanDrag)
+	SLATE_END_ARGS()
+
+	void Construct(const FArguments& InArgs, TSharedRef<FMDViewModelFunctionDebugLineItem> Parent)
+	{
+		bCanDrag = InArgs._bCanDrag;
+		FunctionItem = Parent;
+
+		ButtonStyle.Normal = FSlateBrush(FSlateNoResource());
+		ButtonStyle.Pressed = FSlateBrush(FSlateNoResource());
+		ButtonStyle.Hovered = FSlateBrush(FSlateNoResource());
+		ButtonStyle.Disabled = FSlateBrush(FSlateNoResource());
+		ButtonStyle.NormalPadding = FMargin(0);
+		ButtonStyle.PressedPadding = FMargin(0);
+
+		SButton::Construct(
+			SButton::FArguments()
+			.ButtonStyle(&ButtonStyle)
+			.Content()
+			[
+				InArgs._Content.Widget
+			]
+		);
+	}
+
+	virtual TOptional<EMouseCursor::Type> GetCursor() const override
+	{
+		return (bCanDrag.Get(false) && FunctionItem.IsValid()) ? EMouseCursor::GrabHand : SCompoundWidget::GetCursor();
+	}
+
+	virtual FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
+	{
+		FReply Reply = SButton::OnMouseButtonDown(MyGeometry, MouseEvent);
+		if (bCanDrag.Get(false) && FunctionItem.IsValid())
+		{
+			Reply = Reply.DetectDrag(AsShared(), EKeys::LeftMouseButton);
+		}
+
+		return Reply;
+	}
+
+	virtual FReply OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
+	{
+		if (bCanDrag.Get(false) && FunctionItem.IsValid())
+		{
+			const TSharedRef<FMDVMCommandDragDropAction> Action = FMDVMCommandDragDropAction::Create(
+				FunctionItem->GetFunction(),
+				FunctionItem->GetViewModelAssignmentReference()
+			);
+			
+			return FReply::Handled().BeginDragDrop(Action);
+		}
+
+		return FReply::Unhandled();
+	}
+
+	TAttribute<bool> bCanDrag;
+	TSharedPtr<FMDViewModelFunctionDebugLineItem> FunctionItem;
+	FButtonStyle ButtonStyle;
+};
+
+TSharedRef<FMDVMCommandDragDropAction> FMDVMCommandDragDropAction::Create(TWeakObjectPtr<const UFunction> InFunctionPtr, const FMDViewModelAssignmentReference& InVMAssignment)
+{
+	TSharedRef<FMDVMCommandDragDropAction> Action = MakeShared<FMDVMCommandDragDropAction>();
+	Action->FunctionPtr = InFunctionPtr;
+	Action->VMAssignment = InVMAssignment;
+	Action->MouseCursor = EMouseCursor::GrabHandClosed;
+	Action->Construct();
+	return Action;
+}
+
+FReply FMDVMCommandDragDropAction::DroppedOnPin(FVector2D ScreenPosition, FVector2D GraphPosition)
+{
+	UEdGraph* Graph = GetHoveredGraph();
+	if (Graph != nullptr && VMAssignment.IsAssignmentValid() && FunctionPtr.IsValid())
+	{
+		UMDVMNode_CallCommand* ResultNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UMDVMNode_CallCommand>(
+			Graph,
+			GraphPosition,
+			EK2NewNodeFlags::SelectNewNode,
+			[&](UMDVMNode_CallCommand* NewInstance)
+			{
+				NewInstance->InitializeViewModelCommandParams(VMAssignment, FunctionPtr.Get());
+			}
+		);
+		
+		if (ResultNode != nullptr)
+		{
+			if (UEdGraphPin* FromPin = GetHoveredPin())
+			{
+				ResultNode->AutowireNewNode(FromPin);
+			}
+			else if (const UEdGraphNode* FromNode = GetHoveredNode())
+			{
+				const UEdGraphSchema_K2* Schema = GetDefault<UEdGraphSchema_K2>();
+				if (UEdGraphPin* FromNodeIn = Schema->FindExecutionPin(*FromNode, EGPD_Input))
+				{
+					ResultNode->AutowireNewNode(FromNodeIn);
+				}
+				else if (UEdGraphPin* FromNodeOut = Schema->FindExecutionPin(*FromNode, EGPD_Output))
+				{
+					ResultNode->AutowireNewNode(FromNodeOut);
+				}
+			}
+			
+			return FReply::Handled();
+		}
+	}
+	
+	return FReply::Unhandled();
+}
+
+FReply FMDVMCommandDragDropAction::DroppedOnNode(FVector2D ScreenPosition, FVector2D GraphPosition)
+{
+	return DroppedOnPin(ScreenPosition, GraphPosition);
+}
+
+FReply FMDVMCommandDragDropAction::DroppedOnPanel(const TSharedRef<SWidget>& Panel, FVector2D ScreenPosition, FVector2D GraphPosition, UEdGraph& Graph)
+{
+	return DroppedOnPin(ScreenPosition, GraphPosition);
+}
+
+bool FMDVMCommandDragDropAction::IsSupportedBySchema(const UEdGraphSchema* Schema) const
+{
+	return Schema != nullptr && Schema->IsA<UEdGraphSchema_K2>();
+}
+
+void FMDVMCommandDragDropAction::HoverTargetChanged()
+{
+	const UEdGraph* Graph = GetHoveredGraph();
+	if (Graph != nullptr && IsSupportedBySchema(Graph->GetSchema()))
+	{
+		const FSlateBrush* StatusSymbol = FAppStyle::GetBrush(TEXT("Graph.ConnectorFeedback.OK"));
+		SetSimpleFeedbackMessage(StatusSymbol, FLinearColor::White, FText::Format(INVTEXT("Place Command: {0}"), GetCommandTitle()));
+	}
+	else
+	{
+		const FSlateBrush* StatusSymbol = FAppStyle::GetBrush(TEXT("Graph.ConnectorFeedback.Error"));
+		SetSimpleFeedbackMessage(StatusSymbol, FLinearColor::White, FText::Format(INVTEXT("Cannot place [{0}] here"), GetCommandTitle()));
+	}
+}
+
+FText FMDVMCommandDragDropAction::GetCommandTitle() const
+{
+	const FText FunctionName = (FunctionPtr.IsValid()) ? FunctionPtr->GetDisplayNameText() : INVTEXT("NULL");
+	const FText VMClassName = (VMAssignment.ViewModelClass.Get() != nullptr) ? VMAssignment.ViewModelClass.Get()->GetDisplayNameText() : INVTEXT("NULL");
+	return FText::Format(INVTEXT("{0} from {1} ({2})"), FunctionName, VMClassName, FText::FromName(VMAssignment.ViewModelName));
+}
 
 void FMDViewModelDebugLineItemBase::UpdateViewModel(const FName& InViewModelName, TSubclassOf<UMDViewModelBase> InViewModelClass)
 {
 	ViewModelName = InViewModelName;
 	ViewModelClass = InViewModelClass;
+}
+
+FMDViewModelAssignmentReference FMDViewModelDebugLineItemBase::GetViewModelAssignmentReference() const
+{
+	FMDViewModelAssignmentReference Reference;
+	Reference.ViewModelClass = ViewModelClass;
+	Reference.ViewModelName = ViewModelName;
+	return Reference;
 }
 
 bool FMDViewModelDebugLineItemBase::HasChildren() const
@@ -410,50 +572,67 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GetNameIcon()
 
 			ToolTipText = UEdGraphSchema_K2::TypeToText(ReturnProperty);
 		}
-
-		return SNew(SImage)
-			.Image(FAppStyle::Get().GetBrush(TEXT("GraphEditor.Function_16x")))
-			.ColorAndOpacity(ReturnValueColor)
-			.ToolTipText(ToolTipText);
+		
+		return SNew(SMDVMDragDropFunctionWrapper, StaticCastSharedRef<FMDViewModelFunctionDebugLineItem>(AsShared()))
+			.bCanDrag(bIsCommand)
+			[
+				SNew(SImage)
+				.Image(FAppStyle::Get().GetBrush(TEXT("GraphEditor.Function_16x")))
+				.ColorAndOpacity(ReturnValueColor)
+				.ToolTipText(ToolTipText)
+			];	
 	}
 
 	return FDebugLineItem::GetNameIcon();
 }
 
+TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GenerateNameWidget(TSharedPtr<FString> InSearchString)
+{
+	return SNew(SMDVMDragDropFunctionWrapper, StaticCastSharedRef<FMDViewModelFunctionDebugLineItem>(AsShared()))
+		.bCanDrag(bIsCommand)
+		[
+			FMDViewModelDebugLineItemBase::GenerateNameWidget(InSearchString)
+		];
+}
+
 TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GenerateValueWidget(TSharedPtr<FString> InSearchString)
 {
-	return SNew(SWidgetSwitcher)
-	.WidgetIndex(this, &FMDViewModelFunctionDebugLineItem::GetShouldDisplayFieldNotifyIndex)
-	+SWidgetSwitcher::Slot()
-	[
-		SNew(SButton)
-		.ContentPadding(FMargin(3.0, 2.0))
-		.OnClicked(this, &FMDViewModelFunctionDebugLineItem::OnAddOrViewBoundFieldNotifyFunctionClicked)
+	return SNew(SMDVMDragDropFunctionWrapper, StaticCastSharedRef<FMDViewModelFunctionDebugLineItem>(AsShared()))
+		.bCanDrag(bIsCommand)
 		[
 			SNew(SWidgetSwitcher)
-			.WidgetIndex(this, &FMDViewModelFunctionDebugLineItem::GetAddOrViewBoundFieldNotifyFunctionIndex)
+			.WidgetIndex(this, &FMDViewModelFunctionDebugLineItem::GetShouldDisplayFieldNotifyIndex)
 			+SWidgetSwitcher::Slot()
 			[
-				SNew(SImage)
-				.ColorAndOpacity(FSlateColor::UseForeground())
-				.Image(FAppStyle::Get().GetBrush("Icons.SelectInViewport"))
-				.ToolTipText(INVTEXT("Focus the existing bound function."))
+				SNew(SButton)
+				.ContentPadding(FMargin(3.0, 2.0))
+				.OnClicked(this, &FMDViewModelFunctionDebugLineItem::OnAddOrViewBoundFieldNotifyFunctionClicked)
+				[
+					SNew(SWidgetSwitcher)
+					.WidgetIndex(this, &FMDViewModelFunctionDebugLineItem::GetAddOrViewBoundFieldNotifyFunctionIndex)
+					+SWidgetSwitcher::Slot()
+					[
+						SNew(SImage)
+						.ColorAndOpacity(FSlateColor::UseForeground())
+						.Image(FAppStyle::Get().GetBrush("Icons.SelectInViewport"))
+						.ToolTipText(INVTEXT("Focus the existing bound function."))
+					]
+					+SWidgetSwitcher::Slot()
+					[
+						SNew(SImage)
+						.ColorAndOpacity(FSlateColor::UseForeground())
+						.Image(FAppStyle::Get().GetBrush("Icons.Plus"))
+						.ToolTipText(INVTEXT("Create a BP event bound to this view model field notify function"))
+					]
+				]
 			]
 			+SWidgetSwitcher::Slot()
 			[
-				SNew(SImage)
-				.ColorAndOpacity(FSlateColor::UseForeground())
-				.Image(FAppStyle::Get().GetBrush("Icons.Plus"))
-				.ToolTipText(INVTEXT("Create a BP event bound to this view model field notify function"))
+				SNew(STextBlock)
+				.Text(this, &FMDViewModelFunctionDebugLineItem::GetDescription)
+				.ToolTipText(this, &FMDViewModelFunctionDebugLineItem::GetDescription)
 			]
-		]
-	]
-	+SWidgetSwitcher::Slot()
-	[
-		SNew(STextBlock)
-		.Text(this, &FMDViewModelFunctionDebugLineItem::GetDescription)
-		.ToolTipText(this, &FMDViewModelFunctionDebugLineItem::GetDescription)
-	];
+		];	
 }
 
 void FMDViewModelFunctionDebugLineItem::UpdateIsDebugging(bool InIsDebugging)
@@ -758,7 +937,7 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 				TSharedPtr<FMDViewModelFunctionDebugLineItem>& Item = FunctionTreeItems.FindOrAdd(Func);
 				if (!Item.IsValid())
 				{
-					Item = MakeShared<FMDViewModelFunctionDebugLineItem>(Func, Func->GetDisplayNameText(), Func->GetToolTipText(), DebugViewModel, bIsFieldNotify, WidgetBPPtr.Get(), ViewModelClass, ViewModelName);
+					Item = MakeShared<FMDViewModelFunctionDebugLineItem>(Func, Func->GetDisplayNameText(), Func->GetToolTipText(), DebugViewModel, !bIsFieldNotify, bIsFieldNotify, WidgetBPPtr.Get(), ViewModelClass, ViewModelName);
 				}
 				else
 				{
