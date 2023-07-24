@@ -18,6 +18,7 @@ class APlayerController;
 class APlayerState;
 class APawn;
 class AGameStateBase;
+class UActorComponent;
 class UGameInstance;
 class ULocalPlayer;
 class UWorld;
@@ -35,6 +36,40 @@ MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes
 MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_ViewTargetPlayerState);
 MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_Relative);
 MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty);
+MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_WorldActor);
+
+USTRUCT(meta = (Coll))
+struct MDVIEWMODEL_API FMDVMWorldActorFilter
+{
+	GENERATED_BODY()
+
+public:
+	// Only actors of this class will be considered
+	UPROPERTY(EditAnywhere, Category = "World Actor", meta = (AllowAbstract))
+	TSoftClassPtr<AActor> ActorClass;
+	
+	// Only actors that implement this interface will be considered
+	UPROPERTY(EditAnywhere, Category = "World Actor", meta = (AllowAbstract))
+	TSoftClassPtr<UInterface> RequiredInterface;
+	
+	// Only actors that have a component of this class will be considered
+	// NOTE: Only actors that have the component when initializing the view model will be considered, adding the component to an actor afterwards will not update the view model.
+	UPROPERTY(EditAnywhere, Category = "World Actor", meta = (AllowAbstract))
+	TSoftClassPtr<UActorComponent> RequiredComponentClass;
+	
+	// Only actors that have a component that implement this interface will be considered
+	// NOTE: Only actors that have the component when initializing the view model will be considered, adding the component to an actor afterwards will not update the view model.
+	UPROPERTY(EditAnywhere, Category = "World Actor", meta = (AllowAbstract))
+	TSoftClassPtr<UInterface> RequiredComponentInterface;
+
+	// Only actors that match this query will be considered (the actor must implement IGameplayTagAssetInterface to provider its gameplay tags)
+	UPROPERTY(EditAnywhere, Category = "World Actor")
+	FGameplayTagQuery TagQuery;
+
+	// Only actors with the specified local net roles will be considered
+	UPROPERTY(EditAnywhere, Category = "World Actor")
+	TSet<TEnumAsByte<ENetRole>> AllowedNetRoles = { ROLE_None, ROLE_SimulatedProxy, ROLE_AutonomousProxy, ROLE_Authority };
+};
 
 // Wrapped on DelegateHandle to track which object the handle was for
 struct MDVIEWMODEL_API FMDWrappedDelegateHandle
@@ -120,6 +155,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Provider|Relative", meta = (EditCondition = "bIsRelative", EditConditionHides))
 	FMDViewModelAssignmentReference RelativeViewModel;
 
+	// For World Actor lifetime  (MDVM.Provider.Cached.Lifetimes.WorldActor), the first actor in the world that passes this filter will be the view model's cache and context object 
+	UPROPERTY(EditAnywhere, Category = "Provider|World Actor", meta = (EditCondition = "bIsWorldActor", EditConditionHides))
+	FMDVMWorldActorFilter WorldActorFilter;
+
 #if WITH_EDITORONLY_DATA
 	// For Relative Property lifetime (MDVM.Provider.Cached.Lifetimes.RelativeProperty), this is the FieldNotify property or function on the widget that will be used at the context for the view model (must be an Actor or other supported type)
 	UPROPERTY(EditAnywhere, Category = "Provider|Relative Property", meta = (GetOptions = "GetRelativePropertyNames", EditCondition = "bIsRelativeProperty", EditConditionHides))
@@ -129,6 +168,8 @@ public:
 	bool bIsRelative = false;
 	UPROPERTY(Transient)
 	bool bIsRelativeProperty = false;
+	UPROPERTY(Transient)
+	bool bIsWorldActor = false;
 #endif
 
 	UPROPERTY()
@@ -187,6 +228,7 @@ protected:
 	void OnWidgetDestroy(TWeakObjectPtr<UUserWidget> WidgetPtr);
 
 	void RefreshViewModel(TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
+	UMDViewModelBase* SetViewModelFromCache(IMDViewModelCacheInterface* CacheInterface, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
 	void OnGameStateChanged(AGameStateBase* GameState, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 	void OnViewTargetChanged(APlayerController* PC, AActor* OldViewTarget, AActor* NewViewTarget, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
@@ -194,6 +236,9 @@ protected:
 
 	void OnFieldValueChanged(UObject* Widget, UE::FieldNotification::FFieldId FieldId, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 
+	void OnActorSpawned(AActor* Actor, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
+	void OnActorRemoved(AActor* Actor, TWeakObjectPtr<AActor> BoundActor, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
+	
 	void OnViewModelCacheShutdown(const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& ViewModelCache, TWeakInterfacePtr<IMDViewModelCacheInterface> BoundCache);
 
 	IMDViewModelCacheInterface* ResolveGlobalCache(const UGameInstance* GameInstance) const;
@@ -222,7 +267,12 @@ protected:
 
 	IMDViewModelCacheInterface* ResolveRelativePropertyCacheAndBindDelegates(const FMemberReference& Reference, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
+	IMDViewModelCacheInterface* ResolveWorldActorCacheAndBindDelegates(const FMDVMWorldActorFilter& Filter, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolveWorldActorCacheAndBindDelegates(AActor* Actor, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+
 	void BindViewTargetDelegates(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+
+	bool DoesActorPassFilter(AActor* Candidate, const FMDVMWorldActorFilter& Filter) const;
 
 	TMap<FMDVMCachedProviderBindingKey, FMDWrappedDelegateHandle> WidgetDelegateHandles;
 	TMap<FMDVMCachedProviderBindingKey, FDelegateHandle> ViewTargetDelegateHandles;

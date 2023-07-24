@@ -26,6 +26,8 @@ public:
 	
 	UMDViewModelBase* GetViewModel(const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings = {}) const;
 
+	bool IsShutdown() const { return bIsShutdown; }
+
 	using ViewModelCacheMap = TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>;
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnViewModelCacheShuttingDown, const ViewModelCacheMap&);
 	FOnViewModelCacheShuttingDown OnViewModelCacheShuttingDown;

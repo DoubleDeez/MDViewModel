@@ -9,9 +9,11 @@
 #include "Components/MDVMPawnUpdatePollingComponent.h"
 #include "Components/MDVMPCDynamicDelegateIntermediate.h"
 #include "Components/MDVMPSDynamicDelegateIntermediate.h"
+#include "EngineUtils.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerState.h"
+#include "GameplayTagAssetInterface.h"
 #include "Subsystems/MDGlobalViewModelCache.h"
 #include "Subsystems/MDLocalPlayerViewModelCache.h"
 #include "Subsystems/MDWorldViewModelCache.h"
@@ -50,6 +52,8 @@ UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_Relative, "MDVM
 	"View model lifetime will be tied to another view model on the widget and share its context object");
 UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty, "MDVM.Provider.Cached.Lifetimes.RelativeProperty",
 	"View model lifetime will be tied to a FieldNotify property or function on the widget, using the property/return value as its context object (must be an Actor or other supported type)");
+UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_WorldActor, "MDVM.Provider.Cached.Lifetimes.WorldActor",
+	"View model lifetime will be tied to the first actor found in the world that passes the specified filter.");
 
 namespace MDVMCachedProvider_Private
 {
@@ -135,34 +139,10 @@ UMDViewModelBase* UMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 	BindOnWidgetDestroy(Widget);
 
 	const FMDViewModelProvider_Cached_Settings* Settings = Data.ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
-	if (ensure(Settings))
+	if (ensure(Settings != nullptr))
 	{
-		if (IMDViewModelCacheInterface* ViewModelCache = ResolveAndBindViewModelCache(Widget, Assignment, Data, *Settings))
-		{
-			const FName& ViewModelKey = Settings->bOverrideCachedViewModelKey ? Settings->CachedViewModelKeyOverride : Assignment.ViewModelName;
-			UMDViewModelBase* ViewModelInstance = ViewModelCache->GetOrCreateViewModel(ViewModelKey, Assignment.ViewModelClass, Data.ViewModelSettings);
-			if (IsValid(ViewModelInstance))
-			{
-				UMDViewModelFunctionLibrary::SetViewModel(&Widget, ViewModelInstance, Assignment.ViewModelClass, Assignment.ViewModelName);
-			}
-			else
-			{
-				UMDViewModelFunctionLibrary::ClearViewModel(&Widget, Assignment.ViewModelClass, Assignment.ViewModelName);
-			}
-
-			if (!ViewModelCache->OnViewModelCacheShuttingDown.IsBoundToObject(this))
-			{
-				ViewModelCache->OnViewModelCacheShuttingDown.AddUObject(this, &UMDViewModelProvider_Cached::OnViewModelCacheShutdown, TWeakInterfacePtr<IMDViewModelCacheInterface>(ViewModelCache));
-			}
-
-			BoundAssignments.FindOrAdd(Assignment).Add(&Widget, TWeakInterfacePtr<IMDViewModelCacheInterface>(ViewModelCache));
-
-			return ViewModelInstance;
-		}
-		else
-		{
-			UMDViewModelFunctionLibrary::ClearViewModel(&Widget, Assignment.ViewModelClass, Assignment.ViewModelName);
-		}
+		IMDViewModelCacheInterface* ViewModelCache = ResolveAndBindViewModelCache(Widget, Assignment, Data, *Settings);
+		return SetViewModelFromCache(ViewModelCache, Widget, Assignment, Data);
 	}
 
 	return nullptr;
@@ -227,6 +207,7 @@ void UMDViewModelProvider_Cached::OnProviderSettingsInitializedInEditor(FInstanc
 			const FGameplayTag& LifetimeTag = SettingsPtr->GetLifetimeTag();
 			SettingsPtr->bIsRelative = LifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_Relative;
 			SettingsPtr->bIsRelativeProperty = LifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty;
+			SettingsPtr->bIsWorldActor = LifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_WorldActor;
 		}
 	}
 }
@@ -263,6 +244,7 @@ void UMDViewModelProvider_Cached::OnProviderSettingsPropertyChanged(FInstancedSt
 
 			SettingsPtr->bIsRelative = LifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_Relative;
 			SettingsPtr->bIsRelativeProperty = LifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty;
+			SettingsPtr->bIsWorldActor = LifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_WorldActor;
 #endif
 		}
 	}
@@ -322,6 +304,10 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveAndBindViewModel
 	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty)
 	{
 		return ResolveRelativePropertyCacheAndBindDelegates(Settings.RelativePropertyReference, Widget, Assignment, Data);
+	}
+	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_WorldActor)
+	{
+		return ResolveWorldActorCacheAndBindDelegates(Settings.WorldActorFilter, Widget, Assignment, Data);
 	}
 
 	return nullptr;
@@ -408,6 +394,39 @@ void UMDViewModelProvider_Cached::RefreshViewModel(TWeakObjectPtr<UUserWidget> W
 	}
 }
 
+UMDViewModelBase* UMDViewModelProvider_Cached::SetViewModelFromCache(IMDViewModelCacheInterface* CacheInterface, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
+{
+	const FMDViewModelProvider_Cached_Settings* Settings = Data.ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
+	if (ensure(Settings != nullptr) && CacheInterface != nullptr)
+	{
+		const FName& ViewModelKey = Settings->bOverrideCachedViewModelKey ? Settings->CachedViewModelKeyOverride : Assignment.ViewModelName;
+		UMDViewModelBase* ViewModelInstance = CacheInterface->GetOrCreateViewModel(ViewModelKey, Assignment.ViewModelClass, Data.ViewModelSettings);
+		if (IsValid(ViewModelInstance))
+		{
+			UMDViewModelFunctionLibrary::SetViewModel(&Widget, ViewModelInstance, Assignment.ViewModelClass, Assignment.ViewModelName);
+		}
+		else
+		{
+			UMDViewModelFunctionLibrary::ClearViewModel(&Widget, Assignment.ViewModelClass, Assignment.ViewModelName);
+		}
+
+		if (!CacheInterface->OnViewModelCacheShuttingDown.IsBoundToObject(this))
+		{
+			CacheInterface->OnViewModelCacheShuttingDown.AddUObject(this, &UMDViewModelProvider_Cached::OnViewModelCacheShutdown, TWeakInterfacePtr<IMDViewModelCacheInterface>(CacheInterface));
+		}
+
+		BoundAssignments.FindOrAdd(Assignment).Add(&Widget, TWeakInterfacePtr<IMDViewModelCacheInterface>(CacheInterface));
+
+		return ViewModelInstance;
+	}
+	else
+	{
+		UMDViewModelFunctionLibrary::ClearViewModel(&Widget, Assignment.ViewModelClass, Assignment.ViewModelName);
+	}
+
+	return nullptr;
+}
+
 void UMDViewModelProvider_Cached::OnGameStateChanged(AGameStateBase* GameState, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment,
                                                      FMDViewModelAssignmentData Data)
 {
@@ -435,6 +454,30 @@ void UMDViewModelProvider_Cached::OnFieldValueChanged(UObject* Widget, UE::Field
 	FMDViewModelAssignmentData Data)
 {
 	RefreshViewModel(WidgetPtr, Assignment, Data);
+}
+
+void UMDViewModelProvider_Cached::OnActorSpawned(AActor* Actor, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data)
+{
+	// Don't go through refresh view model since we have the Actor we need already so we can avoid the expensive TActorIterator
+	
+	const FMDViewModelProvider_Cached_Settings* Settings = Data.ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
+	UUserWidget* Widget = WidgetPtr.Get();
+	if (IsValid(Actor) && IsValid(Widget))
+	{
+		if (DoesActorPassFilter(Actor, Settings->WorldActorFilter))
+		{
+			IMDViewModelCacheInterface* CacheInterface = ResolveWorldActorCacheAndBindDelegates(Actor, *Widget, Assignment, Data);
+			SetViewModelFromCache(CacheInterface, *Widget, Assignment, Data);
+		}
+	}
+}
+
+void UMDViewModelProvider_Cached::OnActorRemoved(AActor* Actor, TWeakObjectPtr<AActor> BoundActor, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data)
+{
+	if (BoundActor.Get() == Actor)
+	{
+		RefreshViewModel(WidgetPtr, Assignment, Data);
+	}
 }
 
 void UMDViewModelProvider_Cached::OnViewModelCacheShutdown(const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& ViewModelCache, TWeakInterfacePtr<IMDViewModelCacheInterface> BoundCache)
@@ -859,6 +902,83 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveRelativeProperty
 	return ResolveObjectCache(ContextObject);
 }
 
+IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheAndBindDelegates(const FMDVMWorldActorFilter& Filter, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
+{
+	AActor* FoundActor = nullptr;
+	if (const UWorld* World = Widget.GetWorld())
+	{
+		const TSubclassOf<AActor> ActorClass = Filter.ActorClass.IsNull() ? AActor::StaticClass() : Filter.ActorClass.Get();
+		if (ActorClass != nullptr)
+		{
+			for (TActorIterator<AActor> It(World, ActorClass); It; ++It)
+			{
+				AActor* Candidate = *It;
+				if (DoesActorPassFilter(Candidate, Filter))
+				{
+					FoundActor = Candidate;
+					break;
+				}
+			}
+		}
+	}
+
+	return ResolveWorldActorCacheAndBindDelegates(FoundActor, Widget, Assignment, Data);	
+}
+
+IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheAndBindDelegates(AActor* Actor, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
+{
+	UWorld* World = Widget.GetWorld();
+
+	FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
+
+	// Remove binding if world changed
+	if (WidgetDelegateHandles.Contains(BindingKey) && WidgetDelegateHandles[BindingKey].DelegateOwner != World)
+	{
+		if (const auto* OldOwner = Cast<UWorld>(WidgetDelegateHandles[BindingKey].DelegateOwner.Get()))
+		{
+			OldOwner->RemoveOnActorSpawnedHandler(WidgetDelegateHandles[BindingKey].Handle);
+			OldOwner->RemoveOnActorRemovedFromWorldHandler(WidgetDelegateHandles[BindingKey].Handle);
+		}
+
+		WidgetDelegateHandles.Remove(BindingKey);
+	}
+	
+	if (IsValid(Actor))
+	{
+		// Unbind if we were bound since we don't need to listen for it anymore
+		if (WidgetDelegateHandles.Contains(BindingKey))
+		{
+			World->RemoveOnActorSpawnedHandler(WidgetDelegateHandles[BindingKey].Handle);
+			WidgetDelegateHandles.Remove(BindingKey);
+		}
+
+		// Bind to when the actor is removed from the world so we can find a new actor that meets our criteria
+		auto Delegate = FOnActorRemovedFromWorld::FDelegate::CreateUObject(this, &UMDViewModelProvider_Cached::OnActorRemoved, MakeWeakObjectPtr(Actor), MakeWeakObjectPtr(&Widget), Assignment, Data);
+		FMDWrappedDelegateHandle Handle;
+		Handle.DelegateOwner = World;
+		Handle.Handle = World->AddOnActorRemovedFromWorldHandler(MoveTemp(Delegate));
+		WidgetDelegateHandles.Emplace(MoveTemp(BindingKey), MoveTemp(Handle));
+		
+		return ResolveActorCache(Actor);
+	}
+	else if (WidgetDelegateHandles.Contains(BindingKey))
+	{
+		World->RemoveOnActorRemovedFromWorldHandler(WidgetDelegateHandles[BindingKey].Handle);
+		WidgetDelegateHandles.Remove(BindingKey);
+	}
+
+	if (!WidgetDelegateHandles.Contains(BindingKey))
+	{
+		auto Delegate = FOnActorSpawned::FDelegate::CreateUObject(this, &UMDViewModelProvider_Cached::OnActorSpawned, MakeWeakObjectPtr(&Widget), Assignment, Data);
+		FMDWrappedDelegateHandle Handle;
+		Handle.DelegateOwner = World;
+		Handle.Handle = World->AddOnActorSpawnedHandler(MoveTemp(Delegate));
+		WidgetDelegateHandles.Emplace(MoveTemp(BindingKey), MoveTemp(Handle));
+	}
+
+	return nullptr;
+}
+
 void UMDViewModelProvider_Cached::BindViewTargetDelegates(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
 	FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
@@ -867,4 +987,67 @@ void UMDViewModelProvider_Cached::BindViewTargetDelegates(UUserWidget& Widget, c
 		FDelegateHandle Handle = FGameDelegates::Get().GetViewTargetChangedDelegate().AddUObject(this, &UMDViewModelProvider_Cached::OnViewTargetChanged, MakeWeakObjectPtr(&Widget), Assignment, Data);
 		ViewTargetDelegateHandles.Emplace(MoveTemp(BindingKey), MoveTemp(Handle));
 	}
+}
+
+bool UMDViewModelProvider_Cached::DoesActorPassFilter(AActor* Candidate, const FMDVMWorldActorFilter& Filter) const
+{
+	if (!IsValid(Candidate))
+	{
+		return false;
+	}
+
+	// This actor is on its way out
+	const UMDViewModelCacheComponent* ExistingCache = Candidate->FindComponentByClass<UMDViewModelCacheComponent>();
+	if (ExistingCache != nullptr && ExistingCache->IsShutdown())
+	{
+		return false;
+	}
+
+	if (!Filter.AllowedNetRoles.Contains(Candidate->GetLocalRole()))
+	{
+		return false;
+	}
+
+	const TSubclassOf<AActor> ActorClass = Filter.ActorClass.Get();
+	if (ActorClass != nullptr && !Candidate->IsA(ActorClass))
+	{
+		return false;
+	}
+
+	const TSubclassOf<UInterface> RequiredInterface = Filter.RequiredInterface.Get();
+	if (RequiredInterface != nullptr && !Candidate->GetClass()->ImplementsInterface(RequiredInterface))
+	{
+		return false;
+	}
+
+	const TSubclassOf<UActorComponent> RequiredComponentClass = Filter.RequiredComponentClass.Get();
+	if (RequiredComponentClass != nullptr && Candidate->FindComponentByClass(RequiredComponentClass) == nullptr)
+	{
+		return false;
+	}
+
+	const TSubclassOf<UInterface> RequiredComponentInterface = Filter.RequiredComponentInterface.Get();
+	if (RequiredComponentInterface != nullptr && Candidate->FindComponentByInterface(RequiredComponentInterface) == nullptr)
+	{
+		return false;
+	}
+
+	if (!Filter.TagQuery.IsEmpty())
+	{
+		const IGameplayTagAssetInterface* CandidateGameplayTagAsset = Cast<IGameplayTagAssetInterface>(Candidate);
+		if (CandidateGameplayTagAsset == nullptr)
+		{
+			return false;
+		}
+
+		FGameplayTagContainer CandidateTags;
+		CandidateGameplayTagAsset->GetOwnedGameplayTags(CandidateTags);
+
+		if (!Filter.TagQuery.Matches(CandidateTags))
+		{
+			return false;
+		}
+	}
+
+	return true;
 }

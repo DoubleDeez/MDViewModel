@@ -5,6 +5,9 @@
 #include "Framework/Application/SlateApplication.h"
 #include "Framework/Docking/TabManager.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "IDetailChildrenBuilder.h"
+#include "IDetailPropertyRow.h"
+#include "InstancedStructDetails.h"
 #include "PropertyEditorModule.h"
 #include "ScopedTransaction.h"
 #include "SPrimaryButton.h"
@@ -14,6 +17,35 @@
 #include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
 #include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
+
+class FMDVMExpanderDataDetails : public FInstancedStructDataDetails
+{
+public:
+	FMDVMExpanderDataDetails(TSharedPtr<IPropertyHandle> InStructProperty) : FInstancedStructDataDetails(InStructProperty)
+	{
+	}
+	
+	virtual void OnChildRowAdded(IDetailPropertyRow& ChildRow) override
+	{
+		ChildRow.ShouldAutoExpand(true);
+	}
+};
+
+class FMDVMExpanderDetails : public FInstancedStructDetails
+{
+public:
+	static TSharedRef<IPropertyTypeCustomization> MakeInstance()
+	{
+		return MakeShared<FMDVMExpanderDetails>();
+	}
+
+	virtual void CustomizeChildren(TSharedRef<IPropertyHandle> PropertyHandle, IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils) override
+	{
+		const TSharedRef<FMDVMExpanderDataDetails> DataDetails = MakeShared<FMDVMExpanderDataDetails>(PropertyHandle);
+		ChildBuilder.AddCustomBuilder(DataDetails);
+	}
+};
+
 
 void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSharedRef<SWindow>& InParentWindow)
 {
@@ -42,6 +74,7 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>(TEXT("PropertyEditor"));
 	const TSharedRef<IDetailsView> DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
+	DetailsView->RegisterInstancedCustomPropertyTypeLayout(TEXT("InstancedStruct"), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FMDVMExpanderDetails::MakeInstance));
 	TSharedRef<SMDViewModelAssignmentDialog> SharedThis = StaticCastSharedRef<SMDViewModelAssignmentDialog>(AsShared());
 	DetailsView->RegisterInstancedCustomPropertyLayout(UMDViewModelAssignmentEditorObject::StaticClass(), FOnGetDetailCustomizationInstance::CreateStatic(&FMDViewModelAssignmentEditorObjectCustomization::MakeInstance, SharedThis, bIsEditMode));
 	DetailsView->SetObject(EditorObject.Get());
@@ -110,7 +143,7 @@ UWidgetBlueprint* SMDViewModelAssignmentDialog::GetWidgetBlueprint() const
 void SMDViewModelAssignmentDialog::OpenAssignmentDialog(UMDViewModelWidgetBlueprintExtension* BPExtension)
 {
 	const TSharedRef<SWindow> PickerWindow = SNew(SWindow)
-		.Title(INVTEXT("Add a View Model"))
+		.Title(INVTEXT("Add a View Model Assignment"))
 		.SizingRule( ESizingRule::UserSized )
 		.ClientSize( FVector2D( 700.f, 600.f ))
 		.SupportsMaximize(false)
@@ -138,7 +171,7 @@ void SMDViewModelAssignmentDialog::OpenAssignmentDialog(UMDViewModelWidgetBluepr
 void SMDViewModelAssignmentDialog::OpenEditDialog(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem)
 {
 	const TSharedRef<SWindow> PickerWindow = SNew(SWindow)
-		.Title(INVTEXT("Add a View Model"))
+		.Title(INVTEXT("Edit a View Model Assignment"))
 		.SizingRule( ESizingRule::UserSized )
 		.ClientSize( FVector2D( 700.f, 600.f ))
 		.SupportsMaximize(false)
