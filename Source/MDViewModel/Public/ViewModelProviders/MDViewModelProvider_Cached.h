@@ -151,25 +151,18 @@ public:
 	UPROPERTY()
 	EMDViewModelProvider_CacheLifetime ViewModelLifetime = EMDViewModelProvider_CacheLifetime::Global;
 
-	// For Relative lifetime (MDVM.Provider.Cached.Lifetimes.Relative), this view model's lifetime and context object will be tied to the view model assignment selected here
-	UPROPERTY(EditAnywhere, Category = "Provider|Relative", meta = (EditCondition = "bIsRelative", EditConditionHides))
+	// For Relative lifetime, this view model's lifetime and context object will be tied to the view model assignment selected here
+	UPROPERTY(EditAnywhere, Category = "Provider|Relative", meta = (EditConditionLifetime = "MDVM.Provider.Cached.Lifetimes.Relative"))
 	FMDViewModelAssignmentReference RelativeViewModel;
 
-	// For World Actor lifetime  (MDVM.Provider.Cached.Lifetimes.WorldActor), the first actor in the world that passes this filter will be the view model's cache and context object 
-	UPROPERTY(EditAnywhere, Category = "Provider|World Actor", meta = (EditCondition = "bIsWorldActor", EditConditionHides))
+	// For World Actor lifetime, the first actor in the world that passes this filter will be the view model's cache and context object 
+	UPROPERTY(EditAnywhere, Category = "Provider|World Actor", meta = (EditConditionLifetime = "MDVM.Provider.Cached.Lifetimes.WorldActor"))
 	FMDVMWorldActorFilter WorldActorFilter;
 
 #if WITH_EDITORONLY_DATA
-	// For Relative Property lifetime (MDVM.Provider.Cached.Lifetimes.RelativeProperty), this is the FieldNotify property or function on the widget that will be used at the context for the view model (must be an Actor or other supported type)
-	UPROPERTY(EditAnywhere, Category = "Provider|Relative Property", meta = (GetOptions = "GetRelativePropertyNames", EditCondition = "bIsRelativeProperty", EditConditionHides))
+	// For Relative Property lifetime, this is the FieldNotify property or function on the widget that will be used at the context for the view model (must be an Actor or other supported type)
+	UPROPERTY(EditAnywhere, Category = "Provider|Relative Property", meta = (GetOptions = "GetRelativePropertyNames", EditConditionLifetime = "MDVM.Provider.Cached.Lifetimes.RelativeProperty"))
 	FName RelativePropertyName;
-
-	UPROPERTY(Transient)
-	bool bIsRelative = false;
-	UPROPERTY(Transient)
-	bool bIsRelativeProperty = false;
-	UPROPERTY(Transient)
-	bool bIsWorldActor = false;
 #endif
 
 	UPROPERTY()

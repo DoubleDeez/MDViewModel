@@ -203,11 +203,6 @@ void UMDViewModelProvider_Cached::OnProviderSettingsInitializedInEditor(FInstanc
 			const UFunction* Function = SettingsPtr->RelativePropertyReference.ResolveMember<UFunction>(WidgetBlueprint->SkeletonGeneratedClass);
 			const FObjectPropertyBase* Property = SettingsPtr->RelativePropertyReference.ResolveMember<FObjectPropertyBase>(WidgetBlueprint->SkeletonGeneratedClass);
 			SettingsPtr->RelativePropertyName = (Function != nullptr) ? Function->GetFName() : ((Property != nullptr) ? Property->GetFName() : NAME_None);
-
-			const FGameplayTag& LifetimeTag = SettingsPtr->GetLifetimeTag();
-			SettingsPtr->bIsRelative = LifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_Relative;
-			SettingsPtr->bIsRelativeProperty = LifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty;
-			SettingsPtr->bIsWorldActor = LifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_WorldActor;
 		}
 	}
 }
@@ -241,10 +236,6 @@ void UMDViewModelProvider_Cached::OnProviderSettingsPropertyChanged(FInstancedSt
 				SettingsPtr->RelativePropertyReference = {};
 				SettingsPtr->RelativePropertyName = NAME_None;
 			}
-
-			SettingsPtr->bIsRelative = LifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_Relative;
-			SettingsPtr->bIsRelativeProperty = LifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty;
-			SettingsPtr->bIsWorldActor = LifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_WorldActor;
 #endif
 		}
 	}

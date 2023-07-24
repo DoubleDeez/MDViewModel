@@ -21,13 +21,78 @@
 class FMDVMExpanderDataDetails : public FInstancedStructDataDetails
 {
 public:
-	FMDVMExpanderDataDetails(TSharedPtr<IPropertyHandle> InStructProperty) : FInstancedStructDataDetails(InStructProperty)
+	FMDVMExpanderDataDetails(const TSharedPtr<IPropertyHandle>& InStructProperty)
+		: FInstancedStructDataDetails(InStructProperty)
 	{
 	}
 	
 	virtual void OnChildRowAdded(IDetailPropertyRow& ChildRow) override
 	{
 		ChildRow.ShouldAutoExpand(true);
+
+		SetupCachedLifetimeEditCondition(ChildRow);
+	}
+
+private:
+	void SetupCachedLifetimeEditCondition(IDetailPropertyRow& ChildRow) const
+	{
+		static const FName EditConditionKey = TEXT("EditConditionLifetime");
+		const TSharedPtr<IPropertyHandle> Property = ChildRow.GetPropertyHandle();
+		if (!Property.IsValid() || !Property->HasMetaData(EditConditionKey))
+		{
+			return;
+		}
+		
+		const FString& EditCondition = Property->GetMetaData(EditConditionKey);
+		if (!EditCondition.StartsWith(TEXT("MDVM.Provider.Cached.Lifetimes.")))
+		{
+			return;
+		}
+
+		const FGameplayTag EditConditionTag = FGameplayTag::RequestGameplayTag(*EditCondition);
+		if (!EditConditionTag.IsValid())
+		{
+			return;
+		}
+		
+		TArray<UObject*> Objects;
+		Property->GetOuterObjects(Objects);
+		if (Objects.IsEmpty())
+		{
+			return;
+		}
+
+		const TWeakObjectPtr<const UMDViewModelAssignmentEditorObject> EditorObjectPtr = Cast<UMDViewModelAssignmentEditorObject>(Objects[0]);
+		if (!EditorObjectPtr.IsValid() || EditorObjectPtr->ViewModelProvider != TAG_MDVMProvider_Cached)
+		{
+			return;
+		}
+
+		const TAttribute<bool> EditConditionAttribute = TAttribute<bool>::Create([EditConditionTag, EditorObjectPtr]()
+		{
+			const UMDViewModelAssignmentEditorObject* EditorObject = EditorObjectPtr.Get();
+			if (EditorObject == nullptr)
+			{
+				return false;
+			}
+
+			const FMDViewModelProvider_Cached_Settings* SettingsPtr = EditorObject->ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
+			if (SettingsPtr == nullptr)
+			{
+				return false;
+			}
+
+			return SettingsPtr->GetLifetimeTag() == EditConditionTag;
+		});
+		
+		const TAttribute<EVisibility> VisibilityAttribute = TAttribute<EVisibility>::Create([EditConditionAttribute]()
+		{
+			return EditConditionAttribute.Get(false) ? EVisibility::Visible : EVisibility::Collapsed;
+		});
+		
+		ChildRow
+			.EditCondition(EditConditionAttribute, nullptr)
+			.Visibility(VisibilityAttribute);
 	}
 };
 
@@ -41,6 +106,7 @@ public:
 
 	virtual void CustomizeChildren(TSharedRef<IPropertyHandle> PropertyHandle, IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils) override
 	{
+			
 		const TSharedRef<FMDVMExpanderDataDetails> DataDetails = MakeShared<FMDVMExpanderDataDetails>(PropertyHandle);
 		ChildBuilder.AddCustomBuilder(DataDetails);
 	}
