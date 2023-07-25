@@ -7,19 +7,24 @@
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
 
-void UMDViewModelWidgetExtension::Initialize()
+void UMDViewModelWidgetExtension::Construct()
 {
-	Super::Initialize();
+	Super::Construct();
 
 	PopulateViewModels();
+}
+
+void UMDViewModelWidgetExtension::Destruct()
+{
+	CleanUpViewModels();
+	
+	Super::Destruct();
 }
 
 void UMDViewModelWidgetExtension::BeginDestroy()
 {
 	if (!HasAnyFlags(RF_ClassDefaultObject))
 	{
-		CleanUpViewModels();
-
 		OnBeginDestroy.Broadcast();
 	}
 	

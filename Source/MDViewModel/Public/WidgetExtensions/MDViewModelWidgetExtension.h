@@ -24,7 +24,8 @@ class MDVIEWMODEL_API UMDViewModelWidgetExtension : public UUserWidgetExtension
 
 #pragma region Core
 public:
-	virtual void Initialize() override;
+	virtual void Construct() override;
+	virtual void Destruct() override;
 	virtual void BeginDestroy() override;
 
 	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Get or Create View Model Extension", meta = (DefaultToSelf = "Widget"))
