@@ -1,5 +1,6 @@
 #pragma once
 
+#include "InstancedStruct.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "MDViewModelUtils.h"
 #include "Templates/SubclassOf.h"
@@ -31,11 +32,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Clear View Model", meta = (DefaultToSelf = "Widget", AutoCreateRefTerm = "Assignment"))
 	static void BP_ClearViewModel(UPARAM(meta = (VMAssignment = "Assignment")) UUserWidget* Widget, const FMDViewModelAssignmentReference& Assignment);
 
-	UFUNCTION(BlueprintCallable, Category = "View Model", meta = (DefaultToSelf = "Widget", DeterminesOutputType="ViewModelClass", DeprecatedFunction, DeprecationMessage = "This flow is deprecated, use an appropriate View Model provider instead."))
+	UFUNCTION(BlueprintCallable, Category = "View Model", meta = (DefaultToSelf = "Widget", DeterminesOutputType="ViewModelClass", DeprecatedFunction, DeprecationMessage = "This function is deprecated, replace it with the new Set View Model of Class node."))
 	static UMDViewModelBase* SetViewModelOfClass(UUserWidget* Widget, UObject* ContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings, FName ViewModelName = TEXT("Default"));
-
+	// Create a view model and immediately set it on a widget
+	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Set View Model of Class", meta = (DefaultToSelf = "Widget", AutoCreateRefTerm = "Assignment,ViewModelSettings", BlueprintInternalUseOnly = "true"))
+	static UMDViewModelBase* BP_SetViewModelOfClass(UPARAM(meta = (VMAssignment = "Assignment")) UUserWidget* Widget, UObject* ContextObject, const FMDViewModelAssignmentReference& Assignment, const FInstancedStruct& ViewModelSettings);
 	template<typename T>
-	static T* SetViewModelOfClass(UUserWidget* Widget, UObject* ContextObject, const FInstancedStruct& ViewModelSettings, FName ViewModelName = MDViewModelUtils::DefaultViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass());
+	static T* SetViewModelOfClass(UUserWidget* Widget, UObject* ContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), FName ViewModelName = MDViewModelUtils::DefaultViewModelName, const FInstancedStruct& ViewModelSettings = {});
 
 	UFUNCTION(BlueprintCallable, Category = "View Model", meta = (DefaultToSelf = "Widget", DeterminesOutputType="ViewModelClass", DeprecatedFunction, DeprecationMessage = "This function is deprecated, replace it with the new Get View Model node."))
 	static UMDViewModelBase* GetViewModel(UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = TEXT("Default"));
@@ -66,7 +69,7 @@ public:
 };
 
 template <typename T>
-T* UMDViewModelFunctionLibrary::SetViewModelOfClass(UUserWidget* Widget, UObject* ContextObject, const FInstancedStruct& ViewModelSettings, FName ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass)
+T* UMDViewModelFunctionLibrary::SetViewModelOfClass(UUserWidget* Widget, UObject* ContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName, const FInstancedStruct& ViewModelSettings)
 {
 	static_assert(TIsDerivedFrom<T, UMDViewModelBase>::Value, "ViewModels must derive from UMDViewModelBase");
 	return Cast<T>(SetViewModelOfClass(Widget, ContextObject, ViewModelClass, ViewModelSettings, ViewModelName));

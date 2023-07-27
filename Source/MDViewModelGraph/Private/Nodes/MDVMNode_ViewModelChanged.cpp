@@ -108,9 +108,8 @@ void UMDVMNode_ViewModelChanged::ValidateNodeDuringCompilation(FCompilerResultsL
 	}
 	else
 	{
-		const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
-		ViewModelModule.SearchViewModelAssignments(ViewModelAssignments, BP->GeneratedClass.Get(), ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
+		FMDViewModelModule::SearchViewModelAssignments(ViewModelAssignments, BP->GeneratedClass.Get(), ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
 
 		// Only Native assignments are valid during compile, we need to go through the BP otherwise
 		if (ViewModelAssignments.IsEmpty())

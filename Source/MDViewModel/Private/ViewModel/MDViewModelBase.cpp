@@ -1,8 +1,25 @@
 #include "ViewModel/MDViewModelBase.h"
 #include "InstancedStruct.h"
 
+#if WITH_EDITOR
+#include "Logging/MessageLog.h"
+#endif
+
 void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject)
 {
+#if WITH_EDITOR
+	const UScriptStruct* ExpectedSettingsType = GetViewModelSettingsStruct();
+	const UScriptStruct* ProvidedSettingsType = ViewModelSettings.GetScriptStruct();
+	if (ExpectedSettingsType != nullptr && ExpectedSettingsType != ProvidedSettingsType)
+	{
+		const FText FormatPattern = INVTEXT("View Model of type [{VM}] expects Settings of type [{SettingsType}] but initializing with Settings of type [{BadSettingsType}]");
+		FFormatNamedArguments FormatPatternArgs;
+		FormatPatternArgs.Add(TEXT("VM"), GetClass()->GetDisplayNameText());
+		FormatPatternArgs.Add(TEXT("SettingsType"), ExpectedSettingsType->GetDisplayNameText());
+		FormatPatternArgs.Add(TEXT("BadSettingsType"), ProvidedSettingsType != nullptr ? ProvidedSettingsType->GetDisplayNameText() : INVTEXT("None"));
+		FMessageLog("PIE").Error(FText::Format(FormatPattern, FormatPatternArgs));
+	}
+#endif
 	ContextObject = RedirectContextObject(ViewModelSettings, InContextObject);
 	InitializeViewModel(ViewModelSettings);
 }

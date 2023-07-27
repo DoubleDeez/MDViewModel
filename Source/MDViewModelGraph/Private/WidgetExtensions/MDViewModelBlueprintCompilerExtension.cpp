@@ -25,8 +25,7 @@ void UMDViewModelBlueprintCompilerExtension::ProcessBlueprintCompiled(const FKis
 		{
 			if (UWidgetBlueprintGeneratedClass* WidgetClass = Cast<UWidgetBlueprintGeneratedClass>(CompilationContext.NewClass))
 			{
-				const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
-				if (ViewModelModule.DoesClassOrSuperClassHaveAssignments(WidgetClass->GetSuperClass()))
+				if (FMDViewModelModule::DoesClassOrSuperClassHaveAssignments(WidgetClass->GetSuperClass()))
 				{
 					// We can't add a blueprint extension since we're mid-compile here
 					// So instead we want to add a Class extension, but we need a non-const FWidgetBlueprintCompilerContext to do that

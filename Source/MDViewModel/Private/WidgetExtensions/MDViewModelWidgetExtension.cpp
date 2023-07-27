@@ -7,6 +7,10 @@
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
 
+#if WITH_EDITOR
+#include "Logging/MessageLog.h"
+#endif
+
 void UMDViewModelWidgetExtension::Construct()
 {
 	Super::Construct();
@@ -49,8 +53,22 @@ UMDViewModelWidgetExtension* UMDViewModelWidgetExtension::GetOrCreate(UUserWidge
 
 UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModel(UMDViewModelBase* ViewModel, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
-	if (IsValid(ViewModel))
+	if (IsValid(ViewModel) && IsValid(ViewModelClass))
 	{
+#if WITH_EDITOR
+		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
+		FMDViewModelModule::SearchViewModelAssignments(Assignments, GetUserWidget()->GetClass(), ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
+		if (Assignments.IsEmpty())
+		{
+			const FText FormatPattern = INVTEXT("Attempting to set View Model of type [{VMType}] with name [{VMName}] but Widget [{Widget}] does not have a matching assignment.");
+			FFormatNamedArguments FormatPatternArgs;
+			FormatPatternArgs.Add(TEXT("VMType"), ViewModelClass->GetDisplayNameText());
+			FormatPatternArgs.Add(TEXT("VMName"), FText::FromName(ViewModelName));
+			FormatPatternArgs.Add(TEXT("Widget"), GetUserWidget()->GetClass()->GetDisplayNameText());
+			FMessageLog("PIE").Error(FText::Format(FormatPattern, FormatPatternArgs));
+		}
+#endif
+		
 		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
 		if (ViewModelName != NAME_None)
 		{
@@ -124,10 +142,8 @@ void UMDViewModelWidgetExtension::OnProviderViewModelUpdated(TSubclassOf<UMDView
 		return;
 	}
 
-	const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
-
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-	ViewModelModule.SearchViewModelAssignments(Assignments, GetUserWidget()->GetClass(), ViewModelClass, ProviderTag);
+	FMDViewModelModule::SearchViewModelAssignments(Assignments, GetUserWidget()->GetClass(), ViewModelClass, ProviderTag);
 
 	UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(ProviderTag);
 	if (!IsValid(Provider))
@@ -258,9 +274,8 @@ void UMDViewModelWidgetExtension::PopulateViewModels()
 	}
 #endif
 
-	const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-	ViewModelModule.GetViewModelAssignmentsForWidgetClass(Widget->GetClass(), Assignments);
+	FMDViewModelModule::GetViewModelAssignmentsForWidgetClass(Widget->GetClass(), Assignments);
 
 	for (const auto& Pair : Assignments)
 	{

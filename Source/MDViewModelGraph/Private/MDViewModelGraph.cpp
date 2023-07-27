@@ -10,21 +10,11 @@
 #include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
 #include "WidgetBlueprint.h"
 
-#define LOCTEXT_NAMESPACE "FMDViewModelGraphModule"
-
-void FMDViewModelGraphModule::StartupModule()
+void FMDViewModelGraphModule::GetViewModelAssignmentsForBlueprint(const UBlueprint* Blueprint, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments)
 {
-}
-
-void FMDViewModelGraphModule::ShutdownModule()
-{
-}
-
-void FMDViewModelGraphModule::GetViewModelAssignmentsForWidgetBlueprint(const UWidgetBlueprint* WidgetBP, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments)
-{
-	if (WidgetBP != nullptr)
+	if (Blueprint != nullptr)
 	{
-		const TObjectPtr<UBlueprintExtension>* ExtensionPtr = WidgetBP->GetExtensions().FindByPredicate([](const TObjectPtr<UBlueprintExtension> BPExtension)
+		const TObjectPtr<UBlueprintExtension>* ExtensionPtr = Blueprint->GetExtensions().FindByPredicate([](const TObjectPtr<UBlueprintExtension> BPExtension)
 		{
 			return BPExtension != nullptr && BPExtension->IsA<UMDViewModelWidgetBlueprintExtension>();
 		});
@@ -205,7 +195,5 @@ UMDVMNode_ViewModelChanged* FMDViewModelGraphModule::FindExistingViewModelChange
 
 	return nullptr;
 }
-
-#undef LOCTEXT_NAMESPACE
 
 IMPLEMENT_MODULE(FMDViewModelGraphModule, MDViewModelGraph)

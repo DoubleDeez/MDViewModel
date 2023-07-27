@@ -71,7 +71,7 @@ void UMDVMNode_CallCommand::GetMenuActions(FBlueprintActionDatabaseRegistrar& In
 	}
 	
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-	FMDViewModelGraphModule::GetViewModelAssignmentsForWidgetBlueprint(WidgetBP, Assignments);
+	FMDViewModelGraphModule::GetViewModelAssignmentsForBlueprint(WidgetBP, Assignments);
 
 	for (auto It = Assignments.CreateConstIterator(); It; ++It)
 	{
@@ -112,7 +112,7 @@ bool UMDVMNode_CallCommand::IsActionFilteredOut(const FBlueprintActionFilter& Fi
 		}
 		
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-		FMDViewModelGraphModule::GetViewModelAssignmentsForWidgetBlueprint(WidgetBP, Assignments);
+		FMDViewModelGraphModule::GetViewModelAssignmentsForBlueprint(WidgetBP, Assignments);
 		
 		bool bWidgetHasAssignment = false;
 		for (const auto& Pair : Assignments)
@@ -271,7 +271,7 @@ void UMDVMNode_CallCommand::ValidateNodeDuringCompilation(FCompilerResultsLog& M
 	Super::ValidateNodeDuringCompilation(MessageLog);
 
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-	FMDViewModelGraphModule::GetViewModelAssignmentsForWidgetBlueprint(Cast<UWidgetBlueprint>(GetBlueprint()), Assignments);
+	FMDViewModelGraphModule::GetViewModelAssignmentsForBlueprint(Cast<UWidgetBlueprint>(GetBlueprint()), Assignments);
 
 	bool bWidgetHasAssignment = false;
 	for (const auto& Pair : Assignments)
@@ -285,7 +285,7 @@ void UMDVMNode_CallCommand::ValidateNodeDuringCompilation(FCompilerResultsLog& M
 
 	if (!bWidgetHasAssignment)
 	{
-		constexpr TCHAR ErrorFormat[] = TEXT("Command [@@] is from (%s) with name (%s) but is not assigned to this widget. Assign a view model with the name and type or delete this command node.");
+		static constexpr TCHAR ErrorFormat[] = TEXT("Command [@@] is from (%s) with name (%s) but is not assigned to this widget. Assign a view model with the name and type or delete this command node.");
 		const FText ClassName = Assignment.ViewModelClass != nullptr ? Assignment.ViewModelClass->GetDisplayNameText() : INVTEXT("[INVALID]");
 		MessageLog.Error(*FString::Printf(ErrorFormat, *ClassName.ToString(), *Assignment.ViewModelName.ToString()), this);
 	}

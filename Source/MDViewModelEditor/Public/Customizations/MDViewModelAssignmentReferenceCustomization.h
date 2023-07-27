@@ -41,13 +41,17 @@ public:
 	using SGraphPin::Construct;
 
 	virtual TSharedRef<SWidget>	GetDefaultValueWidget() override;
+	virtual void Tick( const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime ) override;
 
 private:
-	UClass* GetWidgetOwnerClass() const;
-	UClass* ResolveWidgetClassFromPin(const UEdGraphPin* Pin) const;
+	void GetWidgetViewModelAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments) const;
+	const UEdGraphPin* GetWidgetPin() const;
 
 	TSharedRef<SWidget> MakeAssignmentMenu();
 	void SetSelectedAssignment(FMDViewModelAssignment Assignment) const;
 
+	FMDViewModelAssignmentReference GetSelectedAssignment() const;
 	FText GetSelectedAssignmentText() const;
+
+	void ValidateDefaultValue() const;
 };

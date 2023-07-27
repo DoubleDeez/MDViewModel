@@ -5,6 +5,7 @@
 #include "EdGraphSchema_K2.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "IDetailChildrenBuilder.h"
+#include "MDViewModelGraph.h"
 #include "MDViewModelModule.h"
 #include "PropertyHandle.h"
 #include "ScopedTransaction.h"
@@ -116,9 +117,8 @@ TSharedRef<SWidget> FMDViewModelAssignmentReferenceCustomization::MakeAssignment
 	FMenuBuilder MenuBuilder(true, NULL);
 	if (UClass* WidgetClass = GetWidgetOwnerClass())
 	{
-		const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
-		ViewModelModule.GetViewModelAssignmentsForWidgetClass(WidgetClass, ViewModelAssignments);
+		FMDViewModelModule::GetViewModelAssignmentsForWidgetClass(WidgetClass, ViewModelAssignments);
 
 		for (const auto& Pair : ViewModelAssignments)
 		{
@@ -179,7 +179,36 @@ TSharedRef<SWidget> SMDViewModelAssignmentReferenceGraphPin::GetDefaultValueWidg
 		   ];
 }
 
-UClass* SMDViewModelAssignmentReferenceGraphPin::GetWidgetOwnerClass() const
+void SMDViewModelAssignmentReferenceGraphPin::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
+{
+	SGraphPin::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
+
+	ValidateDefaultValue();
+}
+
+void SMDViewModelAssignmentReferenceGraphPin::GetWidgetViewModelAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments) const
+{
+	const UEdGraphPin* WidgetPin = GetWidgetPin();
+	if (WidgetPin == nullptr)
+	{
+		return;
+	}
+
+	const UBlueprint* Blueprint = GraphPinObj->GetOwningNode()->GetTypedOuter<UBlueprint>();
+	
+	// If it's a self pin, we can get the up-to-date assignments that haven't been compiled yet
+	if (Blueprint != nullptr && MDViewModelAssignmentReferenceCustomization_Private::IsSelfPin(*WidgetPin))
+	{
+		FMDViewModelGraphModule::GetViewModelAssignmentsForBlueprint(Blueprint, OutViewModelAssignments);
+	}
+	else
+	{
+		const TSubclassOf<UUserWidget> WidgetClass = Cast<UClass>(WidgetPin->PinType.PinSubCategoryObject.Get());
+		FMDViewModelModule::GetViewModelAssignmentsForWidgetClass(WidgetClass, OutViewModelAssignments);
+	}
+}
+
+const UEdGraphPin* SMDViewModelAssignmentReferenceGraphPin::GetWidgetPin() const
 {
 	static const FName VMAssignmentMeta = TEXT("VMAssignment");
 	if (UEdGraphNode* OwningNode = GraphPinObj->GetOwningNode())
@@ -193,45 +222,9 @@ UClass* SMDViewModelAssignmentReferenceGraphPin::GetWidgetOwnerClass() const
 				continue;
 			}
 			
-			UClass* PinClass = ResolveWidgetClassFromPin(Pin);
-			if (IsValid(PinClass))
-			{
-				return PinClass;
-			}
+			// If the pin connected, check it instead since its class might be more specific
+			return (Pin->LinkedTo.IsEmpty() || Pin->LinkedTo[0] == nullptr) ? Pin : Pin->LinkedTo[0];
 		}
-	}
-	
-	return nullptr;
-}
-
-UClass* SMDViewModelAssignmentReferenceGraphPin::ResolveWidgetClassFromPin(const UEdGraphPin* Pin) const
-{
-	if (Pin == nullptr)
-	{
-		return nullptr;
-	}
-	
-	// If the pin connected, check it instead since its class might be more specific
-	Pin = (Pin->LinkedTo.IsEmpty() || Pin->LinkedTo[0] == nullptr) ? Pin : Pin->LinkedTo[0];
-
-	// If it's a self pin, get the Widget BP generated class
-	if (MDViewModelAssignmentReferenceCustomization_Private::IsSelfPin(*Pin))
-	{
-		if (const UWidgetBlueprint* WidgetBP = GraphPinObj->GetOwningNode()->GetTypedOuter<UWidgetBlueprint>())
-		{
-			return WidgetBP->GeneratedClass;
-		}
-	}
-	
-	UClass* PinClass = Cast<UClass>(Pin->PinType.PinSubCategoryObject.Get());
-	if (!IsValid(PinClass))
-	{
-		return nullptr;
-	}
-
-	if (PinClass->IsChildOf<UUserWidget>())
-	{
-		return PinClass;
 	}
 	
 	return nullptr;
@@ -239,22 +232,19 @@ UClass* SMDViewModelAssignmentReferenceGraphPin::ResolveWidgetClassFromPin(const
 
 TSharedRef<SWidget> SMDViewModelAssignmentReferenceGraphPin::MakeAssignmentMenu()
 {
-	FMenuBuilder MenuBuilder(true, NULL);
-	if (UClass* WidgetClass = GetWidgetOwnerClass())
-	{
-		const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
-		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
-		ViewModelModule.GetViewModelAssignmentsForWidgetClass(WidgetClass, ViewModelAssignments);
+	FMenuBuilder MenuBuilder(true, nullptr);
+	
+	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
+	GetWidgetViewModelAssignments(ViewModelAssignments);
 
-		for (const auto& Pair : ViewModelAssignments)
-		{
-			MenuBuilder.AddMenuEntry(
-				FText::Format(INVTEXT("{0} ({1})"), Pair.Key.ViewModelClass->GetDisplayNameText(), FText::FromName(Pair.Key.ViewModelName)),
-				Pair.Key.ViewModelClass->GetToolTipText(),
-				FSlateIcon(),
-				FExecuteAction::CreateSP(this, &SMDViewModelAssignmentReferenceGraphPin::SetSelectedAssignment, Pair.Key)
-			);
-		}
+	for (const auto& Pair : ViewModelAssignments)
+	{
+		MenuBuilder.AddMenuEntry(
+			FText::Format(INVTEXT("{0} ({1})"), Pair.Key.ViewModelClass->GetDisplayNameText(), FText::FromName(Pair.Key.ViewModelName)),
+			Pair.Key.ViewModelClass->GetToolTipText(),
+			FSlateIcon(),
+			FExecuteAction::CreateSP(this, &SMDViewModelAssignmentReferenceGraphPin::SetSelectedAssignment, Pair.Key)
+		);
 	}
 
 	return MenuBuilder.MakeWidget();
@@ -275,19 +265,118 @@ void SMDViewModelAssignmentReferenceGraphPin::SetSelectedAssignment(FMDViewModel
 		GraphPinObj->Modify();
 		GraphPinObj->GetSchema()->TrySetDefaultValue(*GraphPinObj, FinalValue);
 	}
+	
+	if (UEdGraphNode* OwningNode = GraphPinObj->GetOwningNode())
+	{
+		OwningNode->ReconstructNode();
+	}
+}
+
+FMDViewModelAssignmentReference SMDViewModelAssignmentReferenceGraphPin::GetSelectedAssignment() const
+{
+	FMDViewModelAssignmentReference Assignment;
+
+	const FString DefaultString = GraphPinObj->GetDefaultAsString();
+	if (!DefaultString.IsEmpty())
+	{
+		UScriptStruct* PinLiteralStructType = FMDViewModelAssignmentReference::StaticStruct();
+		PinLiteralStructType->ImportText(*DefaultString, &Assignment, nullptr, PPF_SerializedAsImportText, GError, PinLiteralStructType->GetName());
+	}
+
+	return Assignment;
 }
 
 FText SMDViewModelAssignmentReferenceGraphPin::GetSelectedAssignmentText() const
 {
-	const FString DefaultString = GraphPinObj->GetDefaultAsString();
-	if (!DefaultString.IsEmpty())
+	const FMDViewModelAssignmentReference Assignment = GetSelectedAssignment();
+	if (Assignment.IsAssignmentValid())
 	{
-		FMDViewModelAssignmentReference Assignment;
-		UScriptStruct* PinLiteralStructType = FMDViewModelAssignmentReference::StaticStruct();
-		PinLiteralStructType->ImportText(*DefaultString, &Assignment, nullptr, PPF_SerializedAsImportText, GError, PinLiteralStructType->GetName());
-
 		return FText::Format(INVTEXT("{0} ({1})"), Assignment.ViewModelClass.LoadSynchronous()->GetDisplayNameText(), FText::FromName(Assignment.ViewModelName));
 	}
 
 	return INVTEXT("Select an Assignment...");
+}
+
+void SMDViewModelAssignmentReferenceGraphPin::ValidateDefaultValue() const
+{
+	TSubclassOf<UUserWidget> WidgetClass = nullptr;
+	
+	const bool bShowError = [&]()
+	{
+		if (GraphPinObj->HasAnyConnections() || GraphPinObj->GetDefaultAsString().IsEmpty())
+		{
+			return false;
+		}
+	
+		if (GraphPinObj->PinType.bIsReference && !UEdGraphSchema_K2::IsAutoCreateRefTerm(GraphPinObj))
+		{
+			return false;
+		}
+	
+		const UEdGraphPin* WidgetPin = GetWidgetPin();
+		if (WidgetPin == nullptr)
+		{
+			return false;
+		}
+	
+		WidgetClass = Cast<UClass>(WidgetPin->PinType.PinSubCategoryObject.Get());
+	
+		const UBlueprint* Blueprint = GraphPinObj->GetOwningNode()->GetTypedOuter<UBlueprint>();
+		if (Blueprint != nullptr && MDViewModelAssignmentReferenceCustomization_Private::IsSelfPin(*WidgetPin))
+		{
+			WidgetClass = (Blueprint->SkeletonGeneratedClass) ? Blueprint->SkeletonGeneratedClass : Blueprint->GeneratedClass;
+		}
+	
+		if (WidgetClass == nullptr)
+		{
+			return false;
+		}
+
+		// Only validate a valid assignment object
+		const FMDViewModelAssignmentReference AssignmentReference = GetSelectedAssignment();
+		if (!AssignmentReference.IsAssignmentValid())
+		{
+			return false;
+		}
+	
+		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
+		GetWidgetViewModelAssignments(ViewModelAssignments);
+
+		for (const auto& Pair : ViewModelAssignments)
+		{
+			if (Pair.Key.ViewModelClass == AssignmentReference.ViewModelClass
+				&& Pair.Key.ViewModelName == AssignmentReference.ViewModelName)
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}();
+
+	if (UEdGraphNode* OwningNode = GraphPinObj->GetOwningNode())
+	{
+		bool bDidChange = bShowError != OwningNode->bHasCompilerMessage;
+		if (bShowError)
+		{
+			bDidChange |= !OwningNode->ErrorMsg.StartsWith(TEXT("ViewModelAssignment: "));
+			bDidChange |= OwningNode->ErrorType != EMessageSeverity::Error;
+			OwningNode->ErrorType = EMessageSeverity::Error;
+			OwningNode->ErrorMsg = FString::Printf(TEXT("ViewModelAssignment: The specified assignment does not exist on %s"), *WidgetClass->GetDisplayNameText().ToString());
+			OwningNode->bHasCompilerMessage = true;
+		}
+		else if (OwningNode->ErrorMsg.StartsWith(TEXT("ViewModelAssignment: ")))
+		{
+			bDidChange = true;
+			OwningNode->ErrorType = (int32)EMessageSeverity::Info + 1;
+			OwningNode->ErrorMsg = {};
+			OwningNode->bHasCompilerMessage = false;
+		}
+
+		const TSharedPtr<SGraphNode> GraphNode = OwnerNodePtr.Pin();
+		if (bDidChange && GraphNode.IsValid())
+		{
+			GraphNode->RefreshErrorInfo();
+		}
+	}
 }

@@ -15,10 +15,9 @@ class UBlueprint;
 class FMDViewModelGraphModule : public IModuleInterface
 {
 public:
-    virtual void StartupModule() override;
-    virtual void ShutdownModule() override;
+	// TODO - Move all this to a util class
 
-	static void GetViewModelAssignmentsForWidgetBlueprint(const UWidgetBlueprint* WidgetBP, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments);
+	MDVIEWMODELGRAPH_API static void GetViewModelAssignmentsForBlueprint(const UBlueprint* Blueprint, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments);
 
 	MDVIEWMODELGRAPH_API static bool DoesBlueprintBindToViewModelEvent(const UBlueprint* BP, const FName& EventName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);
 	MDVIEWMODELGRAPH_API static void OnViewModelEventRequestedForBlueprint(const UBlueprint* BP, const FName& EventName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);

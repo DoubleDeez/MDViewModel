@@ -50,10 +50,19 @@ void UMDViewModelFunctionLibrary::BP_ClearViewModel(UUserWidget* Widget, const F
 
 UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModelOfClass(UUserWidget* Widget, UObject* ContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings, FName ViewModelName)
 {
+	FMDViewModelAssignmentReference AssignmentReference;
+	AssignmentReference.ViewModelClass = ViewModelClass;
+	AssignmentReference.ViewModelName = ViewModelName;
+	
+	return BP_SetViewModelOfClass(Widget, ContextObject, AssignmentReference, ViewModelSettings);
+}
+
+UMDViewModelBase* UMDViewModelFunctionLibrary::BP_SetViewModelOfClass(UUserWidget* Widget, UObject* ContextObject, const FMDViewModelAssignmentReference& Assignment, const FInstancedStruct& ViewModelSettings)
+{
 	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
 	if (IsValid(Extension))
 	{
-		return Extension->SetViewModelOfClass(ContextObject, ViewModelClass, ViewModelSettings, ViewModelName);
+		return Extension->SetViewModelOfClass(ContextObject, Assignment.ViewModelClass.Get(), ViewModelSettings, Assignment.ViewModelName);
 	}
 
 	return nullptr;
@@ -86,9 +95,8 @@ bool UMDViewModelFunctionLibrary::DoesWidgetHaveViewModelClassAssigned(const UUs
 {
 	if (IsValid(Widget))
 	{
-		const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-		ViewModelModule.GetViewModelAssignmentsForWidgetClass(Widget->GetClass(), Assignments);
+		FMDViewModelModule::GetViewModelAssignmentsForWidgetClass(Widget->GetClass(), Assignments);
 
 		for (const auto& Pair : Assignments)
 		{
