@@ -106,7 +106,6 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 	.ValueContent()
 	[
 		SNew(SComboButton)
-		.IsEnabled(!bIsEditMode)
 		.OnGetMenuContent(this, &FMDViewModelAssignmentEditorObjectCustomization::OnGetProviderMenuContent)
 		.ButtonContent()
 		[
