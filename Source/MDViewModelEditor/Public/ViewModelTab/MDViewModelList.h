@@ -8,10 +8,7 @@ class UWidgetBlueprint;
 class UUserWidget;
 struct FMDViewModelEditorAssignment;
 
-/**
- *
- */
-class MDVIEWMODELEDITOR_API SMDViewModelList : public SCompoundWidget
+class SMDViewModelList : public SCompoundWidget
 {
 public:
 	DECLARE_DELEGATE_OneParam(FOnViewModelSelected, FMDViewModelEditorAssignment*);
@@ -24,9 +21,8 @@ public:
 
 	SLATE_END_ARGS()
 
-	virtual ~SMDViewModelList();
+	virtual ~SMDViewModelList() override;
 
-	/** Constructs this widget with InArgs */
 	void Construct(const FArguments& InArgs, UWidgetBlueprint* InBlueprint);
 
 	void RefreshList();

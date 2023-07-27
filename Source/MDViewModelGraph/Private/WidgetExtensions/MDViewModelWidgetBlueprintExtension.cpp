@@ -49,7 +49,8 @@ void UMDViewModelWidgetBlueprintExtension::UpdateAssignment(const FMDViewModelEd
 		FMDViewModelEditorAssignment NewAssignment = Assignments[AssignmentIndex];
 		Assignments.RemoveAt(AssignmentIndex);
 
-		// Only copy the properties that are allowed to change
+		// The class isn't allowed to change, so copy everything else
+		NewAssignment.Assignment.ProviderTag = UpdatedAssignment.Assignment.ProviderTag;
 		NewAssignment.Assignment.ViewModelName = UpdatedAssignment.Assignment.ViewModelName;
 		NewAssignment.Data.ProviderSettings = UpdatedAssignment.Data.ProviderSettings;
 		NewAssignment.Data.ViewModelSettings = UpdatedAssignment.Data.ViewModelSettings;
@@ -140,11 +141,6 @@ void UMDViewModelWidgetBlueprintExtension::HandleFinishCompilingClass(UWidgetBlu
 
 		CompilerContext->AddExtension(Class, ClassExtension);
 	}
-}
-
-bool UMDViewModelWidgetBlueprintExtension::HandleValidateGeneratedClass(UWidgetBlueprintGeneratedClass* Class)
-{
-	return Super::HandleValidateGeneratedClass(Class);
 }
 
 void UMDViewModelWidgetBlueprintExtension::HandleEndCompilation()

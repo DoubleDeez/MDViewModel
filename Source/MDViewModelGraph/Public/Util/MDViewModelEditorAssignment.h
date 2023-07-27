@@ -21,10 +21,6 @@ public:
 	UPROPERTY()
 	FMDViewModelAssignmentData Data;
 
-	// Is this a natively assigned viewmodel
-	UPROPERTY()
-	bool bIsNative = false;
-
 	// Is this assignment from a super class
 	UPROPERTY()
 	bool bIsSuper = false;

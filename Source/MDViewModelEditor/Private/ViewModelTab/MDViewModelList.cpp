@@ -140,6 +140,7 @@ void SMDViewModelList::PopulateAssignments()
 #endif
 			{
 				// TODO - how to handle collisions from super classes
+				//		- only happens if the super class adds an assignment that a child class already has
 				SuperAssignments.Append(ClassExtension->GetAssignments());
 			}
 		}
@@ -170,28 +171,6 @@ void SMDViewModelList::PopulateAssignments()
 			NewAssignment.Assignment = Pair.Key;
 			NewAssignment.Data = Pair.Value;
 			NewAssignment.bIsSuper = true;
-
-			MyAssignments.Emplace(MoveTemp(NewAssignment));
-		}
-	}
-
-	const FMDViewModelModule& ViewModelModule = FModuleManager::LoadModuleChecked<FMDViewModelModule>(TEXT("MDViewModel"));
-	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> NativeAssignments;
-	ViewModelModule.GetNativeAssignments(WidgetClass, NativeAssignments);
-	for (const auto& Pair : NativeAssignments)
-	{
-		if (FMDViewModelEditorAssignment* ExistingAssignment = FindAssignment(Pair.Key))
-		{
-			ExistingAssignment->bIsNative = true;
-			// TODO - Override Data
-			//ExistingAssignment->Data = Pair.Value;
-		}
-		else
-		{
-			FMDViewModelEditorAssignment NewAssignment;
-			NewAssignment.Assignment = Pair.Key;
-			NewAssignment.bIsNative = true;
-			NewAssignment.Data = Pair.Value;
 
 			MyAssignments.Emplace(MoveTemp(NewAssignment));
 		}

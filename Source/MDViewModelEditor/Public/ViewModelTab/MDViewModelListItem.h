@@ -5,10 +5,8 @@
 #include "Widgets/SCompoundWidget.h"
 
 struct FMDViewModelEditorAssignment;
-/**
- *
- */
-class MDVIEWMODELEDITOR_API SMDViewModelListItem : public SCompoundWidget
+
+class SMDViewModelListItem : public SCompoundWidget
 {
 public:
 	SLATE_BEGIN_ARGS(SMDViewModelListItem)

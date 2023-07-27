@@ -1,11 +1,8 @@
 #include "ViewModelTab/MDViewModelListItem.h"
 
-#include "DetailLayoutBuilder.h"
-#include "MDViewModelModule.h"
 #include "Brushes/SlateColorBrush.h"
-#include "Components/VerticalBox.h"
+#include "DetailLayoutBuilder.h"
 #include "Misc/MessageDialog.h"
-#include "Styling/StyleColors.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
@@ -31,44 +28,10 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, TSharedPtr<FMDVie
 
 	const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(Assignment->Assignment.ProviderTag);
 
-	const FText SourceText = [Item]()
-	{
-		if (Item->bIsNative && Item->bIsSuper)
-		{
-			return INVTEXT("Native & Super");
-		}
-
-		if (Item->bIsNative)
-		{
-			return INVTEXT("Native");
-		}
-
-		if (Item->bIsSuper)
-		{
-			return INVTEXT("Super");
-		}
-
-		return FText::GetEmpty();
-	}();
-	const FText SourceToolTipText = [Item]()
-	{
-		if (Item->bIsNative && Item->bIsSuper)
-		{
-			return INVTEXT("This viewmodel is assigned natively and in a parent blueprint therefore it cannot be edited.");
-		}
-
-		if (Item->bIsNative)
-		{
-			return INVTEXT("This viewmodel is assigned natively therefore it cannot be edited.");
-		}
-
-		if (Item->bIsSuper)
-		{
-			return INVTEXT("This viewmodel is assigned in a parent blueprint therefore it cannot be edited.");
-		}
-
-		return FText::GetEmpty();
-	}();
+	const FText SourceText = Item->bIsSuper ? INVTEXT("Super") : FText::GetEmpty();
+	const FText SourceToolTipText = Item->bIsSuper
+		? INVTEXT("This viewmodel is assigned in a parent blueprint therefore it cannot be edited.")
+		: FText::GetEmpty();
 
 	const bool bIsViewModelClassValid = Item->Assignment.ViewModelClass != nullptr;
 
@@ -176,7 +139,7 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, TSharedPtr<FMDVie
 
 EVisibility SMDViewModelListItem::GetButtonVisibility() const
 {
-	if (/*IsHovered() && */!Assignment->bIsNative && !Assignment->bIsSuper)
+	if (!Assignment->bIsSuper)
 	{
 		return EVisibility::Visible;
 	}
@@ -186,7 +149,7 @@ EVisibility SMDViewModelListItem::GetButtonVisibility() const
 
 EVisibility SMDViewModelListItem::GetSourceTextVisibility() const
 {
-	if (/*IsHovered() &&*/ (Assignment->bIsNative || Assignment->bIsSuper))
+	if (Assignment->bIsSuper)
 	{
 		return EVisibility::Visible;
 	}
