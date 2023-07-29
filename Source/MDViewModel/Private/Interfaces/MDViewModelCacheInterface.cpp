@@ -26,7 +26,7 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const FName& 
 	return ViewModel;
 }
 
-UMDViewModelBase* IMDViewModelCacheInterface::GetViewModel(const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings) const
+UMDViewModelBase* IMDViewModelCacheInterface::GetViewModel(const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass) const
 {
 	if (bIsShutdown)
 	{

@@ -24,7 +24,7 @@ class MDVIEWMODEL_API IMDViewModelCacheInterface
 public:
 	UMDViewModelBase* GetOrCreateViewModel(const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings = {});
 	
-	UMDViewModelBase* GetViewModel(const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings = {}) const;
+	UMDViewModelBase* GetViewModel(const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass) const;
 
 	bool IsShutdown() const { return bIsShutdown; }
 

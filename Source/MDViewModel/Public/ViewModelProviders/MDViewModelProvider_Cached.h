@@ -184,16 +184,16 @@ class MDVIEWMODEL_API UMDViewModelProvider_Cached : public UMDViewModelProviderB
 public:
 	// Use this to make use of a view model cache for manually assigned view models
 	template<typename T>
-	static T* FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings = {});
-	static UMDViewModelBase* FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings = {});
+	static T* FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings = {});
+	static UMDViewModelBase* FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings = {});
 	template<typename T>
-	static T* FindOrCreateCachedViewModel(UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName = MDViewModelUtils::DefaultViewModelName, const FInstancedStruct& ViewModelSettings = {});
-	static UMDViewModelBase* FindOrCreateCachedViewModel(UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName = MDViewModelUtils::DefaultViewModelName, const FInstancedStruct& ViewModelSettings = {});
+	static T* FindOrCreateCachedViewModel(UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey = MDViewModelUtils::DefaultViewModelName, const FInstancedStruct& ViewModelSettings = {});
+	static UMDViewModelBase* FindOrCreateCachedViewModel(UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey = MDViewModelUtils::DefaultViewModelName, const FInstancedStruct& ViewModelSettings = {});
 
 	// Try to find an existing view model for the given context object
 	template<typename T>
-	static T* FindCachedViewModel(const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName = MDViewModelUtils::DefaultViewModelName, const FInstancedStruct& ViewModelSettings = {});
-	static UMDViewModelBase* FindCachedViewModel(const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName = MDViewModelUtils::DefaultViewModelName, const FInstancedStruct& ViewModelSettings = {});
+	static T* FindCachedViewModel(const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey = MDViewModelUtils::DefaultViewModelName);
+	static UMDViewModelBase* FindCachedViewModel(const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey = MDViewModelUtils::DefaultViewModelName);
 
 	virtual void Deinitialize() override;
 
@@ -215,7 +215,7 @@ protected:
 	virtual IMDViewModelCacheInterface* ResolveAndBindViewModelCache(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data, const FMDViewModelProvider_Cached_Settings& Settings);
 	
 	UMDViewModelBase* FindOrCreateCachedViewModel_Internal(UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings);
-	UMDViewModelBase* FindCachedViewModel_Internal(const UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings) const;
+	UMDViewModelBase* FindCachedViewModel_Internal(const UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass) const;
 
 	void BindOnWidgetDestroy(UUserWidget& Widget);
 	void OnWidgetDestroy(TWeakObjectPtr<UUserWidget> WidgetPtr);
@@ -273,21 +273,21 @@ protected:
 };
 
 template <typename T>
-T* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
+T* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
 {
-	return FindOrCreateCachedViewModel<T>(CacheContextObject, ViewModelClass, ViewModelName, ViewModelSettings);
+	return FindOrCreateCachedViewModel<T>(CacheContextObject, ViewModelClass, CachedViewModelKey, ViewModelSettings);
 }
 
 template <typename T>
-T* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName, const FInstancedStruct& ViewModelSettings)
+T* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey, const FInstancedStruct& ViewModelSettings)
 {
 	static_assert(TIsDerivedFrom<T, UMDViewModelBase>::Value, "T must derive from UMDViewModelBase");
-	return Cast<T>(FindOrCreateCachedViewModel(CacheContextObject, ViewModelClass, ViewModelName, ViewModelSettings));
+	return Cast<T>(FindOrCreateCachedViewModel(CacheContextObject, ViewModelClass, CachedViewModelKey, ViewModelSettings));
 }
 
 template <typename T>
-T* UMDViewModelProvider_Cached::FindCachedViewModel(const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName, const FInstancedStruct& ViewModelSettings)
+T* UMDViewModelProvider_Cached::FindCachedViewModel(const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey)
 {
 	static_assert(TIsDerivedFrom<T, UMDViewModelBase>::Value, "T must derive from UMDViewModelBase");
-	return Cast<T>(FindCachedViewModel(CacheContextObject, ViewModelClass, ViewModelName, ViewModelSettings));
+	return Cast<T>(FindCachedViewModel(CacheContextObject, ViewModelClass, CachedViewModelKey));
 }

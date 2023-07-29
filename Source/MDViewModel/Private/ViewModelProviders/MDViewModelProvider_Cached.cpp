@@ -97,29 +97,29 @@ const FGameplayTag& FMDViewModelProvider_Cached_Settings::GetLifetimeTag() const
 	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 
-UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& ViewModelName,
+UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& CachedViewModelKey,
                                                                            TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
 {
-	return FindOrCreateCachedViewModel(CacheContextObject, ViewModelClass, ViewModelName, ViewModelSettings);
+	return FindOrCreateCachedViewModel(CacheContextObject, ViewModelClass, CachedViewModelKey, ViewModelSettings);
 }
 
-UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName, const FInstancedStruct& ViewModelSettings)
+UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey, const FInstancedStruct& ViewModelSettings)
 {
 	UMDViewModelProvider_Cached* Provider = IsValid(GEngine) ? GEngine->GetEngineSubsystem<UMDViewModelProvider_Cached>() : nullptr;
 	if (IsValid(Provider))
 	{
-		return Provider->FindOrCreateCachedViewModel_Internal(CacheContextObject, ViewModelName, ViewModelClass, ViewModelSettings);
+		return Provider->FindOrCreateCachedViewModel_Internal(CacheContextObject, CachedViewModelKey, ViewModelClass, ViewModelSettings);
 	}
 
 	return nullptr;
 }
 
-UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel(const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName, const FInstancedStruct& ViewModelSettings)
+UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel(const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey)
 {
 	const UMDViewModelProvider_Cached* Provider = IsValid(GEngine) ? GEngine->GetEngineSubsystem<UMDViewModelProvider_Cached>() : nullptr;
 	if (IsValid(Provider))
 	{
-		return Provider->FindCachedViewModel_Internal(CacheContextObject, ViewModelName, ViewModelClass, ViewModelSettings);
+		return Provider->FindCachedViewModel_Internal(CacheContextObject, CachedViewModelKey, ViewModelClass);
 	}
 
 	return nullptr;
@@ -320,12 +320,11 @@ UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel_Inter
 	return nullptr;
 }
 
-UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel_Internal(const UObject* CacheContextObject, const FName& ViewModelName,
-																			TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings) const
+UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel_Internal(const UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass) const
 {
 	if (const IMDViewModelCacheInterface* ViewModelCache = ResolveObjectCache(CacheContextObject))
 	{
-		return ViewModelCache->GetViewModel(ViewModelName, ViewModelClass, ViewModelSettings);
+		return ViewModelCache->GetViewModel(ViewModelName, ViewModelClass);
 	}
 
 	return nullptr;

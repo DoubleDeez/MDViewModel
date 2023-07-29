@@ -5,6 +5,7 @@
 #include "UObject/Package.h"
 #include "Util/MDViewModelAssignmentReference.h"
 #include "ViewModel/MDViewModelBase.h"
+#include "ViewModelProviders/MDViewModelProvider_Cached.h"
 #include "WidgetExtensions/MDViewModelWidgetExtension.h"
 
 UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModel(UUserWidget* Widget, UMDViewModelBase* ViewModel, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
@@ -89,6 +90,16 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::BP_GetViewModel(UUserWidget* Widg
 	}
 
 	return nullptr;
+}
+
+UMDViewModelBase* UMDViewModelFunctionLibrary::FindOrCreateCachedViewModel(UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, FName CachedViewModelKey, const FInstancedStruct& ViewModelSettings)
+{
+	return UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(CacheContextObject, ViewModelClass, CachedViewModelKey, ViewModelSettings);
+}
+
+UMDViewModelBase* UMDViewModelFunctionLibrary::FindCachedViewModel(const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, FName CachedViewModelKey)
+{
+	return UMDViewModelProvider_Cached::FindCachedViewModel(CacheContextObject, ViewModelClass, CachedViewModelKey);
 }
 
 bool UMDViewModelFunctionLibrary::DoesWidgetHaveViewModelClassAssigned(const UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, TSubclassOf<UMDViewModelBase>& OutAssignedViewModelClass, bool bIncludeChildClasses)
