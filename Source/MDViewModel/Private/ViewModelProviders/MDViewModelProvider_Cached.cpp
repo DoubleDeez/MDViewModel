@@ -16,6 +16,7 @@
 #include "GameplayTagAssetInterface.h"
 #include "Subsystems/MDGlobalViewModelCache.h"
 #include "Subsystems/MDLocalPlayerViewModelCache.h"
+#include "Subsystems/MDObjectViewModelCache.h"
 #include "Subsystems/MDWorldViewModelCache.h"
 #include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelFunctionLibrary.h"
@@ -548,8 +549,11 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCache(UObj
 	{
 		return ResolveActorCache(Actor);
 	}
+	else if (IsValid(Object))
+	{
+		return UMDObjectViewModelCacheSystem::ResolveCacheForObject(Object);
+	}
 
-	ensureMsgf(IsValid(Object), TEXT("Object [%s] or type [%s] is not a supported View Model Cache type, supported types are GameInstance, World, LocalPlayer, and Actor"), *GetNameSafe(Object), *GetNameSafe(Object->GetClass()));
 	return nullptr;
 }
 
@@ -570,6 +574,10 @@ const IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCach
 	else if (const AActor* Actor = Cast<AActor>(Object))
 	{
 		return ResolveActorCache(Actor);
+	}
+	else if (IsValid(Object))
+	{
+		return UMDObjectViewModelCacheSystem::ResolveCacheForObject(Object);
 	}
 
 	return nullptr;

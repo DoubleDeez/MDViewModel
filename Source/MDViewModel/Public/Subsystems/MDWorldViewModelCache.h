@@ -8,7 +8,7 @@
 class UMDViewModelBase;
 
 /**
- *
+ * Caches view models relative to a world
  */
 UCLASS()
 class MDVIEWMODEL_API UMDWorldViewModelCache : public UWorldSubsystem, public IMDViewModelCacheInterface

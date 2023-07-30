@@ -160,7 +160,7 @@ public:
 	FMDVMWorldActorFilter WorldActorFilter;
 
 #if WITH_EDITORONLY_DATA
-	// For Relative Property lifetime, this is the FieldNotify property or function on the widget that will be used at the context for the view model (must be an Actor or other supported type)
+	// For Relative Property lifetime, this is the FieldNotify property or function on the widget that will be used at the context for the view model (must be a UObject-derived type)
 	UPROPERTY(EditAnywhere, Category = "Provider|Relative Property", meta = (GetOptions = "GetRelativePropertyNames", EditConditionLifetime = "MDVM.Provider.Cached.Lifetimes.RelativeProperty"))
 	FName RelativePropertyName;
 #endif
@@ -184,15 +184,15 @@ class MDVIEWMODEL_API UMDViewModelProvider_Cached : public UMDViewModelProviderB
 public:
 	// Use this to make use of a view model cache for manually assigned view models
 	template<typename T>
-	static T* FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings = {});
+	static T* FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), const FInstancedStruct& ViewModelSettings = {});
 	static UMDViewModelBase* FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings = {});
 	template<typename T>
-	static T* FindOrCreateCachedViewModel(UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey = MDViewModelUtils::DefaultViewModelName, const FInstancedStruct& ViewModelSettings = {});
+	static T* FindOrCreateCachedViewModel(UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), const FName& CachedViewModelKey = MDViewModelUtils::DefaultViewModelName, const FInstancedStruct& ViewModelSettings = {});
 	static UMDViewModelBase* FindOrCreateCachedViewModel(UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey = MDViewModelUtils::DefaultViewModelName, const FInstancedStruct& ViewModelSettings = {});
 
 	// Try to find an existing view model for the given context object
 	template<typename T>
-	static T* FindCachedViewModel(const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey = MDViewModelUtils::DefaultViewModelName);
+	static T* FindCachedViewModel(const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), const FName& CachedViewModelKey = MDViewModelUtils::DefaultViewModelName);
 	static UMDViewModelBase* FindCachedViewModel(const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey = MDViewModelUtils::DefaultViewModelName);
 
 	virtual void Deinitialize() override;

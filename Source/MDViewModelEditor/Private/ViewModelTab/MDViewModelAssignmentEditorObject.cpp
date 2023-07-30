@@ -1,10 +1,5 @@
 #include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
 
-#include "Engine/GameInstance.h"
-#include "Engine/LocalPlayer.h"
-#include "Engine/World.h"
-#include "GameFramework/Actor.h"
-#include "MDViewModelModule.h"
 #include "UObject/UObjectIterator.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
@@ -85,15 +80,7 @@ TArray<FName> UMDViewModelAssignmentEditorObject::GetRelativePropertyNames() con
 			{
 				if (FieldNotifySupportedNames.Contains(ObjectProp->GetFName()))
 				{
-					const bool bIsSupportedObjectType =
-						ObjectProp->PropertyClass->IsChildOf<AActor>()
-						|| ObjectProp->PropertyClass->IsChildOf<UWorld>()
-						|| ObjectProp->PropertyClass->IsChildOf<ULocalPlayer>()
-						|| ObjectProp->PropertyClass->IsChildOf<UGameInstance>();
-					if (bIsSupportedObjectType)
-					{
-						Result.Add(ObjectProp->GetFName());
-					}
+					Result.Add(ObjectProp->GetFName());
 				}
 			}
 		}
@@ -106,15 +93,7 @@ TArray<FName> UMDViewModelAssignmentEditorObject::GetRelativePropertyNames() con
 				{
 					if (const FObjectPropertyBase* ReturnProperty = CastField<FObjectPropertyBase>(Func->GetReturnProperty()))
 					{
-						const bool bIsSupportedObjectType =
-							ReturnProperty->PropertyClass->IsChildOf<AActor>()
-							|| ReturnProperty->PropertyClass->IsChildOf<UWorld>()
-							|| ReturnProperty->PropertyClass->IsChildOf<ULocalPlayer>()
-							|| ReturnProperty->PropertyClass->IsChildOf<UGameInstance>();
-						if (bIsSupportedObjectType)
-						{
-							Result.Add(ReturnProperty->GetFName());
-						}
+						Result.Add(ReturnProperty->GetFName());
 					}
 				}
 			}

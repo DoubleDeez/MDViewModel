@@ -1,4 +1,6 @@
 #include "ViewModel/MDViewModelBase.h"
+
+#include "Engine/World.h"
 #include "InstancedStruct.h"
 
 #if WITH_EDITOR
@@ -21,6 +23,9 @@ void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& Vi
 	}
 #endif
 	ContextObject = RedirectContextObject(ViewModelSettings, InContextObject);
+
+	ensureAlwaysMsgf(IsValid(GetWorld()), TEXT("View Model [%s]'s ContextObject [%s] could not reach the world. Context Objects are expected to have a valid GetWorld() result."), *GetName(), *GetNameSafe(GetContextObject()));
+	
 	InitializeViewModel(ViewModelSettings);
 }
 

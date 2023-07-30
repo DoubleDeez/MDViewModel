@@ -7,8 +7,7 @@
 
 class UMDViewModelBase;
 
-// This class does not need to be modified.
-UINTERFACE()
+UINTERFACE(meta=(CannotImplementInterfaceInBlueprint))
 class UMDViewModelCacheInterface : public UInterface
 {
 	GENERATED_BODY()

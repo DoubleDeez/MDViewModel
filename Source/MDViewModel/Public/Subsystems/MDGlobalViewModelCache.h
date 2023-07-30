@@ -8,7 +8,7 @@
 class UMDViewModelBase;
 
 /**
- *
+ * Caches view models relative to the game instance
  */
 UCLASS()
 class MDVIEWMODEL_API UMDGlobalViewModelCache : public UGameInstanceSubsystem, public IMDViewModelCacheInterface

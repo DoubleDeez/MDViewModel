@@ -79,12 +79,33 @@ public:
 	template<typename T>
 	T* GetContextObject() const
 	{
-		if (ContextObject.IsValid())
-		{
-			return Cast<T>(ContextObject.Get());
-		}
+		return Cast<T>(ContextObject.Get());
+	}
 
-		return Cast<T>(GetOuter());
+	template<typename T>
+	T* GetContextObjectChecked() const
+	{
+		return CastChecked<T>(ContextObject.Get());
+	}
+	
+	template<typename T>
+	T* GetContextObjectEnsure() const
+	{
+		using DecayedT = typename TDecay<T>::Type;
+
+		auto IsValidObject = [](const auto* Object)
+		{
+			if constexpr (TIsDerivedFrom<DecayedT, UObject>::Value)
+			{
+				return IsValid(Object);
+			}
+
+			return Object != nullptr;
+		};
+		
+		T* Object = Cast<T>(ContextObject.Get());
+		const bool bIsValid = ensureAlwaysMsgf(IsValidObject(Object), TEXT("The context object [%s] for view model [%s] is expected to be of type [%s]"), *GetFullNameSafe(ContextObject.Get()), *GetName(), *GetTypeName<DecayedT>());
+		return bIsValid ? Object : nullptr;
 	}
 
 	FSimpleMulticastDelegate OnViewModelShutDown;
