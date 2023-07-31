@@ -3,6 +3,7 @@
 #include "UObject/UObjectIterator.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
+#include "ViewModelProviders/MDViewModelProvider_Cached.h"
 #include "WidgetBlueprint.h"
 
 
@@ -23,7 +24,7 @@ void UMDViewModelAssignmentEditorObject::PopulateFromAssignment(const FMDViewMod
 			ProviderSettings.InitializeAs(Provider->GetProviderSettingsStruct());
 		}
 
-		Provider->OnProviderSettingsInitializedInEditor(ProviderSettings, WidgetBlueprint);
+		Provider->OnProviderSettingsInitializedInEditor(ProviderSettings, WidgetBlueprint, Assignment.Assignment);
 	}
 	else
 	{
@@ -61,39 +62,44 @@ TArray<FName> UMDViewModelAssignmentEditorObject::GetRelativePropertyNames() con
 
 	Result.Add(NAME_None);
 
-	if (IsValid(WidgetSkeletonClass))
+	const FMDViewModelProvider_Cached_Settings* SettingsPtr = ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
+	if (SettingsPtr != nullptr)
 	{
-		TSet<FName> FieldNotifySupportedNames;
+		const UClass* RelativeObjectClass = (SettingsPtr->GetLifetimeTag() == TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty) ? WidgetSkeletonClass.Get() : SettingsPtr->RelativeViewModel.ViewModelClass.LoadSynchronous();
+		if (IsValid(RelativeObjectClass))
 		{
-			const TScriptInterface<INotifyFieldValueChanged> DefaultWidget = WidgetSkeletonClass->GetDefaultObject();
-			const UE::FieldNotification::IClassDescriptor& ClassDescriptor = DefaultWidget->GetFieldNotificationDescriptor();
-			ClassDescriptor.ForEachField(WidgetSkeletonClass, [&FieldNotifySupportedNames](UE::FieldNotification::FFieldId FieldId)
+			TSet<FName> FieldNotifySupportedNames;
 			{
-				FieldNotifySupportedNames.Add(FieldId.GetName());
-				return true;
-			});
-		}
-
-		for (TFieldIterator<FProperty> It(WidgetSkeletonClass); It; ++It)
-		{
-			if (const FObjectPropertyBase* ObjectProp = CastField<FObjectPropertyBase>(*It))
-			{
-				if (FieldNotifySupportedNames.Contains(ObjectProp->GetFName()))
+				const TScriptInterface<INotifyFieldValueChanged> DefaultWidget = RelativeObjectClass->GetDefaultObject();
+				const UE::FieldNotification::IClassDescriptor& ClassDescriptor = DefaultWidget->GetFieldNotificationDescriptor();
+				ClassDescriptor.ForEachField(RelativeObjectClass, [&FieldNotifySupportedNames](UE::FieldNotification::FFieldId FieldId)
 				{
-					Result.Add(ObjectProp->GetFName());
+					FieldNotifySupportedNames.Add(FieldId.GetName());
+					return true;
+				});
+			}
+
+			for (TFieldIterator<FProperty> It(RelativeObjectClass); It; ++It)
+			{
+				if (const FObjectPropertyBase* ObjectProp = CastField<FObjectPropertyBase>(*It))
+				{
+					if (FieldNotifySupportedNames.Contains(ObjectProp->GetFName()))
+					{
+						Result.Add(ObjectProp->GetFName());
+					}
 				}
 			}
-		}
 
-		for (TFieldIterator<UFunction> It(WidgetSkeletonClass); It; ++It)
-		{
-			if (const UFunction* Func = *It)
+			for (TFieldIterator<UFunction> It(RelativeObjectClass); It; ++It)
 			{
-				if (FieldNotifySupportedNames.Contains(Func->GetFName()))
+				if (const UFunction* Func = *It)
 				{
-					if (const FObjectPropertyBase* ReturnProperty = CastField<FObjectPropertyBase>(Func->GetReturnProperty()))
+					if (FieldNotifySupportedNames.Contains(Func->GetFName()))
 					{
-						Result.Add(ReturnProperty->GetFName());
+						if (const FObjectPropertyBase* ReturnProperty = CastField<FObjectPropertyBase>(Func->GetReturnProperty()))
+						{
+							Result.Add(ReturnProperty->GetFName());
+						}
 					}
 				}
 			}

@@ -8,6 +8,7 @@
 #include "Util/MDViewModelMetaUtils.h"
 #include "MDViewModelBase.generated.h"
 
+struct FMDViewModelAssignment;
 struct FInstancedStruct;
 class UUserWidget;
 
@@ -41,8 +42,8 @@ public:
 #if WITH_EDITOR
 	// Override this to expose properties in the view model assignment editor, called on the CDO
 	virtual UScriptStruct* GetViewModelSettingsStruct() const { return nullptr; }
-	virtual void OnViewModelSettingsPropertyChanged(FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint) const {};
-	virtual bool ValidateViewModelSettings(const FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint, TArray<FText>& OutIssues) const { return true; }
+	virtual void OnViewModelSettingsPropertyChanged(FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint, const FMDViewModelAssignment& Assignment) const {};
+	virtual bool ValidateViewModelSettings(const FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint, const FMDViewModelAssignment& Assignment, TArray<FText>& OutIssues) const { return true; }
 #endif
 
 	struct MDVIEWMODEL_API FFieldNotificationClassDescriptor : public ::UE::FieldNotification::IClassDescriptor

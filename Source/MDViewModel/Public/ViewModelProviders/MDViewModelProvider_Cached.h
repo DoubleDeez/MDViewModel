@@ -36,6 +36,7 @@ MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes
 MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_ViewTargetPlayerState);
 MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_Relative);
 MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty);
+MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_RelativeViewModelProperty);
 MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_WorldActor);
 
 USTRUCT(meta = (Coll))
@@ -76,6 +77,12 @@ struct MDVIEWMODEL_API FMDWrappedDelegateHandle
 {
 	FDelegateHandle Handle;
 	TWeakObjectPtr<UObject> DelegateOwner;
+
+	bool IsBound() const
+	{
+		// Only a handle is required to be considered Bound
+		return Handle.IsValid();
+	}
 };
 
 // Each assignment on a widget needs an individual binding, we track that use this struct as a key
@@ -152,7 +159,7 @@ public:
 	EMDViewModelProvider_CacheLifetime ViewModelLifetime = EMDViewModelProvider_CacheLifetime::Global;
 
 	// For Relative lifetime, this view model's lifetime and context object will be tied to the view model assignment selected here
-	UPROPERTY(EditAnywhere, Category = "Provider|Relative", meta = (EditConditionLifetime = "MDVM.Provider.Cached.Lifetimes.Relative"))
+	UPROPERTY(EditAnywhere, Category = "Provider|Relative", meta = (EditConditionLifetime = "MDVM.Provider.Cached.Lifetimes.Relative,MDVM.Provider.Cached.Lifetimes.RelativeViewModelProperty"))
 	FMDViewModelAssignmentReference RelativeViewModel;
 
 	// For World Actor lifetime, the first actor in the world that passes this filter will be the view model's cache and context object 
@@ -160,8 +167,8 @@ public:
 	FMDVMWorldActorFilter WorldActorFilter;
 
 #if WITH_EDITORONLY_DATA
-	// For Relative Property lifetime, this is the FieldNotify property or function on the widget that will be used at the context for the view model (must be a UObject-derived type)
-	UPROPERTY(EditAnywhere, Category = "Provider|Relative Property", meta = (GetOptions = "GetRelativePropertyNames", EditConditionLifetime = "MDVM.Provider.Cached.Lifetimes.RelativeProperty"))
+	// For Relative [View Model] Property lifetime, this is the FieldNotify property or function on the widget that will be used at the context for the view model (must be a UObject-derived type)
+	UPROPERTY(EditAnywhere, Category = "Provider|Relative Property", meta = (GetOptions = "GetRelativePropertyNames", EditConditionLifetime = "MDVM.Provider.Cached.Lifetimes.RelativeProperty,MDVM.Provider.Cached.Lifetimes.RelativeViewModelProperty"))
 	FName RelativePropertyName;
 #endif
 
@@ -206,9 +213,9 @@ public:
 	virtual FText GetDescription() const override { return INVTEXT("The view model will be grabbed from (or added to) the selected cache, keyed by the view model name and class."); }
 
 	virtual UScriptStruct* GetProviderSettingsStruct() const override { return FMDViewModelProvider_Cached_Settings::StaticStruct(); }
-	virtual bool ValidateProviderSettings(const FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint, TArray<FText>& OutIssues) const override;
-	virtual void OnProviderSettingsInitializedInEditor(FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint) const override;
-	virtual void OnProviderSettingsPropertyChanged(FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint) const override;
+	virtual bool ValidateProviderSettings(const FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint, const FMDViewModelAssignment& Assignment, TArray<FText>& OutIssues) const override;
+	virtual void OnProviderSettingsInitializedInEditor(FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint, const FMDViewModelAssignment& Assignment) const override;
+	virtual void OnAssignmentUpdated(FInstancedStruct& ProviderSettings, UWidgetBlueprint* WidgetBlueprint, const FMDViewModelAssignment& Assignment) const override;
 #endif
 
 protected:
@@ -257,18 +264,34 @@ protected:
 	IMDViewModelCacheInterface* ResolveViewTargetPlayerStateCacheAndBindDelegates(const APlayerController* PlayerController, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
 	IMDViewModelCacheInterface* ResolveRelativeViewModelCacheAndBindDelegates(const FMDViewModelAssignmentReference& Reference, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
-
 	IMDViewModelCacheInterface* ResolveRelativePropertyCacheAndBindDelegates(const FMemberReference& Reference, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolveRelativeViewModelPropertyCacheAndBindDelegates(const FMDViewModelAssignmentReference& VMReference, const FMemberReference& PropertyReference, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolveFieldCacheAndBindDelegates(UObject* Owner, const FMemberReference& Reference, int32 DelegateIndex, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
 	IMDViewModelCacheInterface* ResolveWorldActorCacheAndBindDelegates(const FMDVMWorldActorFilter& Filter, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 	IMDViewModelCacheInterface* ResolveWorldActorCacheAndBindDelegates(AActor* Actor, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
+	// Bind RefreshViewModel to the specified view model changing and get the view model
+	UMDViewModelBase* ResolveViewModelAndBindDelegates(const FMDViewModelAssignmentReference& Reference, int32 DelegateIndex, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	
 	void BindViewTargetDelegates(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
 	bool DoesActorPassFilter(AActor* Candidate, const FMDVMWorldActorFilter& Filter) const;
 
-	TMap<FMDVMCachedProviderBindingKey, FMDWrappedDelegateHandle> WidgetDelegateHandles;
-	TMap<FMDVMCachedProviderBindingKey, FDelegateHandle> ViewTargetDelegateHandles;
+	// Checks WidgetDelegateHandles to see if the handle at the specified index is bound, if not it adds a new entry and calls BindFunc to populate it 
+	template<typename T, typename TBindingKey, typename = typename TEnableIf<TIsSame<typename TDecay<TBindingKey>::Type, FMDVMCachedProviderBindingKey>::Value>::Type>
+	void BindDelegateIfUnbound(TBindingKey&& BindingKey, T* Owner, int32 DelegateIndex, TFunctionRef<FDelegateHandle(T&)> BindFunc);
+
+	// Checks WidgetDelegateHandles to see if the specified delegate exists, if so it calls UnbindFunc and resets the stored delegate data
+	template<typename T>
+	void UnbindDelegate(const FMDVMCachedProviderBindingKey& BindingKey, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc);
+
+	// Checks WidgetDelegateHandles to see if the delegate owner is different, if so it calls UnbindFunc and resets the stored delegate data
+	template<typename T>
+	void UnbindDelegateIfNewOwner(const FMDVMCachedProviderBindingKey& BindingKey, const UObject* Owner, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc);
+
+	// Certain lifetimes may require binding multiple delegates, they can index into the array to store multiple handles
+	TMap<FMDVMCachedProviderBindingKey, TArray<FMDWrappedDelegateHandle, TInlineAllocator<4>>> WidgetDelegateHandles;
 	TMap<FMDViewModelAssignment, TMap<TWeakObjectPtr<UUserWidget>, TWeakInterfacePtr<IMDViewModelCacheInterface>>> BoundAssignments;
 };
 
@@ -290,4 +313,113 @@ T* UMDViewModelProvider_Cached::FindCachedViewModel(const UObject* CacheContextO
 {
 	static_assert(TIsDerivedFrom<T, UMDViewModelBase>::Value, "T must derive from UMDViewModelBase");
 	return Cast<T>(FindCachedViewModel(CacheContextObject, ViewModelClass, CachedViewModelKey));
+}
+
+template <typename T, typename TBindingKey, typename>
+void UMDViewModelProvider_Cached::BindDelegateIfUnbound(TBindingKey&& BindingKey, T* Owner, int32 DelegateIndex, TFunctionRef<FDelegateHandle(T&)> BindFunc)
+{
+	auto IsValidObject = [](const auto* Object)
+	{
+		using DecayedT = typename TDecay<T>::Type;
+		if constexpr (TIsDerivedFrom<DecayedT, UObject>::Value)
+		{
+			return IsValid(Object);
+		}
+
+		return Object != nullptr;
+	};
+	
+	if (!IsValidObject(Owner))
+	{
+		return;
+	}
+	
+	// Find or Add a Delegate Wrapper at the specified DelegateIndex
+	auto& WrapperArray = WidgetDelegateHandles.FindOrAdd(Forward<FMDVMCachedProviderBindingKey>(BindingKey));
+	if (WrapperArray.IsValidIndex(DelegateIndex))
+	{
+		if (WrapperArray[DelegateIndex].IsBound())
+		{
+			// Already bound, we're good
+			return;
+		}
+	}
+	else
+	{
+		WrapperArray.AddDefaulted(DelegateIndex - WrapperArray.Num() + 1);
+	}
+
+	FMDWrappedDelegateHandle& Wrapper = WrapperArray[DelegateIndex];
+	Wrapper.DelegateOwner = Cast<UObject>(Owner);
+	Wrapper.Handle = BindFunc(*Owner);
+}
+
+template <typename T>
+void UMDViewModelProvider_Cached::UnbindDelegate(const FMDVMCachedProviderBindingKey& BindingKey, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc)
+{
+	auto* WrapperArrayPtr = WidgetDelegateHandles.Find(BindingKey);
+	if (WrapperArrayPtr == nullptr || !WrapperArrayPtr->IsValidIndex(DelegateIndex))
+	{
+		return;
+	}
+
+	auto IsValidObject = [](const auto* Object)
+	{
+		using DecayedT = typename TDecay<T>::Type;
+		if constexpr (TIsDerivedFrom<DecayedT, UObject>::Value)
+		{
+			return IsValid(Object);
+		}
+
+		return Object != nullptr;
+	};
+	
+	FMDWrappedDelegateHandle& Wrapper = (*WrapperArrayPtr)[DelegateIndex];
+	T* OldOwner = Cast<T>(Wrapper.DelegateOwner.Get());
+	if (!IsValidObject(OldOwner))
+	{
+		Wrapper = {}; // Clear anyway, otherwise we'll still be seen as "bound"
+		return;
+	}
+
+	UnbindFunc(*OldOwner, Wrapper.Handle);
+	Wrapper = {};
+}
+
+template <typename T>
+void UMDViewModelProvider_Cached::UnbindDelegateIfNewOwner(const FMDVMCachedProviderBindingKey& BindingKey, const UObject* Owner, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc)
+{
+	auto* WrapperArrayPtr = WidgetDelegateHandles.Find(BindingKey);
+	if (WrapperArrayPtr == nullptr || !WrapperArrayPtr->IsValidIndex(DelegateIndex))
+	{
+		return;
+	}
+
+	FMDWrappedDelegateHandle& Wrapper = (*WrapperArrayPtr)[DelegateIndex];
+	UObject* OldOwnerObject = Wrapper.DelegateOwner.Get();
+	if (OldOwnerObject == Owner)
+	{
+		return;
+	}
+
+	auto IsValidObject = [](const auto* Object)
+	{
+		using DecayedT = typename TDecay<T>::Type;
+		if constexpr (TIsDerivedFrom<DecayedT, UObject>::Value)
+		{
+			return IsValid(Object);
+		}
+
+		return Object != nullptr;
+	};
+
+	T* OldOwner = Cast<T>(OldOwnerObject);
+	if (!IsValidObject(OldOwner))
+	{
+		Wrapper = {}; // Clear anyway, otherwise we'll still be seen as "bound"
+		return;
+	}
+
+	UnbindFunc(*OldOwner, Wrapper.Handle);
+	Wrapper = {};
 }

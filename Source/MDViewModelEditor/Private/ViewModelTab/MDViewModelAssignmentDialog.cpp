@@ -43,16 +43,26 @@ private:
 			return;
 		}
 		
-		const FString& EditCondition = Property->GetMetaData(EditConditionKey);
-		if (!EditCondition.StartsWith(TEXT("MDVM.Provider.Cached.Lifetimes.")))
-		{
-			return;
-		}
+		const FString& EditConditions = Property->GetMetaData(EditConditionKey);
+		TArray<FString> EditConditionsList;
+		EditConditions.ParseIntoArray(EditConditionsList, TEXT(","));
 
-		const FGameplayTag EditConditionTag = FGameplayTag::RequestGameplayTag(*EditCondition);
-		if (!EditConditionTag.IsValid())
+		FGameplayTagContainer EditConditionTags;
+		for (const FString& EditConditionString : EditConditionsList)
 		{
-			return;
+			const FString CleanEditConditionString = EditConditionString.TrimStartAndEnd();
+			if (!CleanEditConditionString.StartsWith(TEXT("MDVM.Provider.Cached.Lifetimes.")))
+			{
+				continue;
+			}
+			
+			const FGameplayTag EditConditionTag = FGameplayTag::RequestGameplayTag(*CleanEditConditionString);
+			if (!EditConditionTag.IsValid())
+			{
+				continue;
+			}
+
+			EditConditionTags.AddTag(EditConditionTag);
 		}
 		
 		TArray<UObject*> Objects;
@@ -68,7 +78,7 @@ private:
 			return;
 		}
 
-		const TAttribute<bool> EditConditionAttribute = TAttribute<bool>::Create([EditConditionTag, EditorObjectPtr]()
+		const TAttribute<bool> EditConditionAttribute = TAttribute<bool>::Create([EditConditionTags, EditorObjectPtr]()
 		{
 			const UMDViewModelAssignmentEditorObject* EditorObject = EditorObjectPtr.Get();
 			if (EditorObject == nullptr)
@@ -82,7 +92,7 @@ private:
 				return false;
 			}
 
-			return SettingsPtr->GetLifetimeTag() == EditConditionTag;
+			return EditConditionTags.HasTagExact(SettingsPtr->GetLifetimeTag());
 		});
 		
 		const TAttribute<EVisibility> VisibilityAttribute = TAttribute<EVisibility>::Create([EditConditionAttribute]()
@@ -283,7 +293,7 @@ EVisibility SMDViewModelAssignmentDialog::GetAddVisibility() const
 
 	const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider);
 	TArray<FText> UnusedIssues;
-	if (!Provider->ValidateProviderSettings(EditorObject->ProviderSettings, GetWidgetBlueprint(), UnusedIssues))
+	if (!Provider->ValidateProviderSettings(EditorObject->ProviderSettings, GetWidgetBlueprint(), EditorObject->CreateAssignment().Assignment, UnusedIssues))
 	{
 		return EVisibility::Collapsed;
 	}
@@ -310,7 +320,7 @@ EVisibility SMDViewModelAssignmentDialog::GetSaveVisibility() const
 
 	const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider);
 	TArray<FText> UnusedIssues;
-	if (!IsValid(Provider) || !Provider->ValidateProviderSettings(EditorObject->ProviderSettings, GetWidgetBlueprint(), UnusedIssues))
+	if (!IsValid(Provider) || !Provider->ValidateProviderSettings(EditorObject->ProviderSettings, GetWidgetBlueprint(), EditorObject->CreateAssignment().Assignment, UnusedIssues))
 	{
 		return EVisibility::Collapsed;
 	}

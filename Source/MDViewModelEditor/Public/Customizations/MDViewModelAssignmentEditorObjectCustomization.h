@@ -54,6 +54,8 @@ private:
 	void OnProviderPropertyChanged() const;
 	void OnViewModelPropertyChanged() const;
 
+	void OnAssignmentUpdated() const;
+
 	TWeakPtr<IDetailLayoutBuilder> CachedDetailBuilder;
 	TWeakObjectPtr<UMDViewModelAssignmentEditorObject> EditorObjectPtr;
 	TSharedRef<SMDViewModelAssignmentDialog> Dialog;

@@ -118,6 +118,8 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 	{
 		const TSharedRef<IPropertyHandle> ViewModelClassHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ViewModelClass), UMDViewModelAssignmentEditorObject::StaticClass());
 		const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider);
+		
+		const FMDViewModelAssignment Assignment = EditorObject->CreateAssignment().Assignment;
 
 		const TSharedRef<IPropertyHandle> ProviderSettingsHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ProviderSettings), UMDViewModelAssignmentEditorObject::StaticClass());
 		if (IsValid(Provider) && EditorObject->ProviderSettings.IsValid())
@@ -156,7 +158,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 
 		if (IsValid(Provider))
 		{
-			Provider->OnProviderSettingsInitializedInEditor(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint());
+			Provider->OnProviderSettingsInitializedInEditor(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint(), Assignment);
 
 			DetailBuilder.EditDefaultProperty(ViewModelClassHandle)->CustomWidget()
 			.NameContent()
@@ -174,7 +176,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 			];
 
 			TArray<FText> ProviderIssues;
-			Provider->ValidateProviderSettings(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint(), ProviderIssues);
+			Provider->ValidateProviderSettings(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint(), Assignment, ProviderIssues);
 
 			if (!ProviderIssues.IsEmpty())
 			{
@@ -200,7 +202,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 		if (const UMDViewModelBase* ViewModelCDO = EditorObject->ViewModelClass.GetDefaultObject())
 		{
 			TArray<FText> ViewModelIssues;
-			ViewModelCDO->ValidateViewModelSettings(EditorObject->ViewModelSettings, Dialog->GetWidgetBlueprint(), ViewModelIssues);
+			ViewModelCDO->ValidateViewModelSettings(EditorObject->ViewModelSettings, Dialog->GetWidgetBlueprint(), Assignment, ViewModelIssues);
 
 			if (!ViewModelIssues.IsEmpty())
 			{
@@ -294,7 +296,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::OnProviderSelected(FGamepl
 		if (const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider))
 		{
 			EditorObject->ProviderSettings.InitializeAs(Provider->GetProviderSettingsStruct());
-			Provider->OnProviderSettingsInitializedInEditor(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint());
+			Provider->OnProviderSettingsInitializedInEditor(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint(), EditorObject->CreateAssignment().Assignment);
 		}
 		else
 		{
@@ -303,6 +305,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::OnProviderSelected(FGamepl
 			EditorObject->ProviderSettings.Reset();
 		}
 
+		OnAssignmentUpdated();
 		RefreshDetails();
 	}
 }
@@ -323,6 +326,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::OnViewModelClassPicked(UCl
 			}
 		}
 
+		OnAssignmentUpdated();
 		RefreshDetails();
 	}
 }
@@ -390,14 +394,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::RefreshDetails() const
 
 void FMDViewModelAssignmentEditorObjectCustomization::OnProviderPropertyChanged() const
 {
-	if (UMDViewModelAssignmentEditorObject* EditorObject = EditorObjectPtr.Get())
-	{
-		if (const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider))
-		{
-			Provider->OnProviderSettingsPropertyChanged(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint());
-		}
-	}
-
+	OnAssignmentUpdated();
 	RefreshDetails();
 }
 
@@ -407,9 +404,22 @@ void FMDViewModelAssignmentEditorObjectCustomization::OnViewModelPropertyChanged
 	{
 		if (const UMDViewModelBase* ViewModelCDO = EditorObject->ViewModelClass.GetDefaultObject())
 		{
-			ViewModelCDO->OnViewModelSettingsPropertyChanged(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint());
+			ViewModelCDO->OnViewModelSettingsPropertyChanged(EditorObject->ViewModelSettings, Dialog->GetWidgetBlueprint(), EditorObject->CreateAssignment().Assignment);
 		}
 	}
 
+	OnAssignmentUpdated();
+
 	RefreshDetails();
+}
+
+void FMDViewModelAssignmentEditorObjectCustomization::OnAssignmentUpdated() const
+{
+	if (UMDViewModelAssignmentEditorObject* EditorObject = EditorObjectPtr.Get())
+	{
+		if (const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider))
+		{
+			Provider->OnAssignmentUpdated(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint(), EditorObject->CreateAssignment().Assignment);
+		}
+	}
 }
