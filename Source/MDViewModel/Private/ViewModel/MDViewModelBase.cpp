@@ -1,5 +1,6 @@
 #include "ViewModel/MDViewModelBase.h"
 
+#include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "InstancedStruct.h"
 
@@ -7,7 +8,7 @@
 #include "Logging/MessageLog.h"
 #endif
 
-void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject)
+void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject, const UObject* WorldContext)
 {
 #if WITH_EDITOR
 	const UScriptStruct* ExpectedSettingsType = GetViewModelSettingsStruct();
@@ -22,33 +23,34 @@ void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& Vi
 		FMessageLog("PIE").Error(FText::Format(FormatPattern, FormatPatternArgs));
 	}
 #endif
+	WorldContextObjectPtr = WorldContext;
 	ContextObject = RedirectContextObject(ViewModelSettings, InContextObject);
 
-	ensureAlwaysMsgf(IsValid(GetWorld()), TEXT("View Model [%s]'s ContextObject [%s] could not reach the world. Context Objects are expected to have a valid GetWorld() result."), *GetName(), *GetNameSafe(GetContextObject()));
+	ensureAlwaysMsgf(IsValid(GetWorld()), TEXT("View Model [%s]'s WorldContext [%s] and ContextObject [%s] could not reach the world. Either the World Context Object or the Context Object are expected to have a valid GetWorld() result."), *GetName(), *GetNameSafe(WorldContextObjectPtr.Get()), *GetNameSafe(GetContextObject()));
 	
 	InitializeViewModel(ViewModelSettings);
 }
 
-void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, const UObject* InContextObject)
+void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, const UObject* InContextObject, const UObject* WorldContext)
 {
 	// TODO - Determine a way to support both const and non-const context objects
-	InitializeViewModelWithContext(ViewModelSettings, const_cast<UObject*>(InContextObject));
+	InitializeViewModelWithContext(ViewModelSettings, const_cast<UObject*>(InContextObject), WorldContext);
 }
 
-void UMDViewModelBase::InitializeViewModelWithContext(UObject* InContextObject)
+void UMDViewModelBase::InitializeViewModelWithContext(UObject* InContextObject, const UObject* WorldContext)
 {
 #if WITH_EDITOR
 	ensureMsgf(GetViewModelSettingsStruct() == nullptr, TEXT("Initializing View Model [%s] without settings but it expects settings of type [%s]"), *GetName(), *GetNameSafe(GetViewModelSettingsStruct()));
 #endif
-	InitializeViewModelWithContext({}, InContextObject);
+	InitializeViewModelWithContext({}, InContextObject, WorldContext);
 }
 
-void UMDViewModelBase::InitializeViewModelWithContext(const UObject* InContextObject)
+void UMDViewModelBase::InitializeViewModelWithContext(const UObject* InContextObject, const UObject* WorldContext)
 {
 #if WITH_EDITOR
 	ensureMsgf(GetViewModelSettingsStruct() == nullptr, TEXT("Initializing View Model [%s] without settings but it expects settings of type [%s]"), *GetName(), *GetNameSafe(GetViewModelSettingsStruct()));
 #endif
-	InitializeViewModelWithContext({}, InContextObject);
+	InitializeViewModelWithContext({}, InContextObject, WorldContext);
 }
 
 void UMDViewModelBase::ShutdownViewModelFromProvider()
@@ -60,7 +62,20 @@ void UMDViewModelBase::ShutdownViewModelFromProvider()
 
 UWorld* UMDViewModelBase::GetWorld() const
 {
-	if (const UObject* Context = GetContextObject<UObject>())
+	// Try the world context object first
+	if (IsValid(GEngine))
+	{
+		const UObject* WorldContext = WorldContextObjectPtr.Get();
+		UWorld* World = GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::LogAndReturnNull);
+		if (IsValid(World))
+		{
+			return World;
+		}
+	}
+
+	// Fallback to the context object
+	const UObject* Context = GetContextObject<UObject>();
+	if (IsValid(Context))
 	{
 		return Context->GetWorld();
 	}

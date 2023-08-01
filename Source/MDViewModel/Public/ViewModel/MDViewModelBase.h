@@ -29,10 +29,10 @@ class MDVIEWMODEL_API UMDViewModelBase : public UObject, public INotifyFieldValu
 
 public:
 	// Called by view model providers after they create the view model object
-	void InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject);
-	void InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, const UObject* InContextObject);
-	void InitializeViewModelWithContext(UObject* InContextObject);
-	void InitializeViewModelWithContext(const UObject* InContextObject);
+	void InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject, const UObject* WorldContext = nullptr);
+	void InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, const UObject* InContextObject, const UObject* WorldContext = nullptr);
+	void InitializeViewModelWithContext(UObject* InContextObject, const UObject* WorldContext = nullptr);
+	void InitializeViewModelWithContext(const UObject* InContextObject, const UObject* WorldContext = nullptr);
 
 	// Called by view model providers when they stop referencing the view model object
 	void ShutdownViewModelFromProvider();
@@ -148,6 +148,9 @@ protected:
 private:
 	UPROPERTY(Transient)
 	TWeakObjectPtr<UObject> ContextObject;
+
+	UPROPERTY(Transient)
+	TWeakObjectPtr<const UObject> WorldContextObjectPtr;
 
 	UE::FieldNotification::FFieldMulticastDelegate FieldNotifyDelegates;
 	TBitArray<> EnabledFieldNotifications;

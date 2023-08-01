@@ -106,29 +106,29 @@ const FGameplayTag& FMDViewModelProvider_Cached_Settings::GetLifetimeTag() const
 	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 
-UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(UObject* CacheContextObject, const FName& CachedViewModelKey,
+UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(const UObject* WorldContextObject, UObject* CacheContextObject, const FName& CachedViewModelKey,
                                                                            TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
 {
-	return FindOrCreateCachedViewModel(CacheContextObject, ViewModelClass, CachedViewModelKey, ViewModelSettings);
+	return FindOrCreateCachedViewModel(WorldContextObject, CacheContextObject, ViewModelClass, CachedViewModelKey, ViewModelSettings);
 }
 
-UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey, const FInstancedStruct& ViewModelSettings)
+UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(const UObject* WorldContextObject, UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey, const FInstancedStruct& ViewModelSettings)
 {
 	UMDViewModelProvider_Cached* Provider = IsValid(GEngine) ? GEngine->GetEngineSubsystem<UMDViewModelProvider_Cached>() : nullptr;
 	if (IsValid(Provider))
 	{
-		return Provider->FindOrCreateCachedViewModel_Internal(CacheContextObject, CachedViewModelKey, ViewModelClass, ViewModelSettings);
+		return Provider->FindOrCreateCachedViewModel_Internal(WorldContextObject, CacheContextObject, CachedViewModelKey, ViewModelClass, ViewModelSettings);
 	}
 
 	return nullptr;
 }
 
-UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel(const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey)
+UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel(const UObject* WorldContextObject, const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey)
 {
 	const UMDViewModelProvider_Cached* Provider = IsValid(GEngine) ? GEngine->GetEngineSubsystem<UMDViewModelProvider_Cached>() : nullptr;
 	if (IsValid(Provider))
 	{
-		return Provider->FindCachedViewModel_Internal(CacheContextObject, CachedViewModelKey, ViewModelClass);
+		return Provider->FindCachedViewModel_Internal(WorldContextObject, CacheContextObject, CachedViewModelKey, ViewModelClass);
 	}
 
 	return nullptr;
@@ -151,7 +151,7 @@ UMDViewModelBase* UMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 	if (ensure(Settings != nullptr))
 	{
 		IMDViewModelCacheInterface* ViewModelCache = ResolveAndBindViewModelCache(Widget, Assignment, Data, *Settings);
-		return SetViewModelFromCache(ViewModelCache, Widget, Assignment, Data);
+		return SetViewModelFromCache(&Widget, ViewModelCache, Widget, Assignment, Data);
 	}
 
 	return nullptr;
@@ -336,25 +336,25 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveAndBindViewModel
 	return nullptr;
 }
 
-UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel_Internal(UObject* CacheContextObject, const FName& ViewModelName,
+UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel_Internal(const UObject* WorldContextObject, UObject* CacheContextObject, const FName& ViewModelName,
 	TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
 {
-	if (IMDViewModelCacheInterface* ViewModelCache = ResolveObjectCache(CacheContextObject))
+	if (IMDViewModelCacheInterface* ViewModelCache = ResolveObjectCache(CacheContextObject, WorldContextObject))
 	{
 		if (!ViewModelCache->OnViewModelCacheShuttingDown.IsBoundToObject(this))
 		{
-			ViewModelCache->OnViewModelCacheShuttingDown.AddUObject(this, &UMDViewModelProvider_Cached::OnViewModelCacheShutdown, TWeakInterfacePtr<IMDViewModelCacheInterface>(ViewModelCache));
+			ViewModelCache->OnViewModelCacheShuttingDown.AddUObject(this, &UMDViewModelProvider_Cached::OnViewModelCacheShutdown, ViewModelCache->GetCacheHandle());
 		}
 
-		return ViewModelCache->GetOrCreateViewModel(ViewModelName, ViewModelClass, ViewModelSettings);
+		return ViewModelCache->GetOrCreateViewModel(WorldContextObject, ViewModelName, ViewModelClass, ViewModelSettings);
 	}
 
 	return nullptr;
 }
 
-UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel_Internal(const UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass) const
+UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel_Internal(const UObject* WorldContextObject, const UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass) const
 {
-	if (const IMDViewModelCacheInterface* ViewModelCache = ResolveObjectCache(CacheContextObject))
+	if (const IMDViewModelCacheInterface* ViewModelCache = ResolveObjectCache(CacheContextObject, WorldContextObject))
 	{
 		return ViewModelCache->GetViewModel(ViewModelName, ViewModelClass);
 	}
@@ -410,13 +410,13 @@ void UMDViewModelProvider_Cached::RefreshViewModel(TWeakObjectPtr<UUserWidget> W
 	}
 }
 
-UMDViewModelBase* UMDViewModelProvider_Cached::SetViewModelFromCache(IMDViewModelCacheInterface* CacheInterface, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
+UMDViewModelBase* UMDViewModelProvider_Cached::SetViewModelFromCache(const UObject* WorldContextObject, IMDViewModelCacheInterface* CacheInterface, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
 	const FMDViewModelProvider_Cached_Settings* Settings = Data.ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
 	if (ensure(Settings != nullptr) && CacheInterface != nullptr)
 	{
 		const FName& ViewModelKey = Settings->bOverrideCachedViewModelKey ? Settings->CachedViewModelKeyOverride : Assignment.ViewModelName;
-		UMDViewModelBase* ViewModelInstance = CacheInterface->GetOrCreateViewModel(ViewModelKey, Assignment.ViewModelClass, Data.ViewModelSettings);
+		UMDViewModelBase* ViewModelInstance = CacheInterface->GetOrCreateViewModel(WorldContextObject, ViewModelKey, Assignment.ViewModelClass, Data.ViewModelSettings);
 		if (IsValid(ViewModelInstance))
 		{
 			UMDViewModelFunctionLibrary::SetViewModel(&Widget, ViewModelInstance, Assignment.ViewModelClass, Assignment.ViewModelName);
@@ -428,10 +428,10 @@ UMDViewModelBase* UMDViewModelProvider_Cached::SetViewModelFromCache(IMDViewMode
 
 		if (!CacheInterface->OnViewModelCacheShuttingDown.IsBoundToObject(this))
 		{
-			CacheInterface->OnViewModelCacheShuttingDown.AddUObject(this, &UMDViewModelProvider_Cached::OnViewModelCacheShutdown, TWeakInterfacePtr<IMDViewModelCacheInterface>(CacheInterface));
+			CacheInterface->OnViewModelCacheShuttingDown.AddUObject(this, &UMDViewModelProvider_Cached::OnViewModelCacheShutdown, CacheInterface->GetCacheHandle());
 		}
 
-		BoundAssignments.FindOrAdd(Assignment).Add(&Widget, TWeakInterfacePtr<IMDViewModelCacheInterface>(CacheInterface));
+		BoundAssignments.FindOrAdd(Assignment).Add(&Widget, CacheInterface->GetCacheHandle());
 
 		return ViewModelInstance;
 	}
@@ -483,7 +483,7 @@ void UMDViewModelProvider_Cached::OnActorSpawned(AActor* Actor, TWeakObjectPtr<U
 		if (DoesActorPassFilter(Actor, Settings->WorldActorFilter))
 		{
 			IMDViewModelCacheInterface* CacheInterface = ResolveWorldActorCacheAndBindDelegates(Actor, *Widget, Assignment, Data);
-			SetViewModelFromCache(CacheInterface, *Widget, Assignment, Data);
+			SetViewModelFromCache(Actor, CacheInterface, *Widget, Assignment, Data);
 		}
 	}
 }
@@ -496,7 +496,7 @@ void UMDViewModelProvider_Cached::OnActorRemoved(AActor* Actor, TWeakObjectPtr<A
 	}
 }
 
-void UMDViewModelProvider_Cached::OnViewModelCacheShutdown(const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& ViewModelCache, TWeakInterfacePtr<IMDViewModelCacheInterface> BoundCache)
+void UMDViewModelProvider_Cached::OnViewModelCacheShutdown(const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& ViewModelCache, int32 BoundCacheHandle)
 {
 	for (const TTuple<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& ViewModelInstance : ViewModelCache)
 	{
@@ -507,11 +507,11 @@ void UMDViewModelProvider_Cached::OnViewModelCacheShutdown(const TMap<FMDViewMod
 			ViewModelInstance.Key.ViewModelName
 		};
 
-		if (const TMap<TWeakObjectPtr<UUserWidget>, TWeakInterfacePtr<IMDViewModelCacheInterface>>* BoundWidgets = BoundAssignments.Find(Assignment))
+		if (const TMap<TWeakObjectPtr<UUserWidget>, int32>* BoundWidgets = BoundAssignments.Find(Assignment))
 		{
-			for (const TTuple<TWeakObjectPtr<UUserWidget>, TWeakInterfacePtr<IMDViewModelCacheInterface>>& BoundWidget : *BoundWidgets)
+			for (const TTuple<TWeakObjectPtr<UUserWidget>, int32>& BoundWidget : *BoundWidgets)
 			{
-				if (BoundWidget.Value == BoundCache)
+				if (BoundWidget.Value == BoundCacheHandle)
 				{
 					UMDViewModelFunctionLibrary::ClearViewModel(BoundWidget.Key.Get(), Assignment.ViewModelClass, Assignment.ViewModelName);
 				}
@@ -556,7 +556,7 @@ const IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveActorCache
 	return nullptr;
 }
 
-IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCache(UObject* Object) const
+IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCache(UObject* Object, const UObject* WorldContextObject) const
 {
 	if (const UGameInstance* GameInstance = Cast<UGameInstance>(Object))
 	{
@@ -576,13 +576,13 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCache(UObj
 	}
 	else if (IsValid(Object))
 	{
-		return UMDObjectViewModelCacheSystem::ResolveCacheForObject(Object);
+		return UMDObjectViewModelCacheSystem::ResolveCacheForObject(Object, WorldContextObject);
 	}
 
 	return nullptr;
 }
 
-const IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCache(const UObject* Object) const
+const IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCache(const UObject* Object, const UObject* WorldContextObject) const
 {
 	if (const UGameInstance* GameInstance = Cast<UGameInstance>(Object))
 	{
@@ -602,7 +602,7 @@ const IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCach
 	}
 	else if (IsValid(Object))
 	{
-		return UMDObjectViewModelCacheSystem::ResolveCacheForObject(Object);
+		return UMDObjectViewModelCacheSystem::ResolveCacheForObject(Object, WorldContextObject);
 	}
 
 	return nullptr;
@@ -808,7 +808,12 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveRelativeViewMode
 		return nullptr;
 	}
 
-	return ResolveObjectCache(RelativeViewModel->GetContextObject());
+	const UObject* WorldContextObject = RelativeViewModel->GetWorld();
+	if (!IsValid(WorldContextObject))
+	{
+		WorldContextObject = Widget.GetWorld();
+	}
+	return ResolveObjectCache(RelativeViewModel->GetContextObject(), WorldContextObject);
 }
 
 IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveRelativePropertyCacheAndBindDelegates(const FMemberReference& Reference, UUserWidget& Widget,
@@ -876,7 +881,12 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveFieldCacheAndBin
 		Owner->ProcessEvent(Function, &PropertyValue);
 	}
 
-	return ResolveObjectCache(PropertyValue);
+	const UObject* WorldContextObject = Owner->GetWorld();
+	if (!IsValid(WorldContextObject))
+	{
+		WorldContextObject = Widget.GetWorld();
+	}
+	return ResolveObjectCache(PropertyValue, WorldContextObject);
 }
 
 IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheAndBindDelegates(const FMDVMWorldActorFilter& Filter, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)

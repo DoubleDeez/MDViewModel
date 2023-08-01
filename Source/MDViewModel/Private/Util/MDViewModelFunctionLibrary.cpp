@@ -49,21 +49,21 @@ void UMDViewModelFunctionLibrary::BP_ClearViewModel(UUserWidget* Widget, const F
 	}
 }
 
-UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModelOfClass(UUserWidget* Widget, UObject* ContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings, FName ViewModelName)
+UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModelOfClass(const UObject* WorldContextObject, UUserWidget* Widget, UObject* ContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings, FName ViewModelName)
 {
 	FMDViewModelAssignmentReference AssignmentReference;
 	AssignmentReference.ViewModelClass = ViewModelClass;
 	AssignmentReference.ViewModelName = ViewModelName;
 	
-	return BP_SetViewModelOfClass(Widget, ContextObject, AssignmentReference, ViewModelSettings);
+	return BP_SetViewModelOfClass(WorldContextObject, Widget, ContextObject, AssignmentReference, ViewModelSettings);
 }
 
-UMDViewModelBase* UMDViewModelFunctionLibrary::BP_SetViewModelOfClass(UUserWidget* Widget, UObject* ContextObject, const FMDViewModelAssignmentReference& Assignment, const FInstancedStruct& ViewModelSettings)
+UMDViewModelBase* UMDViewModelFunctionLibrary::BP_SetViewModelOfClass(const UObject* WorldContextObject, UUserWidget* Widget, UObject* ContextObject, const FMDViewModelAssignmentReference& Assignment, const FInstancedStruct& ViewModelSettings)
 {
 	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
 	if (IsValid(Extension))
 	{
-		return Extension->SetViewModelOfClass(ContextObject, Assignment.ViewModelClass.Get(), ViewModelSettings, Assignment.ViewModelName);
+		return Extension->SetViewModelOfClass(WorldContextObject, ContextObject, Assignment.ViewModelClass.Get(), ViewModelSettings, Assignment.ViewModelName);
 	}
 
 	return nullptr;
@@ -92,14 +92,14 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::BP_GetViewModel(UUserWidget* Widg
 	return nullptr;
 }
 
-UMDViewModelBase* UMDViewModelFunctionLibrary::FindOrCreateCachedViewModel(UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, FName CachedViewModelKey, const FInstancedStruct& ViewModelSettings)
+UMDViewModelBase* UMDViewModelFunctionLibrary::FindOrCreateCachedViewModel(const UObject* WorldContextObject, UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, FName CachedViewModelKey, const FInstancedStruct& ViewModelSettings)
 {
-	return UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(CacheContextObject, ViewModelClass, CachedViewModelKey, ViewModelSettings);
+	return UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(WorldContextObject, CacheContextObject, ViewModelClass, CachedViewModelKey, ViewModelSettings);
 }
 
-UMDViewModelBase* UMDViewModelFunctionLibrary::FindCachedViewModel(const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, FName CachedViewModelKey)
+UMDViewModelBase* UMDViewModelFunctionLibrary::FindCachedViewModel(const UObject* WorldContextObject, const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, FName CachedViewModelKey)
 {
-	return UMDViewModelProvider_Cached::FindCachedViewModel(CacheContextObject, ViewModelClass, CachedViewModelKey);
+	return UMDViewModelProvider_Cached::FindCachedViewModel(WorldContextObject, CacheContextObject, ViewModelClass, CachedViewModelKey);
 }
 
 bool UMDViewModelFunctionLibrary::DoesWidgetHaveViewModelClassAssigned(const UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, TSubclassOf<UMDViewModelBase>& OutAssignedViewModelClass, bool bIncludeChildClasses)

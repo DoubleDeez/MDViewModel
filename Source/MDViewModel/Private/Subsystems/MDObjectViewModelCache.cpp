@@ -1,6 +1,7 @@
 #include "Subsystems/MDObjectViewModelCache.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
+#include "Serialization/CompactBinaryWriter.h"
 #include "ViewModel/MDViewModelBase.h"
 
 void FMDObjectViewModelCache::AddReferencedObjects(FReferenceCollector& Collector)
@@ -52,9 +53,9 @@ void UMDObjectViewModelCacheSystem::Deinitialize()
 	Super::Deinitialize();
 }
 
-IMDViewModelCacheInterface* UMDObjectViewModelCacheSystem::ResolveCacheForObject(UObject* Object)
+IMDViewModelCacheInterface* UMDObjectViewModelCacheSystem::ResolveCacheForObject(UObject* Object, const UObject* WorldContextObject)
 {
-	UMDObjectViewModelCacheSystem* CacheSystem = UMDObjectViewModelCacheSystem::Get(Object);
+	UMDObjectViewModelCacheSystem* CacheSystem = UMDObjectViewModelCacheSystem::Get(WorldContextObject);
 	if (!IsValid(CacheSystem))
 	{
 		return nullptr;
@@ -69,13 +70,17 @@ IMDViewModelCacheInterface* UMDObjectViewModelCacheSystem::ResolveCacheForObject
 	return &Cache;
 }
 
-IMDViewModelCacheInterface* UMDObjectViewModelCacheSystem::ResolveCacheForObject(const UObject* Object)
+IMDViewModelCacheInterface* UMDObjectViewModelCacheSystem::ResolveCacheForObject(const UObject* Object, const UObject* WorldContextObject)
 {
-	UMDObjectViewModelCacheSystem* CacheSystem = UMDObjectViewModelCacheSystem::Get(Object);
+	UMDObjectViewModelCacheSystem* CacheSystem = UMDObjectViewModelCacheSystem::Get(WorldContextObject);
 	if (!IsValid(CacheSystem))
 	{
 		return nullptr;
 	}
+
+	FCbWriter Writer;
+
+	Writer << NAME_None;
 
 	return CacheSystem->ObjectCacheMap.Find(Object);
 }

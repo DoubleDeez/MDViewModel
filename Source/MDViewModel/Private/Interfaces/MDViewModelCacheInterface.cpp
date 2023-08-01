@@ -3,7 +3,9 @@
 #include "Util/MDViewModelInstanceKey.h"
 #include "ViewModel/MDViewModelBase.h"
 
-UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
+int32 IMDViewModelCacheInterface::LastHandle = 0;
+
+UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const UObject* WorldContextObject, const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
 {
 	if (bIsShutdown)
 	{
@@ -20,7 +22,7 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const FName& 
 	if (!IsValid(ViewModel))
 	{
 		ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), Key.ViewModelClass);
-		ViewModel->InitializeViewModelWithContext(ViewModelSettings, GetViewModelOwner());
+		ViewModel->InitializeViewModelWithContext(ViewModelSettings, GetViewModelOwner(), WorldContextObject);
 	}
 
 	return ViewModel;

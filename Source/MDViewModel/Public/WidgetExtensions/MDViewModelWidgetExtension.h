@@ -44,10 +44,10 @@ private:
 #pragma region Assignment
 public:
 	template<typename T>
-	T* SetViewModelOfClass(UObject* ContextObject, const FInstancedStruct& ViewModelSettings, TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
+	T* SetViewModelOfClass(const UObject* WorldContextObject, UObject* ContextObject, const FInstancedStruct& ViewModelSettings, TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
 
 	UMDViewModelBase* SetViewModel(UMDViewModelBase* ViewModel, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
-	UMDViewModelBase* SetViewModelOfClass(UObject* ContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
+	UMDViewModelBase* SetViewModelOfClass(const UObject* WorldContextObject, UObject* ContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
 
 	UMDViewModelBase* GetViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName) const;
 
@@ -75,8 +75,8 @@ private:
 };
 
 template <typename T>
-T* UMDViewModelWidgetExtension::SetViewModelOfClass(UObject* ContextObject, const FInstancedStruct& ViewModelSettings, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
+T* UMDViewModelWidgetExtension::SetViewModelOfClass(const UObject* WorldContextObject, UObject* ContextObject, const FInstancedStruct& ViewModelSettings, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
 	static_assert(TIsDerivedFrom<T, UMDViewModelBase>::Value, "ViewModels must derive from UMDViewModelBase");
-	return Cast<T>(SetViewModelOfClass(ContextObject, ViewModelClass, ViewModelSettings, ViewModelName));
+	return Cast<T>(SetViewModelOfClass(WorldContextObject, ContextObject, ViewModelClass, ViewModelSettings, ViewModelName));
 }

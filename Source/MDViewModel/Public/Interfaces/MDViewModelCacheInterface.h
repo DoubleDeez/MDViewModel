@@ -21,11 +21,13 @@ class MDVIEWMODEL_API IMDViewModelCacheInterface
 	GENERATED_BODY()
 
 public:
-	UMDViewModelBase* GetOrCreateViewModel(const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings = {});
+	UMDViewModelBase* GetOrCreateViewModel(const UObject* WorldContextObject, const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings = {});
 	
 	UMDViewModelBase* GetViewModel(const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass) const;
 
 	bool IsShutdown() const { return bIsShutdown; }
+
+	int32 GetCacheHandle() const { return CacheHandle; }
 
 	using ViewModelCacheMap = TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>;
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnViewModelCacheShuttingDown, const ViewModelCacheMap&);
@@ -41,5 +43,8 @@ protected:
 	virtual const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& GetViewModelCache() const;
 
 private:
+	static int32 LastHandle;
+	
 	bool bIsShutdown = false;
+	int32 CacheHandle = ++LastHandle;
 };

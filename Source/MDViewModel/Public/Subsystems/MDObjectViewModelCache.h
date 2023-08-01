@@ -38,8 +38,8 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
-	static IMDViewModelCacheInterface* ResolveCacheForObject(UObject* Object);
-	static IMDViewModelCacheInterface* ResolveCacheForObject(const UObject* Object);
+	static IMDViewModelCacheInterface* ResolveCacheForObject(UObject* Object, const UObject* WorldContextObject);
+	static IMDViewModelCacheInterface* ResolveCacheForObject(const UObject* Object, const UObject* WorldContextObject);
 	
 	static void AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector);
 
