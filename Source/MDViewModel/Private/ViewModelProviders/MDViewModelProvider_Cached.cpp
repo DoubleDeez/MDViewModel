@@ -89,11 +89,6 @@ enum EMDVMDelegateIndex
 	MDVMDI_ViewTarget = 1
 };
 
-bool FMDVMCachedProviderBindingKey::operator==(const FMDVMCachedProviderBindingKey& Other) const
-{
-	return Other.Assignment == Assignment && Other.WidgetPtr == WidgetPtr;
-}
-
 const FGameplayTag& FMDViewModelProvider_Cached_Settings::GetLifetimeTag() const
 {
 	if (ViewModelLifetimeTag.IsValid())
@@ -168,7 +163,7 @@ bool UMDViewModelProvider_Cached::ValidateProviderSettings(const FInstancedStruc
 	}
 
 	const FGameplayTag& Lifetime = SettingsPtr->GetLifetimeTag();
-	if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_Relative)
+	if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_Relative || Lifetime == TAG_MDVMProvider_Cached_Lifetimes_RelativeViewModelProperty)
 	{
 		if (SettingsPtr->RelativeViewModel.ViewModelClass.IsNull())
 		{
@@ -615,7 +610,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveHUDCacheAndBindD
 		? UMDVMPCUpdatePollingComponent::FindOrAddPollingComponent(PlayerController)
 		: nullptr;
 
-	FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
+	FMDVMAssignmentWidgetKey BindingKey = { Assignment, &Widget };
 	UnbindDelegateIfNewOwner<UMDVMPCUpdatePollingComponent>(BindingKey, Poller, MDVMDI_Default, [](auto& OldPoller, FDelegateHandle& Handle)
 	{
 		OldPoller.UnbindOnHUDChanged(Handle);
@@ -642,7 +637,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePawnCacheAndBind
 		? UMDVMPCDynamicDelegateIntermediate::FindOrAddListener(PlayerController)
 		: nullptr;
 
-	FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
+	FMDVMAssignmentWidgetKey BindingKey = { Assignment, &Widget };
 	UnbindDelegateIfNewOwner<UMDVMPCDynamicDelegateIntermediate>(BindingKey, Intermediate, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
 	{
 		OldOwner.OnPawnChanged.Remove(Handle);
@@ -668,7 +663,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePawnCacheAndBind
 		? UMDVMPSDynamicDelegateIntermediate::FindOrAddListener(PlayerState)
 		: nullptr;
 
-	FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
+	FMDVMAssignmentWidgetKey BindingKey = { Assignment, &Widget };
 	UnbindDelegateIfNewOwner<UMDVMPSDynamicDelegateIntermediate>(BindingKey, Intermediate, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
 	{
 		OldOwner.OnPawnChanged.Remove(Handle);
@@ -694,7 +689,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePlayerStateCache
 		? UMDVMPCUpdatePollingComponent::FindOrAddPollingComponent(PlayerController)
 		: nullptr;
 
-	FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
+	FMDVMAssignmentWidgetKey BindingKey = { Assignment, &Widget };
 	UnbindDelegateIfNewOwner<UMDVMPCUpdatePollingComponent>(BindingKey, Poller, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
 	{
 		OldOwner.UnbindOnPlayerStateChanged(Handle);
@@ -721,7 +716,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePlayerStateCache
 		? UMDVMPawnUpdatePollingComponent::FindOrAddPollingComponent(Pawn)
 		: nullptr;
 
-	FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
+	FMDVMAssignmentWidgetKey BindingKey = { Assignment, &Widget };
 	UnbindDelegateIfNewOwner<UMDVMPawnUpdatePollingComponent>(BindingKey, Poller, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
 	{
 		OldOwner.UnbindOnPlayerStateChanged(Handle);
@@ -744,7 +739,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePlayerStateCache
 IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveGameStateCacheAndBindDelegates(UWorld* World,
 	UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
-	FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
+	FMDVMAssignmentWidgetKey BindingKey = { Assignment, &Widget };
 	UnbindDelegateIfNewOwner<UWorld>(BindingKey, World, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
 	{
 		OldOwner.GameStateSetEvent.Remove(Handle);
@@ -856,7 +851,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveFieldCacheAndBin
 
 	const UE::FieldNotification::FFieldId FieldId = FieldNotifyOwner->GetFieldNotificationDescriptor().GetField(Owner->GetClass(), FieldName);
 	
-	FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
+	FMDVMAssignmentWidgetKey BindingKey = { Assignment, &Widget };
 	UnbindDelegateIfNewOwner<INotifyFieldValueChanged>(BindingKey, Owner, DelegateIndex, [&FieldId](auto& OldOwner, FDelegateHandle& Handle)
 	{
 		OldOwner.RemoveFieldValueChangedDelegate(FieldId, Handle);
@@ -916,7 +911,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheA
 {
 	UWorld* World = Widget.GetWorld();
 
-	FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
+	FMDVMAssignmentWidgetKey BindingKey = { Assignment, &Widget };
 	UnbindDelegateIfNewOwner<UWorld>(BindingKey, World, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
 	{
 		OldOwner.RemoveOnActorSpawnedHandler(Handle);
@@ -960,7 +955,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheA
 UMDViewModelBase* UMDViewModelProvider_Cached::ResolveViewModelAndBindDelegates(const FMDViewModelAssignmentReference& Reference, int32 DelegateIndex, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
 	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(&Widget);
-	FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
+	FMDVMAssignmentWidgetKey BindingKey = { Assignment, &Widget };
 	UnbindDelegateIfNewOwner<UMDViewModelWidgetExtension>(BindingKey, Extension, DelegateIndex, [Reference](auto& OldOwner, FDelegateHandle& Handle)
 	{
 		OldOwner.StopListeningForChanges(Handle, Reference.ViewModelClass.Get(), Reference.ViewModelName);
@@ -977,7 +972,7 @@ UMDViewModelBase* UMDViewModelProvider_Cached::ResolveViewModelAndBindDelegates(
 
 void UMDViewModelProvider_Cached::BindViewTargetDelegates(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
-	FMDVMCachedProviderBindingKey BindingKey = { Assignment, &Widget };
+	FMDVMAssignmentWidgetKey BindingKey = { Assignment, &Widget };
 	BindDelegateIfUnbound<UUserWidget>(MoveTemp(BindingKey), &Widget, MDVMDI_ViewTarget, [&](auto& Owner)
 	{
 		return FGameDelegates::Get().GetViewTargetChangedDelegate().AddUObject(this, &UMDViewModelProvider_Cached::OnViewTargetChanged, MakeWeakObjectPtr(&Widget), Assignment, Data);

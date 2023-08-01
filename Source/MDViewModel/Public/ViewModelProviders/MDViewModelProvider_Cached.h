@@ -8,6 +8,7 @@
 #include "UObject/WeakInterfacePtr.h"
 #include "Util/MDViewModelAssignment.h"
 #include "Util/MDViewModelAssignmentReference.h"
+#include "Util/MDVMAssignmentWidgetKey.h"
 #include "MDViewModelProvider_Cached.generated.h"
 
 struct FMDViewModelInstanceKey;
@@ -39,7 +40,7 @@ MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes
 MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_RelativeViewModelProperty);
 MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_WorldActor);
 
-USTRUCT(meta = (Coll))
+USTRUCT()
 struct MDVIEWMODEL_API FMDVMWorldActorFilter
 {
 	GENERATED_BODY()
@@ -84,26 +85,6 @@ struct MDVIEWMODEL_API FMDWrappedDelegateHandle
 		return Handle.IsValid();
 	}
 };
-
-// Each assignment on a widget needs an individual binding, we track that use this struct as a key
-struct MDVIEWMODEL_API FMDVMCachedProviderBindingKey
-{
-	FMDViewModelAssignment Assignment;
-
-	TWeakObjectPtr<UUserWidget> WidgetPtr;
-
-	bool operator==(const FMDVMCachedProviderBindingKey& Other) const;
-
-	bool operator!=(const FMDVMCachedProviderBindingKey& Other) const
-	{
-		return !(*this == Other);
-	}
-};
-
-inline uint32 GetTypeHash(const FMDVMCachedProviderBindingKey& Key)
-{
-	return HashCombine(GetTypeHash(Key.Assignment), GetTypeHash(Key.WidgetPtr));
-}
 
 UENUM()
 enum class EMDViewModelProvider_CacheLifetime
@@ -279,19 +260,19 @@ protected:
 	bool DoesActorPassFilter(AActor* Candidate, const FMDVMWorldActorFilter& Filter) const;
 
 	// Checks WidgetDelegateHandles to see if the handle at the specified index is bound, if not it adds a new entry and calls BindFunc to populate it 
-	template<typename T, typename TBindingKey, typename = typename TEnableIf<TIsSame<typename TDecay<TBindingKey>::Type, FMDVMCachedProviderBindingKey>::Value>::Type>
+	template<typename T, typename TBindingKey, typename = typename TEnableIf<TIsSame<typename TDecay<TBindingKey>::Type, FMDVMAssignmentWidgetKey>::Value>::Type>
 	void BindDelegateIfUnbound(TBindingKey&& BindingKey, T* Owner, int32 DelegateIndex, TFunctionRef<FDelegateHandle(T&)> BindFunc);
 
 	// Checks WidgetDelegateHandles to see if the specified delegate exists, if so it calls UnbindFunc and resets the stored delegate data
 	template<typename T>
-	void UnbindDelegate(const FMDVMCachedProviderBindingKey& BindingKey, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc);
+	void UnbindDelegate(const FMDVMAssignmentWidgetKey& BindingKey, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc);
 
 	// Checks WidgetDelegateHandles to see if the delegate owner is different, if so it calls UnbindFunc and resets the stored delegate data
 	template<typename T>
-	void UnbindDelegateIfNewOwner(const FMDVMCachedProviderBindingKey& BindingKey, const UObject* Owner, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc);
+	void UnbindDelegateIfNewOwner(const FMDVMAssignmentWidgetKey& BindingKey, const UObject* Owner, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc);
 
 	// Certain lifetimes may require binding multiple delegates, they can index into the array to store multiple handles
-	TMap<FMDVMCachedProviderBindingKey, TArray<FMDWrappedDelegateHandle, TInlineAllocator<4>>> WidgetDelegateHandles;
+	TMap<FMDVMAssignmentWidgetKey, TArray<FMDWrappedDelegateHandle, TInlineAllocator<4>>> WidgetDelegateHandles;
 
 	// Maps assignments to Widgets and their ViewModelCache handles
 	TMap<FMDViewModelAssignment, TMap<TWeakObjectPtr<UUserWidget>, int32>> BoundAssignments;
@@ -337,7 +318,7 @@ void UMDViewModelProvider_Cached::BindDelegateIfUnbound(TBindingKey&& BindingKey
 	}
 	
 	// Find or Add a Delegate Wrapper at the specified DelegateIndex
-	auto& WrapperArray = WidgetDelegateHandles.FindOrAdd(Forward<FMDVMCachedProviderBindingKey>(BindingKey));
+	auto& WrapperArray = WidgetDelegateHandles.FindOrAdd(Forward<FMDVMAssignmentWidgetKey>(BindingKey));
 	if (WrapperArray.IsValidIndex(DelegateIndex))
 	{
 		if (WrapperArray[DelegateIndex].IsBound())
@@ -357,7 +338,7 @@ void UMDViewModelProvider_Cached::BindDelegateIfUnbound(TBindingKey&& BindingKey
 }
 
 template <typename T>
-void UMDViewModelProvider_Cached::UnbindDelegate(const FMDVMCachedProviderBindingKey& BindingKey, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc)
+void UMDViewModelProvider_Cached::UnbindDelegate(const FMDVMAssignmentWidgetKey& BindingKey, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc)
 {
 	auto* WrapperArrayPtr = WidgetDelegateHandles.Find(BindingKey);
 	if (WrapperArrayPtr == nullptr || !WrapperArrayPtr->IsValidIndex(DelegateIndex))
@@ -389,7 +370,7 @@ void UMDViewModelProvider_Cached::UnbindDelegate(const FMDVMCachedProviderBindin
 }
 
 template <typename T>
-void UMDViewModelProvider_Cached::UnbindDelegateIfNewOwner(const FMDVMCachedProviderBindingKey& BindingKey, const UObject* Owner, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc)
+void UMDViewModelProvider_Cached::UnbindDelegateIfNewOwner(const FMDVMAssignmentWidgetKey& BindingKey, const UObject* Owner, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc)
 {
 	auto* WrapperArrayPtr = WidgetDelegateHandles.Find(BindingKey);
 	if (WrapperArrayPtr == nullptr || !WrapperArrayPtr->IsValidIndex(DelegateIndex))

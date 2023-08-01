@@ -230,6 +230,40 @@ void UMDViewModelWidgetExtension::StopListeningForAllDynamicViewModelsChanged(co
 	}
 }
 
+bool UMDViewModelWidgetExtension::IsListeningForChanges(const UObject* BoundObject, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName) const
+{
+	if (IsValid(ViewModelClass))
+	{
+		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
+		const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
+		if (const FMDVMOnViewModelSet* Delegate = OnViewModelSetDelegates.Find(Key))
+		{
+			if (Delegate->IsBoundToObject(BoundObject))
+			{
+				return true;
+			}
+		}
+	}
+	
+	if (IsValid(ViewModelClass))
+	{
+		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
+		const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
+		if (const TArray<FMDVMOnViewModelSetDynamic>* Delegates = OnViewModelSetDynamicDelegates.Find(Key))
+		{
+			for (const FMDVMOnViewModelSetDynamic& Delegate : *Delegates)
+			{
+				if (Delegate.IsBoundToObject(BoundObject))
+				{
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
 void UMDViewModelWidgetExtension::BroadcastViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
 {
 	UUserWidget* OwnerWidget = GetUserWidget();
@@ -300,6 +334,20 @@ void UMDViewModelWidgetExtension::CleanUpViewModels()
 				It.Value().Broadcast(ViewModel, nullptr);
 			}
 		}
+		OnViewModelSetDelegates.Reset();
+
+		for (auto It = OnViewModelSetDynamicDelegates.CreateConstIterator(); It; ++It)
+		{
+			UMDViewModelBase* ViewModel = ViewModels.FindRef(It.Key());
+			if (IsValid(ViewModel))
+			{
+				for (const FMDVMOnViewModelSetDynamic& Delegate : It.Value())
+				{
+					Delegate.ExecuteIfBound(ViewModel, nullptr);
+				}
+			}
+		}
+		OnViewModelSetDynamicDelegates.Reset();
 	}
 
 	// Viewmodels themselves

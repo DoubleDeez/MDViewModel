@@ -67,6 +67,8 @@ public:
 	void StopListeningForChanges(const FMDVMOnViewModelSetDynamic& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
 	void StopListeningForAllDynamicViewModelsChanged(const UObject* BoundObject);
 
+	bool IsListeningForChanges(const UObject* BoundObject, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName) const;
+
 private:
 	void BroadcastViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);
 	TMap<FMDViewModelInstanceKey, FMDVMOnViewModelSet> OnViewModelSetDelegates;
