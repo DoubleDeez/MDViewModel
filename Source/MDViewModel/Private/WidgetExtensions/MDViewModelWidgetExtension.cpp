@@ -334,7 +334,6 @@ void UMDViewModelWidgetExtension::CleanUpViewModels()
 				It.Value().Broadcast(ViewModel, nullptr);
 			}
 		}
-		OnViewModelSetDelegates.Reset();
 
 		for (auto It = OnViewModelSetDynamicDelegates.CreateConstIterator(); It; ++It)
 		{
@@ -347,7 +346,6 @@ void UMDViewModelWidgetExtension::CleanUpViewModels()
 				}
 			}
 		}
-		OnViewModelSetDynamicDelegates.Reset();
 	}
 
 	// Viewmodels themselves
