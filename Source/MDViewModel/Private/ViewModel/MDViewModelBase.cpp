@@ -3,26 +3,23 @@
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "InstancedStruct.h"
-
-#if WITH_EDITOR
-#include "Logging/MessageLog.h"
-#endif
+#include "Logging/StructuredLog.h"
+#include "Util/MDViewModelLog.h"
 
 void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject, const UObject* WorldContext)
 {
-#if WITH_EDITOR
+#if (!UE_BUILD_SHIPPING && !UE_BUILD_TEST)
 	const UScriptStruct* ExpectedSettingsType = GetViewModelSettingsStruct();
 	const UScriptStruct* ProvidedSettingsType = ViewModelSettings.GetScriptStruct();
 	if (ExpectedSettingsType != nullptr && ExpectedSettingsType != ProvidedSettingsType)
 	{
-		const FText FormatPattern = INVTEXT("View Model of type [{VM}] expects Settings of type [{SettingsType}] but initializing with Settings of type [{BadSettingsType}]");
-		FFormatNamedArguments FormatPatternArgs;
-		FormatPatternArgs.Add(TEXT("VM"), GetClass()->GetDisplayNameText());
-		FormatPatternArgs.Add(TEXT("SettingsType"), ExpectedSettingsType->GetDisplayNameText());
-		FormatPatternArgs.Add(TEXT("BadSettingsType"), ProvidedSettingsType != nullptr ? ProvidedSettingsType->GetDisplayNameText() : INVTEXT("None"));
-		FMessageLog("PIE").Error(FText::Format(FormatPattern, FormatPatternArgs));
+		UE_LOGFMT(LogMDViewModel, Error, "View Model of type [{VM}] expects Settings of type [{SettingsType}] but initializing with Settings of type [{BadSettingsType}]",
+			("VM", GetClass()->GetFName()),
+			("SettingsType", ExpectedSettingsType->GetFName()),
+			("BadSettingsType", ProvidedSettingsType != nullptr ? ProvidedSettingsType->GetFName() : TEXT("None")));
 	}
 #endif
+	
 	WorldContextObjectPtr = WorldContext;
 	ContextObject = RedirectContextObject(ViewModelSettings, InContextObject);
 

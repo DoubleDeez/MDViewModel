@@ -3,13 +3,11 @@
 #include "MDViewModelModule.h"
 #include "Launch/Resources/Version.h"
 #include "Blueprint/UserWidget.h"
+#include "Logging/StructuredLog.h"
 #include "UObject/Package.h"
+#include "Util/MDViewModelLog.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
-
-#if WITH_EDITOR
-#include "Logging/MessageLog.h"
-#endif
 
 void UMDViewModelWidgetExtension::Construct()
 {
@@ -55,17 +53,15 @@ UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModel(UMDViewModelBase* Vi
 {
 	if (IsValid(ViewModel) && IsValid(ViewModelClass))
 	{
-#if WITH_EDITOR
+#if (!UE_BUILD_SHIPPING && !UE_BUILD_TEST)
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
 		FMDViewModelModule::SearchViewModelAssignments(Assignments, GetUserWidget()->GetClass(), ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
 		if (Assignments.IsEmpty())
 		{
-			const FText FormatPattern = INVTEXT("Attempting to set View Model of type [{VMType}] with name [{VMName}] but Widget [{Widget}] does not have a matching assignment.");
-			FFormatNamedArguments FormatPatternArgs;
-			FormatPatternArgs.Add(TEXT("VMType"), ViewModelClass->GetDisplayNameText());
-			FormatPatternArgs.Add(TEXT("VMName"), FText::FromName(ViewModelName));
-			FormatPatternArgs.Add(TEXT("Widget"), GetUserWidget()->GetClass()->GetDisplayNameText());
-			FMessageLog("PIE").Error(FText::Format(FormatPattern, FormatPatternArgs));
+			UE_LOGFMT(LogMDViewModel, Error, "Attempting to set View Model of type [{VMType}] with name [{VMName}] but Widget [{Widget}] does not have a matching assignment.",
+				("VMType", ViewModelClass->GetFName()),
+				("VMName", ViewModelName),
+				("Widget", GetUserWidget()->GetClass()->GetPathName()));
 		}
 #endif
 		
