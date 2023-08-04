@@ -8,15 +8,15 @@
 
 void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject, const UObject* WorldContext)
 {
-#if (!UE_BUILD_SHIPPING && !UE_BUILD_TEST)
+#if WITH_EDITOR
 	const UScriptStruct* ExpectedSettingsType = GetViewModelSettingsStruct();
 	const UScriptStruct* ProvidedSettingsType = ViewModelSettings.GetScriptStruct();
 	if (ExpectedSettingsType != nullptr && ExpectedSettingsType != ProvidedSettingsType)
 	{
 		UE_LOGFMT(LogMDViewModel, Error, "View Model of type [{VM}] expects Settings of type [{SettingsType}] but initializing with Settings of type [{BadSettingsType}]",
-			("VM", GetClass()->GetFName()),
-			("SettingsType", ExpectedSettingsType->GetFName()),
-			("BadSettingsType", ProvidedSettingsType != nullptr ? ProvidedSettingsType->GetFName() : TEXT("None")));
+			("VM", GetClass()->GetDisplayNameText()),
+			("SettingsType", ExpectedSettingsType->GetDisplayNameText()),
+			("BadSettingsType", ProvidedSettingsType != nullptr ? ProvidedSettingsType->GetDisplayNameText() : INVTEXT("NONE")));
 	}
 #endif
 	

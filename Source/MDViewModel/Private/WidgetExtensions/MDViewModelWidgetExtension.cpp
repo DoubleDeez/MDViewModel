@@ -53,13 +53,13 @@ UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModel(UMDViewModelBase* Vi
 {
 	if (IsValid(ViewModel) && IsValid(ViewModelClass))
 	{
-#if (!UE_BUILD_SHIPPING && !UE_BUILD_TEST)
+#if WITH_EDITOR
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
 		FMDViewModelModule::SearchViewModelAssignments(Assignments, GetUserWidget()->GetClass(), ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
 		if (Assignments.IsEmpty())
 		{
 			UE_LOGFMT(LogMDViewModel, Error, "Attempting to set View Model of type [{VMType}] with name [{VMName}] but Widget [{Widget}] does not have a matching assignment.",
-				("VMType", ViewModelClass->GetFName()),
+				("VMType", ViewModelClass->GetDisplayNameText()),
 				("VMName", ViewModelName),
 				("Widget", GetUserWidget()->GetClass()->GetPathName()));
 		}
