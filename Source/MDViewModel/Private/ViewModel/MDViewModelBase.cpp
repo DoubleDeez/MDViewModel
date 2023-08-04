@@ -63,10 +63,13 @@ UWorld* UMDViewModelBase::GetWorld() const
 	if (IsValid(GEngine))
 	{
 		const UObject* WorldContext = WorldContextObjectPtr.Get();
-		UWorld* World = GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::LogAndReturnNull);
-		if (IsValid(World))
+		if (IsValid(WorldContext))
 		{
-			return World;
+			UWorld* World = GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::LogAndReturnNull);
+			if (IsValid(World))
+			{
+				return World;
+			}
 		}
 	}
 
