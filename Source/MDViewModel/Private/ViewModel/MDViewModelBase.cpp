@@ -14,9 +14,9 @@ void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& Vi
 	if (ExpectedSettingsType != nullptr && ExpectedSettingsType != ProvidedSettingsType)
 	{
 		UE_LOGFMT(LogMDViewModel, Error, "View Model of type [{VM}] expects Settings of type [{SettingsType}] but initializing with Settings of type [{BadSettingsType}]",
-			("VM", GetClass()->GetDisplayNameText()),
-			("SettingsType", ExpectedSettingsType->GetDisplayNameText()),
-			("BadSettingsType", ProvidedSettingsType != nullptr ? ProvidedSettingsType->GetDisplayNameText() : INVTEXT("NONE")));
+			("VM", GetClass()->GetDisplayNameText().ToString()),
+			("SettingsType", ExpectedSettingsType->GetDisplayNameText().ToString()),
+			("BadSettingsType", ProvidedSettingsType != nullptr ? ProvidedSettingsType->GetDisplayNameText().ToString() : TEXT("NONE")));
 	}
 #endif
 	

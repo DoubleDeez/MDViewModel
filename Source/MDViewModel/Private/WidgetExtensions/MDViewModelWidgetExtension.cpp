@@ -59,7 +59,7 @@ UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModel(UMDViewModelBase* Vi
 		if (Assignments.IsEmpty())
 		{
 			UE_LOGFMT(LogMDViewModel, Error, "Attempting to set View Model of type [{VMType}] with name [{VMName}] but Widget [{Widget}] does not have a matching assignment.",
-				("VMType", ViewModelClass->GetDisplayNameText()),
+				("VMType", ViewModelClass->GetDisplayNameText().ToString()),
 				("VMName", ViewModelName),
 				("Widget", GetUserWidget()->GetClass()->GetPathName()));
 		}
