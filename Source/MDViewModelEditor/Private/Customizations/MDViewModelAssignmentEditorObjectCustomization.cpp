@@ -140,6 +140,11 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 				ViewModelSettingsHandle->SetOnChildPropertyValueChanged(FSimpleDelegate::CreateSP(this, &FMDViewModelAssignmentEditorObjectCustomization::OnViewModelPropertyChanged));
 				DetailBuilder.EditDefaultProperty(ViewModelSettingsHandle)->ShouldAutoExpand(true).OverrideResetToDefault(HideResetToDefault);
 			}
+			else if (EditorObject->ViewModelProvider == TAG_MDVMProvider_Manual)
+			{
+				// Manual provider doesn't initialize view models so we don't need to warn here.
+				DetailBuilder.HideProperty(ViewModelSettingsHandle);
+			}
 			else
 			{
 				DetailBuilder.EditDefaultProperty(ViewModelSettingsHandle)->CustomWidget().OverrideResetToDefault(HideResetToDefault)
