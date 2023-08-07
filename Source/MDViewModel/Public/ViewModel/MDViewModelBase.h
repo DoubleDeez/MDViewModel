@@ -39,6 +39,8 @@ public:
 
 	virtual UWorld* GetWorld() const override;
 
+	const UObject* GetWorldContextObject() const { return WorldContextObjectPtr.Get(); }
+
 #if WITH_EDITOR
 	// Override this to expose properties in the view model assignment editor, called on the CDO
 	virtual UScriptStruct* GetViewModelSettingsStruct() const { return nullptr; }
