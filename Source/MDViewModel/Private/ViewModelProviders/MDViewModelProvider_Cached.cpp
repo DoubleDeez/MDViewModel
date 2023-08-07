@@ -491,7 +491,7 @@ void UMDViewModelProvider_Cached::OnActorRemoved(AActor* Actor, TWeakObjectPtr<A
 	}
 }
 
-void UMDViewModelProvider_Cached::OnViewModelCacheShutdown(const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& ViewModelCache, int32 BoundCacheHandle)
+void UMDViewModelProvider_Cached::OnViewModelCacheShutdown(const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& ViewModelCache, uint64 BoundCacheHandle)
 {
 	for (const TTuple<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& ViewModelInstance : ViewModelCache)
 	{
@@ -502,9 +502,9 @@ void UMDViewModelProvider_Cached::OnViewModelCacheShutdown(const TMap<FMDViewMod
 			ViewModelInstance.Key.ViewModelName
 		};
 
-		if (const TMap<TWeakObjectPtr<UUserWidget>, int32>* BoundWidgets = BoundAssignments.Find(Assignment))
+		if (const TMap<TWeakObjectPtr<UUserWidget>, uint64>* BoundWidgets = BoundAssignments.Find(Assignment))
 		{
-			for (const TTuple<TWeakObjectPtr<UUserWidget>, int32>& BoundWidget : *BoundWidgets)
+			for (const TTuple<TWeakObjectPtr<UUserWidget>, uint64>& BoundWidget : *BoundWidgets)
 			{
 				if (BoundWidget.Value == BoundCacheHandle)
 				{

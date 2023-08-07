@@ -220,7 +220,7 @@ protected:
 	void OnActorSpawned(AActor* Actor, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 	void OnActorRemoved(AActor* Actor, TWeakObjectPtr<AActor> BoundActor, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 	
-	void OnViewModelCacheShutdown(const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& ViewModelCache, int32 BoundCacheHandle);
+	void OnViewModelCacheShutdown(const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& ViewModelCache, uint64 BoundCacheHandle);
 
 	IMDViewModelCacheInterface* ResolveGlobalCache(const UGameInstance* GameInstance) const;
 	IMDViewModelCacheInterface* ResolveLocalPlayerCache(const ULocalPlayer* LocalPlayer) const;
@@ -275,7 +275,7 @@ protected:
 	TMap<FMDVMAssignmentWidgetKey, TArray<FMDWrappedDelegateHandle, TInlineAllocator<4>>> WidgetDelegateHandles;
 
 	// Maps assignments to Widgets and their ViewModelCache handles
-	TMap<FMDViewModelAssignment, TMap<TWeakObjectPtr<UUserWidget>, int32>> BoundAssignments;
+	TMap<FMDViewModelAssignment, TMap<TWeakObjectPtr<UUserWidget>, uint64>> BoundAssignments;
 };
 
 template <typename T>

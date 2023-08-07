@@ -27,7 +27,7 @@ public:
 
 	bool IsShutdown() const { return bIsShutdown; }
 
-	int32 GetCacheHandle() const { return CacheHandle; }
+	uint64 GetCacheHandle() const { return CacheHandle; }
 
 	using ViewModelCacheMap = TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>;
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnViewModelCacheShuttingDown, const ViewModelCacheMap&);
@@ -43,8 +43,8 @@ protected:
 	virtual const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& GetViewModelCache() const;
 
 private:
-	static int32 LastHandle;
+	static uint64 LastHandle;
 	
 	bool bIsShutdown = false;
-	int32 CacheHandle = ++LastHandle;
+	uint64 CacheHandle = ++LastHandle;
 };

@@ -3,7 +3,7 @@
 #include "Util/MDViewModelInstanceKey.h"
 #include "ViewModel/MDViewModelBase.h"
 
-int32 IMDViewModelCacheInterface::LastHandle = 0;
+uint64 IMDViewModelCacheInterface::LastHandle = 0;
 
 UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const UObject* WorldContextObject, const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
 {
