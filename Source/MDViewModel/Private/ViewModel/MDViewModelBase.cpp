@@ -3,29 +3,16 @@
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "InstancedStruct.h"
-#include "Logging/StructuredLog.h"
-#include "Util/MDViewModelLog.h"
 
 void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject, const UObject* WorldContext)
 {
-#if WITH_EDITOR
-	const UScriptStruct* ExpectedSettingsType = GetViewModelSettingsStruct();
-	const UScriptStruct* ProvidedSettingsType = ViewModelSettings.GetScriptStruct();
-	if (ExpectedSettingsType != nullptr && ExpectedSettingsType != ProvidedSettingsType)
-	{
-		UE_LOGFMT(LogMDViewModel, Error, "View Model of type [{VM}] expects Settings of type [{SettingsType}] but initializing with Settings of type [{BadSettingsType}]",
-			("VM", GetClass()->GetDisplayNameText().ToString()),
-			("SettingsType", ExpectedSettingsType->GetDisplayNameText().ToString()),
-			("BadSettingsType", ProvidedSettingsType != nullptr ? ProvidedSettingsType->GetDisplayNameText().ToString() : TEXT("NONE")));
-	}
-#endif
-	
 	WorldContextObjectPtr = WorldContext;
-	ContextObject = RedirectContextObject(ViewModelSettings, InContextObject);
+	CachedViewModelSettings = ViewModelSettings;
+	ContextObject = RedirectContextObject(InContextObject);
 
 	ensureAlwaysMsgf(IsValid(GetWorld()), TEXT("View Model [%s]'s WorldContext [%s] and ContextObject [%s] could not reach the world. Either the World Context Object or the Context Object are expected to have a valid GetWorld() result."), *GetName(), *GetNameSafe(WorldContextObjectPtr.Get()), *GetNameSafe(GetContextObject()));
 	
-	InitializeViewModel(ViewModelSettings);
+	InitializeViewModel();
 }
 
 void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, const UObject* InContextObject, const UObject* WorldContext)
@@ -36,17 +23,11 @@ void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& Vi
 
 void UMDViewModelBase::InitializeViewModelWithContext(UObject* InContextObject, const UObject* WorldContext)
 {
-#if WITH_EDITOR
-	ensureMsgf(GetViewModelSettingsStruct() == nullptr, TEXT("Initializing View Model [%s] without settings but it expects settings of type [%s]"), *GetName(), *GetNameSafe(GetViewModelSettingsStruct()));
-#endif
 	InitializeViewModelWithContext({}, InContextObject, WorldContext);
 }
 
 void UMDViewModelBase::InitializeViewModelWithContext(const UObject* InContextObject, const UObject* WorldContext)
 {
-#if WITH_EDITOR
-	ensureMsgf(GetViewModelSettingsStruct() == nullptr, TEXT("Initializing View Model [%s] without settings but it expects settings of type [%s]"), *GetName(), *GetNameSafe(GetViewModelSettingsStruct()));
-#endif
 	InitializeViewModelWithContext({}, InContextObject, WorldContext);
 }
 

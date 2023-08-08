@@ -3,13 +3,13 @@
 #include "FieldNotification/FieldMulticastDelegate.h"
 #include "FieldNotification/FieldNotificationDeclaration.h"
 #include "FieldNotification/IFieldValueChanged.h"
+#include "InstancedStruct.h"
 #include "UObject/Object.h"
 #include "UObject/Package.h"
 #include "Util/MDViewModelMetaUtils.h"
 #include "MDViewModelBase.generated.h"
 
 struct FMDViewModelAssignment;
-struct FInstancedStruct;
 class UUserWidget;
 
 #if WITH_EDITOR
@@ -111,14 +111,42 @@ public:
 		return bIsValid ? Object : nullptr;
 	}
 
+	
+	UFUNCTION(BlueprintCallable, Category = "View Model")
+	const FInstancedStruct& GetViewModelSettings() const { return CachedViewModelSettings; }
+
+	template<typename T>
+	const T* GetViewModelSettings() const
+	{
+		return GetViewModelSettings().GetPtr<T>();
+	}
+
+	template<typename T>
+	const T& GetViewModelSettingsChecked() const
+	{
+		const FInstancedStruct& Settings = GetViewModelSettings();
+		const T* SettingsPtr = Settings.GetPtr<T>();
+		checkf(SettingsPtr != nullptr, TEXT("The view model [%s] is expecting settings of type [%s] but the actual type is [%s]"), *GetName(), *T::StaticStruct->GetName(), *GetNameSafe(Settings.GetScriptStruct()));
+		return *SettingsPtr;
+	}
+	
+	template<typename T>
+	const T* GetViewModelSettingsEnsure() const
+	{
+		const FInstancedStruct& Settings = GetViewModelSettings();
+		const T* SettingsPtr = Settings.GetPtr<T>();
+		ensureAlwaysMsgf(SettingsPtr != nullptr, TEXT("The view model [%s] is expecting settings of type [%s] but the actual type is [%s]"), *GetName(), *T::StaticStruct->GetName(), *GetNameSafe(Settings.GetScriptStruct()));
+		return SettingsPtr;
+	}
+
 	FSimpleMulticastDelegate OnViewModelShutDown;
 
 protected:
 	// Called by view model providers after they create the view model object
-	virtual void InitializeViewModel(const FInstancedStruct& ViewModelSettings) {};
+	virtual void InitializeViewModel() {};
 
 	// Override this to override the context object that's been passed to this view model during initialization
-	virtual UObject* RedirectContextObject(const FInstancedStruct& ViewModelSettings, UObject* InContextObject) const { return InContextObject; }
+	virtual UObject* RedirectContextObject(UObject* InContextObject) const { return InContextObject; }
 
 	// Called by view model providers when they stop referencing the view model object
 	virtual void ShutdownViewModel() {}
@@ -153,6 +181,9 @@ private:
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<const UObject> WorldContextObjectPtr;
+
+	UPROPERTY(Transient)
+	FInstancedStruct CachedViewModelSettings;
 
 	UE::FieldNotification::FFieldMulticastDelegate FieldNotifyDelegates;
 	TBitArray<> EnabledFieldNotifications;
