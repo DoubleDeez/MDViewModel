@@ -34,7 +34,11 @@ public:
 	static void OpenAssignmentDialog(UMDViewModelWidgetBlueprintExtension* BPExtension);
 	static void OpenEditDialog(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem);
 
-protected:
+private:
+	static void OpenDialog_Internal(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem = nullptr);
+	static void OnDialogClosed(const TSharedRef<SWindow>& Window);
+	static TWeakPtr<SWindow> ActiveDialogWindowPtr;
+	
 	EVisibility GetAddVisibility() const;
 	EVisibility GetSaveVisibility() const;
 

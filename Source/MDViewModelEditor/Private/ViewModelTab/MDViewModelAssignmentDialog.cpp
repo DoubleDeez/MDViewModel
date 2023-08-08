@@ -18,6 +18,8 @@
 #include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 
+TWeakPtr<SWindow> SMDViewModelAssignmentDialog::ActiveDialogWindowPtr;
+
 class FMDVMExpanderDataDetails : public FInstancedStructDataDetails
 {
 public:
@@ -116,7 +118,6 @@ public:
 
 	virtual void CustomizeChildren(TSharedRef<IPropertyHandle> PropertyHandle, IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils) override
 	{
-			
 		const TSharedRef<FMDVMExpanderDataDetails> DataDetails = MakeShared<FMDVMExpanderDataDetails>(PropertyHandle);
 		ChildBuilder.AddCustomBuilder(DataDetails);
 	}
@@ -218,15 +219,38 @@ UWidgetBlueprint* SMDViewModelAssignmentDialog::GetWidgetBlueprint() const
 
 void SMDViewModelAssignmentDialog::OpenAssignmentDialog(UMDViewModelWidgetBlueprintExtension* BPExtension)
 {
+	return OpenDialog_Internal(BPExtension);
+}
+
+void SMDViewModelAssignmentDialog::OpenEditDialog(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem)
+{
+	return OpenDialog_Internal(BPExtension, EditorItem);
+}
+
+void SMDViewModelAssignmentDialog::OpenDialog_Internal(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem)
+{
+	if (const TSharedPtr<SWindow> ActiveDialogWindow = ActiveDialogWindowPtr.Pin())
+	{
+		// Only one instance allowed at a time
+		ActiveDialogWindow->FlashWindow();
+		return;
+	}
+	
+	const bool bIsEditMode = EditorItem.IsValid();
 	const TSharedRef<SWindow> PickerWindow = SNew(SWindow)
-		.Title(INVTEXT("Add a View Model Assignment"))
+		.Title(bIsEditMode ? INVTEXT("Edit a View Model Assignment") : INVTEXT("Add a View Model Assignment"))
 		.SizingRule( ESizingRule::UserSized )
 		.ClientSize( FVector2D( 700.f, 600.f ))
 		.SupportsMaximize(false)
 		.SupportsMinimize(false);
 
+	ActiveDialogWindowPtr = PickerWindow;
+	PickerWindow->GetOnWindowClosedEvent().AddStatic(&SMDViewModelAssignmentDialog::OnDialogClosed);
+
 	const TSharedRef<SMDViewModelAssignmentDialog> AssignmentDialog = SNew(SMDViewModelAssignmentDialog, PickerWindow)
-		.BPExtensionPtr(BPExtension);
+		.BPExtensionPtr(BPExtension)
+		.EditorItem(EditorItem)
+		.bIsEditMode(bIsEditMode);
 
 	PickerWindow->SetContent(AssignmentDialog);
 
@@ -244,33 +268,11 @@ void SMDViewModelAssignmentDialog::OpenAssignmentDialog(UMDViewModelWidgetBluepr
 	}
 }
 
-void SMDViewModelAssignmentDialog::OpenEditDialog(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem)
+void SMDViewModelAssignmentDialog::OnDialogClosed(const TSharedRef<SWindow>& Window)
 {
-	const TSharedRef<SWindow> PickerWindow = SNew(SWindow)
-		.Title(INVTEXT("Edit a View Model Assignment"))
-		.SizingRule( ESizingRule::UserSized )
-		.ClientSize( FVector2D( 700.f, 600.f ))
-		.SupportsMaximize(false)
-		.SupportsMinimize(false);
-
-	const TSharedRef<SMDViewModelAssignmentDialog> AssignmentDialog = SNew(SMDViewModelAssignmentDialog, PickerWindow)
-		.BPExtensionPtr(BPExtension)
-		.EditorItem(EditorItem)
-		.bIsEditMode(true);
-
-	PickerWindow->SetContent(AssignmentDialog);
-
-	if (FSlateApplication::Get().GetActiveModalWindow().IsValid())
+	if (Window == ActiveDialogWindowPtr)
 	{
-		FSlateApplication::Get().AddWindowAsNativeChild(PickerWindow, FSlateApplication::Get().GetActiveModalWindow().ToSharedRef());
-	}
-	else if (FGlobalTabmanager::Get()->GetRootWindow().IsValid())
-	{
-		FSlateApplication::Get().AddWindowAsNativeChild(PickerWindow, FGlobalTabmanager::Get()->GetRootWindow().ToSharedRef());
-	}
-	else
-	{
-		FSlateApplication::Get().AddWindow(PickerWindow);
+		ActiveDialogWindowPtr.Reset();
 	}
 }
 
