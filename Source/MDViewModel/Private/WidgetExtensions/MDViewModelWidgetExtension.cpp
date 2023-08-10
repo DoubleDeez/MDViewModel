@@ -53,7 +53,7 @@ UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModel(UMDViewModelBase* Vi
 {
 	if (IsValid(ViewModel) && IsValid(ViewModelClass))
 	{
-		if (ensureAlwaysMsgf(ViewModel->IsA(ViewModelClass), TEXT("Attempting to set View Model of class [%s] on widget [%s] but it does not inherit from the assigned view model class [%s]"), *ViewModel->GetClass()->GetName(), *GetFullNameSafe(GetUserWidget()), *ViewModelClass->GetName()))
+		if (!ensureAlwaysMsgf(ViewModel->IsA(ViewModelClass), TEXT("Attempting to set View Model of class [%s] on widget [%s] but it does not inherit from the assigned view model class [%s]"), *ViewModel->GetClass()->GetName(), *GetFullNameSafe(GetUserWidget()), *ViewModelClass->GetName()))
 		{
 			return nullptr;
 		}
