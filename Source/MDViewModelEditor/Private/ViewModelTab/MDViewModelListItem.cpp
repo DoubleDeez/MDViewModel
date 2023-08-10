@@ -114,7 +114,7 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, TSharedPtr<FMDVie
 				[
 					SNew(STextBlock)
 					.Text(FText::FromName(Item->Assignment.ViewModelName))
-					.ToolTipText(INVTEXT("The name of this view model instance. It must be unique for all view models on this widget.\r\n'Default' is an exception, and can be used once per View Model Class on this widget."))
+					.ToolTipText(INVTEXT("The name of this view model assignment. It must be unique for all view models of the same class on this widget."))
 				]
 				+SHorizontalBox::Slot()
 				.FillWidth(1.f)

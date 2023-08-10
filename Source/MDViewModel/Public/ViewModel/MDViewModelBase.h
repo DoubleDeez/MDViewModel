@@ -126,7 +126,7 @@ public:
 	{
 		const FInstancedStruct& Settings = GetViewModelSettings();
 		const T* SettingsPtr = Settings.GetPtr<T>();
-		checkf(SettingsPtr != nullptr, TEXT("The view model [%s] is expecting settings of type [%s] but the actual type is [%s]"), *GetName(), *T::StaticStruct->GetName(), *GetNameSafe(Settings.GetScriptStruct()));
+		checkf(SettingsPtr != nullptr, TEXT("The view model [%s] is expecting settings of type [%s] but the actual type is [%s]"), *GetName(), *T::StaticStruct()->GetName(), *GetNameSafe(Settings.GetScriptStruct()));
 		return *SettingsPtr;
 	}
 	
@@ -135,7 +135,7 @@ public:
 	{
 		const FInstancedStruct& Settings = GetViewModelSettings();
 		const T* SettingsPtr = Settings.GetPtr<T>();
-		ensureAlwaysMsgf(SettingsPtr != nullptr, TEXT("The view model [%s] is expecting settings of type [%s] but the actual type is [%s]"), *GetName(), *T::StaticStruct->GetName(), *GetNameSafe(Settings.GetScriptStruct()));
+		ensureAlwaysMsgf(SettingsPtr != nullptr, TEXT("The view model [%s] is expecting settings of type [%s] but the actual type is [%s]"), *GetName(), *T::StaticStruct()->GetName(), *GetNameSafe(Settings.GetScriptStruct()));
 		return SettingsPtr;
 	}
 
