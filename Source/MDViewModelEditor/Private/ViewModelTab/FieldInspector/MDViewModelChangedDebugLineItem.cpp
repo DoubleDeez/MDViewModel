@@ -1,6 +1,6 @@
 #include "ViewModelTab/FieldInspector/MDViewModelChangedDebugLineItem.h"
 
-#include "MDViewModelGraph.h"
+#include "Util/MDViewModelGraphStatics.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetBlueprint.h"
 #include "Widgets/Images/SImage.h"
@@ -52,12 +52,12 @@ FDebugLineItem* FMDViewModelChangedDebugLineItem::Duplicate() const
 
 FReply FMDViewModelChangedDebugLineItem::OnAddOrViewBoundVMChangedFunctionClicked() const
 {
-	FMDViewModelGraphModule::OnViewModelChangedRequestedForBlueprint(WidgetBP.Get(), ViewModelClass, ViewModelName);
+	FMDViewModelGraphStatics::OnViewModelChangedRequestedForBlueprint(WidgetBP.Get(), ViewModelClass, ViewModelName);
 	return FReply::Handled();
 }
 
 int32 FMDViewModelChangedDebugLineItem::GetAddOrViewBoundVMChangedFunctionIndex() const
 {
-	return FMDViewModelGraphModule::DoesBlueprintBindToViewModelChanged(WidgetBP.Get(), ViewModelClass, ViewModelName)
+	return FMDViewModelGraphStatics::DoesBlueprintBindToViewModelChanged(WidgetBP.Get(), ViewModelClass, ViewModelName)
 		? 0 : 1;
 }

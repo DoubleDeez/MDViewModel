@@ -1,8 +1,9 @@
 #include "Util/MDViewModelFunctionLibrary.h"
 
-#include "MDViewModelModule.h"
+#include "Util/MDViewModelUtils.h"
 #include "Blueprint/UserWidget.h"
 #include "UObject/Package.h"
+#include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelAssignmentReference.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProvider_Cached.h"
@@ -107,7 +108,7 @@ bool UMDViewModelFunctionLibrary::DoesWidgetHaveViewModelClassAssigned(const UUs
 	if (IsValid(Widget))
 	{
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-		FMDViewModelModule::GetViewModelAssignmentsForWidgetClass(Widget->GetClass(), Assignments);
+		MDViewModelUtils::GetViewModelAssignmentsForWidgetClass(Widget->GetClass(), Assignments);
 
 		for (const auto& Pair : Assignments)
 		{

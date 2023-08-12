@@ -3,7 +3,7 @@
 #include "BlueprintEditor.h"
 #include "EdGraphSchema_K2.h"
 #include "Kismet2/KismetDebugUtilities.h"
-#include "MDViewModelGraph.h"
+#include "Util/MDViewModelGraphStatics.h"
 #include "WidgetBlueprint.h"
 #include "Widgets/Images/SLayeredImage.h"
 #include "Widgets/Input/SButton.h"
@@ -326,7 +326,7 @@ FReply FMDViewModelFieldDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 
 	if (PropertyPtr.IsValid())
 	{
-		FMDViewModelGraphModule::OnViewModelFieldNotifyRequestedForBlueprint(WidgetBP.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName);
+		FMDViewModelGraphStatics::OnViewModelFieldNotifyRequestedForBlueprint(WidgetBP.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName);
 	}
 
 	return FReply::Handled();
@@ -336,7 +336,7 @@ int32 FMDViewModelFieldDebugLineItem::GetAddOrViewBoundFunctionIndex() const
 {
 	check(bIsFieldNotify);
 
-	return (!PropertyPtr.IsValid() || FMDViewModelGraphModule::DoesBlueprintBindToViewModelFieldNotify(WidgetBP.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName))
+	return (!PropertyPtr.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelFieldNotify(WidgetBP.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName))
 		? 0 : 1;
 }
 

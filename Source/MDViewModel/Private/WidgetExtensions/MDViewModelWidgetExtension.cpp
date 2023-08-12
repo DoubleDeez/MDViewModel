@@ -1,10 +1,12 @@
 #include "WidgetExtensions/MDViewModelWidgetExtension.h"
 
-#include "MDViewModelModule.h"
+#include "Util/MDViewModelUtils.h"
 #include "Launch/Resources/Version.h"
 #include "Blueprint/UserWidget.h"
 #include "Logging/StructuredLog.h"
 #include "UObject/Package.h"
+#include "Util/MDViewModelAssignment.h"
+#include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelLog.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
@@ -60,7 +62,7 @@ UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModel(UMDViewModelBase* Vi
 		
 #if WITH_EDITOR
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-		FMDViewModelModule::SearchViewModelAssignments(Assignments, GetUserWidget()->GetClass(), ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
+		MDViewModelUtils::SearchViewModelAssignments(Assignments, GetUserWidget()->GetClass(), ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
 		if (Assignments.IsEmpty())
 		{
 			UE_LOGFMT(LogMDViewModel, Error, "Attempting to set View Model of type [{VMType}] with name [{VMName}] but Widget [{Widget}] does not have a matching assignment.",
@@ -144,7 +146,7 @@ void UMDViewModelWidgetExtension::OnProviderViewModelUpdated(TSubclassOf<UMDView
 	}
 
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-	FMDViewModelModule::SearchViewModelAssignments(Assignments, GetUserWidget()->GetClass(), ViewModelClass, ProviderTag);
+	MDViewModelUtils::SearchViewModelAssignments(Assignments, GetUserWidget()->GetClass(), ViewModelClass, ProviderTag);
 
 	UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(ProviderTag);
 	if (!IsValid(Provider))
@@ -310,7 +312,7 @@ void UMDViewModelWidgetExtension::PopulateViewModels()
 #endif
 
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-	FMDViewModelModule::GetViewModelAssignmentsForWidgetClass(Widget->GetClass(), Assignments);
+	MDViewModelUtils::GetViewModelAssignmentsForWidgetClass(Widget->GetClass(), Assignments);
 
 	for (const auto& Pair : Assignments)
 	{

@@ -5,9 +5,11 @@
 #include "K2Node_IfThenElse.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "KismetCompiler.h"
-#include "MDViewModelGraph.h"
-#include "MDViewModelModule.h"
+#include "Util/MDViewModelGraphStatics.h"
+#include "Util/MDViewModelUtils.h"
 #include "Nodes/MDVMNode_GetViewModel.h"
+#include "Util/MDViewModelAssignment.h"
+#include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelAssignmentReference.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetBlueprint.h"
@@ -69,9 +71,9 @@ void UMDVMNode_CallCommand::GetMenuActions(FBlueprintActionDatabaseRegistrar& In
 	{
 		return;
 	}
-	
+
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-	FMDViewModelGraphModule::GetViewModelAssignmentsForBlueprint(WidgetBP, Assignments);
+	FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(WidgetBP, Assignments);
 
 	for (auto It = Assignments.CreateConstIterator(); It; ++It)
 	{
@@ -112,7 +114,7 @@ bool UMDVMNode_CallCommand::IsActionFilteredOut(const FBlueprintActionFilter& Fi
 		}
 		
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-		FMDViewModelGraphModule::GetViewModelAssignmentsForBlueprint(WidgetBP, Assignments);
+		FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(WidgetBP, Assignments);
 		
 		bool bWidgetHasAssignment = false;
 		for (const auto& Pair : Assignments)
@@ -271,7 +273,7 @@ void UMDVMNode_CallCommand::ValidateNodeDuringCompilation(FCompilerResultsLog& M
 	Super::ValidateNodeDuringCompilation(MessageLog);
 
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-	FMDViewModelGraphModule::GetViewModelAssignmentsForBlueprint(Cast<UWidgetBlueprint>(GetBlueprint()), Assignments);
+	FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(Cast<UWidgetBlueprint>(GetBlueprint()), Assignments);
 
 	bool bWidgetHasAssignment = false;
 	for (const auto& Pair : Assignments)

@@ -4,7 +4,7 @@
 #include "EdGraphSchema_K2.h"
 #include "K2Node_FunctionEntry.h"
 #include "Kismet2/BlueprintEditorUtils.h"
-#include "MDViewModelModule.h"
+#include "Util/MDViewModelUtils.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetBlueprint.h"
 #include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
@@ -179,7 +179,7 @@ void UMDVMNode_ViewModelFieldNotify::ValidateNodeDuringCompilation(FCompilerResu
 	else
 	{
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
-		FMDViewModelModule::SearchViewModelAssignments(ViewModelAssignments, BP->GeneratedClass.Get(), ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
+		MDViewModelUtils::SearchViewModelAssignments(ViewModelAssignments, BP->GeneratedClass.Get(), ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
 
 		// Only Native assignments are valid during compile, we need to go through the BP otherwise
 		if (ViewModelAssignments.IsEmpty())

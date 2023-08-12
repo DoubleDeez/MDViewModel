@@ -1,7 +1,7 @@
 #include "ViewModelTab/FieldInspector/MDViewModelFunctionDebugLineItem.h"
 
 #include "EdGraphSchema_K2.h"
-#include "MDViewModelGraph.h"
+#include "Util/MDViewModelGraphStatics.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMDragAndDropWrapperButton.h"
 #include "ViewModelTab/FieldInspector/MDViewModelFieldDebugLineItem.h"
 #include "WidgetBlueprint.h"
@@ -130,7 +130,7 @@ FReply FMDViewModelFunctionDebugLineItem::OnAddOrViewBoundFieldNotifyFunctionCli
 
 	if (FunctionPtr.IsValid())
 	{
-		FMDViewModelGraphModule::OnViewModelFieldNotifyRequestedForBlueprint(WidgetBP.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName);
+		FMDViewModelGraphStatics::OnViewModelFieldNotifyRequestedForBlueprint(WidgetBP.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName);
 	}
 
 	return FReply::Handled();
@@ -140,6 +140,6 @@ int32 FMDViewModelFunctionDebugLineItem::GetAddOrViewBoundFieldNotifyFunctionInd
 {
 	check(bIsFieldNotify);
 
-	return (!FunctionPtr.IsValid() || FMDViewModelGraphModule::DoesBlueprintBindToViewModelFieldNotify(WidgetBP.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName))
+	return (!FunctionPtr.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelFieldNotify(WidgetBP.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName))
 		? 0 : 1;
 }

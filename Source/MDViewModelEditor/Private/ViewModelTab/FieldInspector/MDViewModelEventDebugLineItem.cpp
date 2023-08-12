@@ -1,6 +1,6 @@
 #include "ViewModelTab/FieldInspector/MDViewModelEventDebugLineItem.h"
 
-#include "MDViewModelGraph.h"
+#include "Util/MDViewModelGraphStatics.h"
 #include "WidgetBlueprint.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
@@ -40,7 +40,7 @@ FReply FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 {
 	if (WeakDelegateProp.IsValid())
 	{
-		FMDViewModelGraphModule::OnViewModelEventRequestedForBlueprint(WidgetBP.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName);
+		FMDViewModelGraphStatics::OnViewModelEventRequestedForBlueprint(WidgetBP.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName);
 	}
 
 	return FReply::Handled();
@@ -48,6 +48,6 @@ FReply FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 
 int32 FMDViewModelEventDebugLineItem::GetAddOrViewBoundFunctionIndex() const
 {
-	return (!WeakDelegateProp.IsValid() || FMDViewModelGraphModule::DoesBlueprintBindToViewModelEvent(WidgetBP.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName))
+	return (!WeakDelegateProp.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelEvent(WidgetBP.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName))
 		? 0 : 1;
 }

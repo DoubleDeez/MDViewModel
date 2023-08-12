@@ -3,7 +3,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
 #include "Launch/Resources/Version.h"
-#include "MDViewModelModule.h"
+#include "Util/MDViewModelUtils.h"
 #include "ScopedTransaction.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "ViewModelTab/MDViewModelAssignmentDialog.h"

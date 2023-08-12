@@ -3,15 +3,16 @@
 #include "Blueprint/UserWidget.h"
 #include "DetailWidgetRow.h"
 #include "EdGraphSchema_K2.h"
+#include "Engine/Blueprint.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "IDetailChildrenBuilder.h"
-#include "MDViewModelGraph.h"
-#include "MDViewModelModule.h"
+#include "Util/MDViewModelGraphStatics.h"
+#include "Util/MDViewModelUtils.h"
 #include "PropertyHandle.h"
 #include "ScopedTransaction.h"
+#include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelAssignmentReference.h"
 #include "ViewModel/MDViewModelBase.h"
-#include "WidgetBlueprint.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
 
@@ -117,8 +118,9 @@ TSharedRef<SWidget> FMDViewModelAssignmentReferenceCustomization::MakeAssignment
 	FMenuBuilder MenuBuilder(true, NULL);
 	if (UClass* WidgetClass = GetWidgetOwnerClass())
 	{
+
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
-		FMDViewModelModule::GetViewModelAssignmentsForWidgetClass(WidgetClass, ViewModelAssignments);
+		MDViewModelUtils::GetViewModelAssignmentsForWidgetClass(WidgetClass, ViewModelAssignments);
 
 		for (const auto& Pair : ViewModelAssignments)
 		{
@@ -199,12 +201,12 @@ void SMDViewModelAssignmentReferenceGraphPin::GetWidgetViewModelAssignments(TMap
 	// If it's a self pin, we can get the up-to-date assignments that haven't been compiled yet
 	if (Blueprint != nullptr && MDViewModelAssignmentReferenceCustomization_Private::IsSelfPin(*WidgetPin))
 	{
-		FMDViewModelGraphModule::GetViewModelAssignmentsForBlueprint(Blueprint, OutViewModelAssignments);
+		FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(Blueprint, OutViewModelAssignments);
 	}
 	else
 	{
 		const TSubclassOf<UUserWidget> WidgetClass = Cast<UClass>(WidgetPin->PinType.PinSubCategoryObject.Get());
-		FMDViewModelModule::GetViewModelAssignmentsForWidgetClass(WidgetClass, OutViewModelAssignments);
+		MDViewModelUtils::GetViewModelAssignmentsForWidgetClass(WidgetClass, OutViewModelAssignments);
 	}
 }
 
