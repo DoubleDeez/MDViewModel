@@ -1,12 +1,26 @@
 #pragma once
 
+#include "FieldInspector/DragAndDrop/MDVMInspectorDragAndDropActionBase.h"
 #include "Styling/SlateBrush.h"
 #include "Styling/SlateTypes.h"
-#include "Widgets/SCompoundWidget.h"
+#include "Widgets/Views/SListView.h"
+#include "Widgets/Views/STableRow.h"
 
 struct FMDViewModelEditorAssignment;
 
-class SMDViewModelListItem : public SCompoundWidget
+class FMDVMDragAndDropViewModel : public FMDVMInspectorDragAndDropActionBase
+{
+public:
+	DRAG_DROP_OPERATOR_TYPE(FMDVMDragAndDropViewModel, FMDVMInspectorDragAndDropActionBase)
+	
+	static TSharedRef<FMDVMDragAndDropViewModel> Create(const FMDViewModelAssignmentReference& InVMAssignment);
+
+	virtual UEdGraphNode* CreateNodeOnDrop(UEdGraph& Graph, const FVector2D& GraphPosition) override;
+	
+	virtual FText GetNodeTitle() const override;
+};
+
+class SMDViewModelListItem : public STableRow<TSharedPtr<FMDViewModelEditorAssignment>>
 {
 public:
 	SLATE_BEGIN_ARGS(SMDViewModelListItem)
@@ -18,7 +32,13 @@ public:
 
 	SLATE_END_ARGS()
 
-	void Construct(const FArguments& InArgs, TSharedPtr<FMDViewModelEditorAssignment> Item);
+	void Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwningTable, const TSharedPtr<FMDViewModelEditorAssignment>& Item);
+
+	virtual TOptional<EMouseCursor::Type> GetCursor() const override;
+
+	virtual FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
+
+	virtual FReply OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 
 private:
 	EVisibility GetButtonVisibility() const;

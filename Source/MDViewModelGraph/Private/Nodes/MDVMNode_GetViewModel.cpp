@@ -11,6 +11,17 @@ UMDVMNode_GetViewModel::UMDVMNode_GetViewModel()
 	FunctionReference.SetExternalMember(GET_FUNCTION_NAME_CHECKED(UMDViewModelFunctionLibrary, BP_GetViewModel), UMDViewModelFunctionLibrary::StaticClass());
 }
 
+void UMDVMNode_GetViewModel::AllocateDefaultPins()
+{
+	Super::AllocateDefaultPins();
+
+	if (PendingAssignment.IsAssignmentValid())
+	{
+		SetDefaultAssignment(PendingAssignment);
+		PendingAssignment = {};
+	}
+}
+
 void UMDVMNode_GetViewModel::PostReconstructNode()
 {
 	Super::PostReconstructNode();
@@ -39,13 +50,19 @@ void UMDVMNode_GetViewModel::GetMenuActions(FBlueprintActionDatabaseRegistrar& I
 
 void UMDVMNode_GetViewModel::SetDefaultAssignment(const FMDViewModelAssignmentReference& Assignment)
 {
-	UEdGraphPin* AssignmentPin = FindPinChecked(TEXT("Assignment"));
-	FString AssignmentValue;
-	FMDViewModelAssignmentReference::StaticStruct()->ExportText(AssignmentValue, &Assignment, &Assignment, nullptr, PPF_SerializedAsImportText, nullptr);
-
-	if (AssignmentValue != AssignmentPin->GetDefaultAsString())
+	if (UEdGraphPin* AssignmentPin = FindPin(TEXT("Assignment")))
 	{
-		AssignmentPin->GetSchema()->TrySetDefaultValue(*AssignmentPin, AssignmentValue);
+		FString AssignmentValue;
+		FMDViewModelAssignmentReference::StaticStruct()->ExportText(AssignmentValue, &Assignment, &Assignment, nullptr, PPF_SerializedAsImportText, nullptr);
+
+		if (AssignmentValue != AssignmentPin->GetDefaultAsString())
+		{
+			AssignmentPin->GetSchema()->TrySetDefaultValue(*AssignmentPin, AssignmentValue);
+		}
+	}
+	else
+	{
+		PendingAssignment = Assignment;
 	}
 }
 

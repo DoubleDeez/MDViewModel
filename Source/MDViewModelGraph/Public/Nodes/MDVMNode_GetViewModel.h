@@ -1,9 +1,8 @@
 #pragma once
 
 #include "K2Node_CallFunction.h"
+#include "Util/MDViewModelAssignmentReference.h"
 #include "MDVMNode_GetViewModel.generated.h"
-
-struct FMDViewModelAssignmentReference;
 
 /**
  * Custom node for UMDViewModelFunctionLibrary::BP_GetViewModel to auto-cast the return value to the assigned view model class
@@ -16,6 +15,7 @@ class MDVIEWMODELGRAPH_API UMDVMNode_GetViewModel : public UK2Node_CallFunction
 public:
 	UMDVMNode_GetViewModel();
 
+	virtual void AllocateDefaultPins() override;
 	virtual void PostReconstructNode() override;
 	virtual void PinDefaultValueChanged(UEdGraphPin* Pin) override;
 	
@@ -25,4 +25,6 @@ public:
 
 private:
 	void UpdateReturnPin() const;
+
+	FMDViewModelAssignmentReference PendingAssignment;
 };

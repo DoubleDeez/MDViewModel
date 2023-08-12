@@ -112,12 +112,9 @@ void SMDViewModelList::OnItemSelected(TSharedPtr<FMDViewModelEditorAssignment> I
 
 TSharedRef<ITableRow> SMDViewModelList::OnGenerateRow(TSharedPtr<FMDViewModelEditorAssignment> Item, const TSharedRef<STableViewBase>& OwningTable)
 {
-	return SNew(STableRow<TSharedPtr<FMDViewModelEditorAssignment>>, OwningTable)
-	[
-		SNew(SMDViewModelListItem, Item)
+	return SNew(SMDViewModelListItem, OwningTable, Item)
 		.OnEditItemRequested(this, &SMDViewModelList::OnEditItem, Item)
-		.OnDeleteItemConfirmed(this, &SMDViewModelList::OnDeleteItem, Item)
-	];
+		.OnDeleteItemConfirmed(this, &SMDViewModelList::OnDeleteItem, Item);
 }
 
 void SMDViewModelList::PopulateAssignments()
