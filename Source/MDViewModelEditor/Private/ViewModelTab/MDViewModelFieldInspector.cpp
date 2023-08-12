@@ -54,7 +54,7 @@ public:
 	virtual FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
 	{
 		FReply Reply = SButton::OnMouseButtonDown(MyGeometry, MouseEvent);
-		if (bCanDrag.Get(false) && FunctionItem.IsValid())
+		if (bCanDrag.Get(false) && FunctionItem.IsValid() && MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
 		{
 			Reply = Reply.DetectDrag(AsShared(), EKeys::LeftMouseButton);
 		}
