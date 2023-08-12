@@ -260,7 +260,7 @@ protected:
 	bool DoesActorPassFilter(AActor* Candidate, const FMDVMWorldActorFilter& Filter) const;
 
 	// Checks WidgetDelegateHandles to see if the handle at the specified index is bound, if not it adds a new entry and calls BindFunc to populate it 
-	template<typename T, typename TBindingKey, typename = typename TEnableIf<TIsSame<typename TDecay<TBindingKey>::Type, FMDVMAssignmentWidgetKey>::Value>::Type>
+	template<typename T, typename TBindingKey, typename = typename TEnableIf<std::is_same_v<typename TDecay<TBindingKey>::Type, FMDVMAssignmentWidgetKey>>::Type>
 	void BindDelegateIfUnbound(TBindingKey&& BindingKey, T* Owner, int32 DelegateIndex, TFunctionRef<FDelegateHandle(T&)> BindFunc);
 
 	// Checks WidgetDelegateHandles to see if the specified delegate exists, if so it calls UnbindFunc and resets the stored delegate data
