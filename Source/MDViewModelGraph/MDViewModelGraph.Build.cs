@@ -26,6 +26,7 @@ public class MDViewModelGraph : ModuleRules
                 "Slate",
                 "SlateCore",
                 "StructUtils",
+                "ToolMenus",
                 "UMG",
                 "UMGEditor",
                 "UnrealEd"

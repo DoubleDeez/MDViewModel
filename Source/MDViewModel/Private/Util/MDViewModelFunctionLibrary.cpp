@@ -75,21 +75,25 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::GetViewModel(UUserWidget* Widget,
 	FMDViewModelAssignmentReference AssignmentReference;
 	AssignmentReference.ViewModelClass = ViewModelClass;
 	AssignmentReference.ViewModelName = ViewModelName;
-	
-	return BP_GetViewModel(Widget, AssignmentReference);
+
+	bool IsValid = false;
+	return BP_GetViewModel(Widget, AssignmentReference, IsValid);
 }
 
-UMDViewModelBase* UMDViewModelFunctionLibrary::BP_GetViewModel(UUserWidget* Widget, const FMDViewModelAssignmentReference& Assignment)
+UMDViewModelBase* UMDViewModelFunctionLibrary::BP_GetViewModel(UUserWidget* Widget, const FMDViewModelAssignmentReference& Assignment, bool& bIsValid)
 {
 	if (IsValid(Widget))
 	{
 		const UMDViewModelWidgetExtension* Extension = Widget->GetExtension<UMDViewModelWidgetExtension>();
 		if (IsValid(Extension))
 		{
-			return Extension->GetViewModel(Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
+			UMDViewModelBase* ViewModel = Extension->GetViewModel(Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
+			bIsValid = IsValid(ViewModel);
+			return ViewModel;
 		}
 	}
 
+	bIsValid = false;
 	return nullptr;
 }
 

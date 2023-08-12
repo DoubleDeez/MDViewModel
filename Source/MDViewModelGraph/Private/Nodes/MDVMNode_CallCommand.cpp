@@ -194,6 +194,8 @@ void UMDVMNode_CallCommand::ExpandNode(FKismetCompilerContext& CompilerContext, 
 		GetViewModelNode->AllocateDefaultPins();
 		GetViewModelNode->SetDefaultAssignment(Assignment);
 
+		// TODO - UMDVMNode_GetViewModel internally validates now
+		
 		// IsValid
 		UK2Node_CallFunction* IsValidNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
 		IsValidNode->SetFromFunction(GetDefault<UKismetSystemLibrary>()->FindFunctionChecked(GET_MEMBER_NAME_CHECKED(UKismetSystemLibrary, IsValid)));
