@@ -2,11 +2,8 @@
 
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintNodeSpawner.h"
-#include "K2Node_IfThenElse.h"
-#include "Kismet/KismetSystemLibrary.h"
 #include "KismetCompiler.h"
 #include "Util/MDViewModelGraphStatics.h"
-#include "Util/MDViewModelUtils.h"
 #include "Nodes/MDVMNode_GetViewModel.h"
 #include "Util/MDViewModelAssignment.h"
 #include "Util/MDViewModelAssignmentData.h"
@@ -194,17 +191,6 @@ void UMDVMNode_CallCommand::ExpandNode(FKismetCompilerContext& CompilerContext, 
 		GetViewModelNode->AllocateDefaultPins();
 		GetViewModelNode->SetDefaultAssignment(Assignment);
 
-		// TODO - UMDVMNode_GetViewModel internally validates now
-		
-		// IsValid
-		UK2Node_CallFunction* IsValidNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
-		IsValidNode->SetFromFunction(GetDefault<UKismetSystemLibrary>()->FindFunctionChecked(GET_MEMBER_NAME_CHECKED(UKismetSystemLibrary, IsValid)));
-		IsValidNode->AllocateDefaultPins();
-
-		// IsValid Branch
-		UK2Node_IfThenElse* BranchNode = CompilerContext.SpawnIntermediateNode<UK2Node_IfThenElse>(this, SourceGraph);
-		BranchNode->AllocateDefaultPins();
-
 		// CallFunction
 		UK2Node_CallFunction* CallFuncNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
 		CallFuncNode->SetFromFunction(Function);
@@ -215,24 +201,10 @@ void UMDVMNode_CallCommand::ExpandNode(FKismetCompilerContext& CompilerContext, 
 		UEdGraphPin* CallFuncSelfPin = Schema->FindSelfPin(*CallFuncNode, EGPD_Input);
 		GetViewModelReturnValuePin->MakeLinkTo(CallFuncSelfPin);
 
-		// Connect GetViewModel return value to IsValid pin
-		UEdGraphPin* IsValidObjectPin = IsValidNode->FindPin(TEXT("Object"));
-		GetViewModelReturnValuePin->MakeLinkTo(IsValidObjectPin);
-
-		// Connect IsValid result to Branch condition
-		UEdGraphPin* IsValidResultPin = IsValidNode->GetReturnValuePin();
-		UEdGraphPin* BranchConditionPin = BranchNode->GetConditionPin();
-		IsValidResultPin->MakeLinkTo(BranchConditionPin);
-		
-		// Connect GetViewModel Exec pin to Branch exec pin
-		UEdGraphPin* GetViewModelExecOutPin = Schema->FindExecutionPin(*GetViewModelNode, EGPD_Output);
-		UEdGraphPin* BranchExecPin = Schema->FindExecutionPin(*BranchNode, EGPD_Input);
-		GetViewModelExecOutPin->MakeLinkTo(BranchExecPin);
-
 		// Connect Branch True pin to CallFunction exec pin
-		UEdGraphPin* BranchTruePin = BranchNode->GetThenPin();
+		UEdGraphPin* GetViewModelTruePin = GetViewModelNode->GetTruePin();
 		UEdGraphPin* CallFuncExecInPin = Schema->FindExecutionPin(*CallFuncNode, EGPD_Input);
-		BranchTruePin->MakeLinkTo(CallFuncExecInPin);
+		GetViewModelTruePin->MakeLinkTo(CallFuncExecInPin);
 
 		// Copy over all other connections
 		const UEdGraphPin* SelfPin = Schema->FindSelfPin(*this, EGPD_Input);
@@ -254,7 +226,7 @@ void UMDVMNode_CallCommand::ExpandNode(FKismetCompilerContext& CompilerContext, 
 
 				if (SrcPin->GetFName() == TEXT("InvalidVM"))
 				{
-					return BranchNode->GetElsePin();
+					return GetViewModelNode->GetFalsePin();
 				}
 				
 				return CallFuncNode->FindPin(SrcPin->PinName);

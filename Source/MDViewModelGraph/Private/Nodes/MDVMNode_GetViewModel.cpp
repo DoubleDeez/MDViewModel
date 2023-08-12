@@ -61,8 +61,8 @@ void UMDVMNode_GetViewModel::ReconstructNode()
 	{
 		bDoesNeedOutputRemapping = false;
 
-		UEdGraphPin* TruePin = FindPin(TEXT("True"));
-		UEdGraphPin* FalsePin = FindPin(TEXT("False"));
+		UEdGraphPin* TruePin = GetTruePin();
+		UEdGraphPin* FalsePin = GetFalsePin();
 		if (TruePin != nullptr && FalsePin != nullptr)
 		{
 			for (UEdGraphPin* LinkedPin : TruePin->LinkedTo)
@@ -145,6 +145,16 @@ void UMDVMNode_GetViewModel::GetNodeContextMenuActions(UToolMenu* Menu, UGraphNo
 		FIsActionChecked()
 		)
 	);
+}
+
+UEdGraphPin* UMDVMNode_GetViewModel::GetTruePin() const
+{
+	return FindPin(TEXT("True"));
+}
+
+UEdGraphPin* UMDVMNode_GetViewModel::GetFalsePin() const
+{
+	return FindPin(TEXT("False"));
 }
 
 UK2Node::ERedirectType UMDVMNode_GetViewModel::DoPinsMatchForReconstruction(const UEdGraphPin* NewPin, int32 NewPinIndex, const UEdGraphPin* OldPin, int32 OldPinIndex) const

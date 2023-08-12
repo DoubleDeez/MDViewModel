@@ -26,6 +26,9 @@ public:
 	virtual bool IncludeParentNodeContextMenu() const override { return true; }
 
 	virtual bool IsNodePure() const override { return bIsPureGet; }
+
+	UEdGraphPin* GetTruePin() const;
+	UEdGraphPin* GetFalsePin() const;
 	
 	virtual ERedirectType DoPinsMatchForReconstruction(const UEdGraphPin* NewPin, int32 NewPinIndex, const UEdGraphPin* OldPin, int32 OldPinIndex) const override;
 
