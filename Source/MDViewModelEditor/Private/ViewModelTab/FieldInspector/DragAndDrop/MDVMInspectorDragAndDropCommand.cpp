@@ -27,7 +27,7 @@ UEdGraphNode* FMDVMInspectorDragAndDropCommand::CreateNodeOnDrop(UEdGraph& Graph
 		EK2NewNodeFlags::SelectNewNode,
 		[&](UMDVMNode_CallCommand* NewInstance)
 		{
-			NewInstance->InitializeViewModelCommandParams(VMAssignment, FunctionPtr.Get());
+			NewInstance->InitializeViewModelFunctionParams(VMAssignment, FunctionPtr.Get());
 		}
 	);
 }
