@@ -205,6 +205,19 @@ void UMDVMNode_GetViewModel::SetDefaultAssignment(const FMDViewModelAssignmentRe
 	}
 }
 
+void UMDVMNode_GetViewModel::SetIsPureGet(bool InIsPure)
+{
+	if (bIsPureGet != InIsPure)
+	{
+		bIsPureGet = InIsPure;
+
+		if (Pins.Num() > 0)
+		{
+			ReconstructNode();
+		}
+	}
+}
+
 void UMDVMNode_GetViewModel::UpdateReturnPin() const
 {
 	// Change the return pin's class to the assigned view model class
@@ -230,10 +243,5 @@ void UMDVMNode_GetViewModel::TogglePurity()
 	const FScopedTransaction Transaction( bIsPureGet ? INVTEXT("Convert to Impure Node") : INVTEXT("Convert to Pure Node") );
 	Modify();
 
-	bIsPureGet = !bIsPureGet;
-
-	if (Pins.Num() > 0)
-	{
-		ReconstructNode();
-	}
+	SetIsPureGet(!bIsPureGet);
 }

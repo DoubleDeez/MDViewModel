@@ -36,6 +36,8 @@ public:
 
 	void SetDefaultAssignment(const FMDViewModelAssignmentReference& Assignment);
 
+	void SetIsPureGet(bool InIsPure);
+
 private:
 	void UpdateReturnPin() const;
 	void TogglePurity();

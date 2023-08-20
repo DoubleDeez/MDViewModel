@@ -1,13 +1,16 @@
 #pragma once
 #include "MDViewModelDebugLineItemBase.h"
 
+class FMDVMInspectorDragAndDropActionBase;
+
 class FMDViewModelFunctionDebugLineItem : public FMDViewModelDebugLineItemBase
 {
 public:
-	FMDViewModelFunctionDebugLineItem(const UFunction* Function, const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, bool bIsCommand, bool bIsFieldNotify = false, UWidgetBlueprint* WidgetBP = nullptr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
+	FMDViewModelFunctionDebugLineItem(const UFunction* Function, const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, bool bIsCommand, bool bIsGetter, bool bIsFieldNotify = false, UWidgetBlueprint* WidgetBP = nullptr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
 		: FMDViewModelDebugLineItemBase(DisplayName, Description, DebugViewModel, bIsFieldNotify, WidgetBP, ViewModelClass, ViewModelName)
 		, FunctionPtr(Function)
 		, bIsCommand(bIsCommand)
+		, bIsGetter(bIsGetter)
 	{
 	}
 
@@ -30,6 +33,8 @@ public:
 
 	virtual TSharedRef<SWidget> GenerateValueWidget(TSharedPtr<FString> InSearchString) override;
 
+	TSharedRef<FMDVMInspectorDragAndDropActionBase> CreateDragAndDropAction() const;
+
 	void UpdateIsDebugging(bool InIsDebugging);
 	
 	const UFunction* GetFunction() const { return FunctionPtr.Get(); }
@@ -47,5 +52,6 @@ private:
 	TWeakObjectPtr<const UFunction> FunctionPtr;
 	bool bIsDebugging = false;
 	bool bIsCommand = false;
+	bool bIsGetter = false;
 };
 

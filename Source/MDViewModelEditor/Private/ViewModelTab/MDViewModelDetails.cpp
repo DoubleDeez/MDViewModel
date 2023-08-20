@@ -25,7 +25,7 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs)
 				[
 					SNew(STextBlock)
 					.Text(INVTEXT("View Model Properties"))
-					.ToolTipText(INVTEXT("Blueprint accessible properties from the selected view model. Properties marked with FieldNotify can be bound to."))
+					.ToolTipText(INVTEXT("Blueprint accessible properties and getters from the selected view model. Properties marked with FieldNotify can be bound to."))
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
 				]
 			]
@@ -37,7 +37,7 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs)
 				.bIncludeBlueprintVisibleProperties(true)
 				.bIncludeBlueprintAssignableProperties(false)
 				.bIncludeBlueprintCallable(false)
-				.bIncludeBlueprintPure(false)
+				.bIncludeBlueprintPure(true)
 				.bIncludeFieldNotifyFunctions(true)
 			]
 		]

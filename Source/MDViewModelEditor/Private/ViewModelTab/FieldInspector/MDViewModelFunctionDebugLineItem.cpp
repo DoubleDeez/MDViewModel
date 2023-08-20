@@ -3,6 +3,8 @@
 #include "EdGraphSchema_K2.h"
 #include "Util/MDViewModelGraphStatics.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMDragAndDropWrapperButton.h"
+#include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropCommand.h"
+#include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropGetter.h"
 #include "ViewModelTab/FieldInspector/MDViewModelFieldDebugLineItem.h"
 #include "WidgetBlueprint.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
@@ -26,7 +28,7 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GetNameIcon()
 		}
 		
 		return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFunctionDebugLineItem>(AsShared()))
-			.bCanDrag(bIsCommand)
+			.bCanDrag(bIsCommand || bIsGetter)
 			[
 				SNew(SImage)
 				.Image(FAppStyle::Get().GetBrush(TEXT("GraphEditor.Function_16x")))
@@ -41,7 +43,7 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GetNameIcon()
 TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GenerateNameWidget(TSharedPtr<FString> InSearchString)
 {
 	return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFunctionDebugLineItem>(AsShared()))
-		.bCanDrag(bIsCommand)
+		.bCanDrag(bIsCommand || bIsGetter)
 		[
 			FMDViewModelDebugLineItemBase::GenerateNameWidget(InSearchString)
 		];
@@ -50,7 +52,7 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GenerateNameWidget(TShare
 TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GenerateValueWidget(TSharedPtr<FString> InSearchString)
 {
 	return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFunctionDebugLineItem>(AsShared()))
-		.bCanDrag(bIsCommand)
+		.bCanDrag(bIsCommand || bIsGetter)
 		[
 			SNew(SWidgetSwitcher)
 			.WidgetIndex(this, &FMDViewModelFunctionDebugLineItem::GetShouldDisplayFieldNotifyIndex)
@@ -87,6 +89,26 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GenerateValueWidget(TShar
 		];	
 }
 
+TSharedRef<FMDVMInspectorDragAndDropActionBase> FMDViewModelFunctionDebugLineItem::CreateDragAndDropAction() const
+{
+	check(bIsCommand || bIsGetter);
+
+	if (bIsCommand)
+	{
+		return FMDVMInspectorDragAndDropCommand::Create(
+			GetFunction(),
+			GetViewModelAssignmentReference()
+		);
+	}
+	else /*if (bIsGetter)*/
+	{
+		return FMDVMInspectorDragAndDropGetter::Create(
+			GetFunction(),
+			GetViewModelAssignmentReference()
+		);
+	}
+}
+
 void FMDViewModelFunctionDebugLineItem::UpdateIsDebugging(bool InIsDebugging)
 {
 	bIsDebugging = InIsDebugging;
@@ -116,7 +138,7 @@ void FMDViewModelFunctionDebugLineItem::UpdateCachedChildren() const
 
 FDebugLineItem* FMDViewModelFunctionDebugLineItem::Duplicate() const
 {
-	return new FMDViewModelFunctionDebugLineItem(FunctionPtr.Get(), DisplayName, Description, DebugViewModel, bIsCommand, bIsFieldNotify, WidgetBP.Get(), ViewModelClass, ViewModelName);
+	return new FMDViewModelFunctionDebugLineItem(FunctionPtr.Get(), DisplayName, Description, DebugViewModel, bIsCommand, bIsGetter, bIsFieldNotify, WidgetBP.Get(), ViewModelClass, ViewModelName);
 }
 
 int32 FMDViewModelFunctionDebugLineItem::GetShouldDisplayFieldNotifyIndex() const

@@ -15,8 +15,12 @@ class MDVIEWMODELGRAPH_API UMDVMNode_CallFunctionBase : public UK2Node_CallFunct
 public:
 	virtual void GetMenuActions(FBlueprintActionDatabaseRegistrar& InActionRegistrar) const override;
 	virtual bool IsActionFilteredOut(const FBlueprintActionFilter& Filter) override;
+	virtual void GetNodeContextMenuActions(UToolMenu* Menu, UGraphNodeContextMenuContext* Context) const override;
+	virtual bool IncludeParentNodeContextMenu() const override { return true; }
 
 	virtual void AllocateDefaultPins() override;
+
+	virtual bool IsNodePure() const override { return bIsSetPure; }
 	
 	virtual void GetPinHoverText(const UEdGraphPin& Pin, FString& HoverTextOut) const override;
 
@@ -31,13 +35,19 @@ public:
 
 protected:
 	virtual bool IsFunctionValidForNode(const UFunction& Func) const { return false; }
+	virtual bool CanTogglePurity() const;
 
 	virtual UBlueprintNodeSpawner* CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const UFunction* Function, const UWidgetBlueprint* WidgetBP) const { return nullptr;}
 	
 private:
+	void TogglePurity();
+	
 	UPROPERTY()
 	FMDViewModelAssignmentReference Assignment;
 
 	UPROPERTY()
 	TWeakObjectPtr<const UWidgetBlueprint> ExpectedWidgetBP;
+
+	UPROPERTY()
+	bool bIsSetPure = false;
 };

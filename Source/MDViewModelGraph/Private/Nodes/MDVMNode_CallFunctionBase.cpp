@@ -4,6 +4,9 @@
 #include "KismetCompiler.h"
 #include "Nodes/MDViewModelNodeSpawner.h"
 #include "Nodes/MDVMNode_GetViewModel.h"
+#include "ScopedTransaction.h"
+#include "ToolMenu.h"
+#include "ToolMenuSection.h"
 #include "Util/MDViewModelAssignment.h"
 #include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelGraphStatics.h"
@@ -83,20 +86,56 @@ bool UMDVMNode_CallFunctionBase::IsActionFilteredOut(const FBlueprintActionFilte
 	return Super::IsActionFilteredOut(Filter);
 }
 
+void UMDVMNode_CallFunctionBase::GetNodeContextMenuActions(UToolMenu* Menu, UGraphNodeContextMenuContext* Context) const
+{
+	Super::GetNodeContextMenuActions(Menu, Context);
+
+	if (CanTogglePurity())
+	{
+		FToolMenuSection& Section = Menu->AddSection("MDVMCallFunction", INVTEXT("View Model"));
+		Section.AddMenuEntry(
+			"TogglePurity",
+			bIsSetPure ? INVTEXT("Convert to Validated Node") : INVTEXT("Convert to Pure Node"),
+			bIsSetPure ? INVTEXT("Exposes exec pins to handle if the view model is null") : INVTEXT("Convert to Pure Node without validation"),
+			FSlateIcon(),
+			FUIAction(
+			FExecuteAction::CreateUObject(const_cast<UMDVMNode_CallFunctionBase*>(this), &UMDVMNode_CallFunctionBase::TogglePurity),
+			FCanExecuteAction::CreateLambda([bCanTogglePurity = !Context->bIsDebugging](){ return bCanTogglePurity; }),
+			FIsActionChecked()
+			)
+		);
+	}
+}
+
 void UMDVMNode_CallFunctionBase::AllocateDefaultPins()
 {
+	EFunctionFlags OriginalFlags = FUNC_None;
+	UFunction* Func = GetTargetFunction();
+	if (Func != nullptr)
+	{
+		OriginalFlags = Func->FunctionFlags;
+		bIsSetPure ? (Func->FunctionFlags |= FUNC_BlueprintPure) : (Func->FunctionFlags &= ~FUNC_BlueprintPure);
+	}
+	
 	Super::AllocateDefaultPins();
 
-	// TODO - if !pure
-	UEdGraphPin* InvalidVMPin = CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, TEXT("InvalidVM"));
-	InvalidVMPin->PinFriendlyName = INVTEXT("Invalid View Model");
-	InvalidVMPin->PinToolTip = TEXT("Use this pin to handle calling the command when the view model is null.");
+	if (!IsNodePure())
+	{
+		UEdGraphPin* InvalidVMPin = CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, TEXT("InvalidVM"));
+		InvalidVMPin->PinFriendlyName = INVTEXT("Invalid View Model");
+		InvalidVMPin->PinToolTip = TEXT("Use this pin to handle calling the command when the view model is null.");
+	}
 
 	// Always hide the self pin, it's going to come from our auto-generated GetViewModel node in ExpandNode
 	const UEdGraphSchema_K2* Schema = GetDefault<UEdGraphSchema_K2>();
 	if (UEdGraphPin* SelfPin = Schema->FindSelfPin(*this, EGPD_Input))
 	{
 		SelfPin->bHidden = true;	
+	}
+	
+	if (Func != nullptr)
+	{
+		Func->FunctionFlags = OriginalFlags;
 	}
 }
 
@@ -146,9 +185,13 @@ void UMDVMNode_CallFunctionBase::ExpandNode(FKismetCompilerContext& CompilerCont
 
 		// GetViewModel
 		UMDVMNode_GetViewModel* GetViewModelNode = CompilerContext.SpawnIntermediateNode<UMDVMNode_GetViewModel>(this, SourceGraph);
+		GetViewModelNode->SetIsPureGet(IsNodePure());
 		GetViewModelNode->AllocateDefaultPins();
 		GetViewModelNode->SetDefaultAssignment(Assignment);
-
+		
+		const EFunctionFlags OriginalFlags = Function->FunctionFlags;
+		bIsSetPure ? (Function->FunctionFlags |= FUNC_BlueprintPure) : (Function->FunctionFlags &= ~FUNC_BlueprintPure);
+		
 		// CallFunction
 		UK2Node_CallFunction* CallFuncNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
 		CallFuncNode->SetFromFunction(Function);
@@ -159,10 +202,14 @@ void UMDVMNode_CallFunctionBase::ExpandNode(FKismetCompilerContext& CompilerCont
 		UEdGraphPin* CallFuncSelfPin = Schema->FindSelfPin(*CallFuncNode, EGPD_Input);
 		GetViewModelReturnValuePin->MakeLinkTo(CallFuncSelfPin);
 
-		// Connect Branch True pin to CallFunction exec pin
-		UEdGraphPin* GetViewModelTruePin = GetViewModelNode->GetTruePin();
-		UEdGraphPin* CallFuncExecInPin = Schema->FindExecutionPin(*CallFuncNode, EGPD_Input);
-		GetViewModelTruePin->MakeLinkTo(CallFuncExecInPin);
+		// Perform Exec connections
+		if (!IsNodePure())
+		{
+			// Connect GetViewModel True pin to function Exec input
+			UEdGraphPin* GetViewModelTruePin = GetViewModelNode->GetTruePin();
+			UEdGraphPin* CallFuncExecInPin = Schema->FindExecutionPin(*CallFuncNode, EGPD_Input);
+			GetViewModelTruePin->MakeLinkTo(CallFuncExecInPin);
+		}
 
 		// Copy over all other connections
 		const UEdGraphPin* SelfPin = Schema->FindSelfPin(*this, EGPD_Input);
@@ -197,12 +244,36 @@ void UMDVMNode_CallFunctionBase::ExpandNode(FKismetCompilerContext& CompilerCont
 		}
 		
 		BreakAllNodeLinks();
+	
+		if (Function != nullptr)
+		{
+			Function->FunctionFlags = OriginalFlags;
+		}
 	}
 }
 
 void UMDVMNode_CallFunctionBase::ValidateNodeDuringCompilation(FCompilerResultsLog& MessageLog) const
 {
+	EFunctionFlags OriginalFlags = FUNC_None;
+	UFunction* Func = GetTargetFunction();
+	if (Func != nullptr)
+	{
+		if (!IsFunctionValidForNode(*Func))
+		{
+			static constexpr TCHAR ErrorFormat[] = TEXT("Node [@@] has incompatible function (%s) and must be deleted.");
+			MessageLog.Error(*FString::Printf(ErrorFormat, *Func->GetName()), this);
+		}
+		
+		OriginalFlags = Func->FunctionFlags;
+		bIsSetPure ? (Func->FunctionFlags |= FUNC_BlueprintPure) : (Func->FunctionFlags &= ~FUNC_BlueprintPure);
+	}
+	
 	Super::ValidateNodeDuringCompilation(MessageLog);
+	
+	if (Func != nullptr)
+	{
+		Func->FunctionFlags = OriginalFlags;
+	}
 
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
 	FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(Cast<UWidgetBlueprint>(GetBlueprint()), Assignments);
@@ -230,4 +301,29 @@ void UMDVMNode_CallFunctionBase::InitializeViewModelFunctionParams(const FMDView
 	SetFromFunction(Function);
 	Assignment = VMAssignment;
 	ExpectedWidgetBP = WidgetBP;
+	bIsSetPure = bIsPureFunc;
+}
+
+bool UMDVMNode_CallFunctionBase::CanTogglePurity() const
+{
+	if (const UFunction* Func = GetTargetFunction())
+	{
+		return Func->HasAllFunctionFlags(FUNC_BlueprintPure);
+	}
+
+	return false;
+}
+
+void UMDVMNode_CallFunctionBase::TogglePurity()
+{
+	const FScopedTransaction Transaction(bIsSetPure ? INVTEXT("Convert to Validated Node") : INVTEXT("Convert to Pure Node"));
+	Modify();
+
+	
+	bIsSetPure = !bIsSetPure;
+
+	if (Pins.Num() > 0)
+	{
+		ReconstructNode();
+	}
 }

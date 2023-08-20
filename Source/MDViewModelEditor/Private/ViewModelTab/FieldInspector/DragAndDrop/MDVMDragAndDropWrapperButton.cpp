@@ -1,6 +1,6 @@
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMDragAndDropWrapperButton.h"
 
-#include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropCommand.h"
+#include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropActionBase.h"
 #include "ViewModelTab/FieldInspector/MDViewModelFunctionDebugLineItem.h"
 
 void SMDVMDragAndDropWrapperButton::Construct(const FArguments& InArgs, TSharedRef<FMDViewModelFunctionDebugLineItem> Parent)
@@ -45,12 +45,7 @@ FReply SMDVMDragAndDropWrapperButton::OnDragDetected(const FGeometry& MyGeometry
 {
 	if (bCanDrag.Get(false) && FunctionItem.IsValid())
 	{
-		const TSharedRef<FMDVMInspectorDragAndDropCommand> Action = FMDVMInspectorDragAndDropCommand::Create(
-			FunctionItem->GetFunction(),
-			FunctionItem->GetViewModelAssignmentReference()
-		);
-			
-		return FReply::Handled().BeginDragDrop(Action);
+		return FReply::Handled().BeginDragDrop(FunctionItem->CreateDragAndDropAction());
 	}
 
 	return FReply::Unhandled();

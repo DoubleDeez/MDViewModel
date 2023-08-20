@@ -126,22 +126,27 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 				continue;
 			}
 
+			bool bIsCommand = false;
+			bool bIsGetter = false;
 			const bool bIsFieldNotify = FieldNotifySupportedNames.Contains(Func->GetFName());
 			const bool bShouldAddFunction = [&]()
 			{
 				if (bIncludeFieldNotifyFunctions && bIsFieldNotify)
 				{
+					bIsGetter = true;
 					return true;
 				}
 
 				const bool bIsPure = Func->HasAnyFunctionFlags(FUNC_BlueprintPure);
-				if (bIncludeBlueprintPure && bIsPure)
+				if (bIncludeBlueprintPure && bIsPure && Func->GetReturnProperty() != nullptr && Func->NumParms == 1)
 				{
+					bIsGetter = true;
 					return true;
 				}
 
 				if (!bIsPure && bIncludeBlueprintCallable && Func->HasAnyFunctionFlags(FUNC_BlueprintCallable) && !Func->HasAnyFunctionFlags(FUNC_Static))
 				{
+					bIsCommand = true;
 					return true;
 				}
 
@@ -153,7 +158,7 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 				TSharedPtr<FMDViewModelFunctionDebugLineItem>& Item = FunctionTreeItems.FindOrAdd(Func);
 				if (!Item.IsValid())
 				{
-					Item = MakeShared<FMDViewModelFunctionDebugLineItem>(Func, Func->GetDisplayNameText(), Func->GetToolTipText(), DebugViewModel, !bIsFieldNotify, bIsFieldNotify, WidgetBPPtr.Get(), ViewModelClass, ViewModelName);
+					Item = MakeShared<FMDViewModelFunctionDebugLineItem>(Func, Func->GetDisplayNameText(), Func->GetToolTipText(), DebugViewModel, bIsCommand, bIsGetter, bIsFieldNotify, WidgetBPPtr.Get(), ViewModelClass, ViewModelName);
 				}
 				else
 				{
