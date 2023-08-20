@@ -185,6 +185,9 @@ private:
 	UPROPERTY(Transient)
 	FInstancedStruct CachedViewModelSettings;
 
+	UPROPERTY(Transient)
+	bool bIsInitialized = false;
+
 	UE::FieldNotification::FFieldMulticastDelegate FieldNotifyDelegates;
 	TBitArray<> EnabledFieldNotifications;
 };

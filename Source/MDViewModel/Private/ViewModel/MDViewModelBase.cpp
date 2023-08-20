@@ -6,6 +6,11 @@
 
 void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject, const UObject* WorldContext)
 {
+	if (!ensureAlwaysMsgf(!bIsInitialized, TEXT("View Model [%s] is already initialized but InitializeViewModelWithContext is being called again."), *GetName()))
+	{
+		return;
+	}
+	
 	WorldContextObjectPtr = WorldContext;
 	CachedViewModelSettings = ViewModelSettings;
 	ContextObject = RedirectContextObject(InContextObject);
@@ -13,6 +18,8 @@ void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& Vi
 	ensureAlwaysMsgf(IsValid(GetWorld()), TEXT("View Model [%s]'s WorldContext [%s] and ContextObject [%s] could not reach the world. Either the World Context Object or the Context Object are expected to have a valid GetWorld() result."), *GetName(), *GetNameSafe(WorldContextObjectPtr.Get()), *GetNameSafe(GetContextObject()));
 	
 	InitializeViewModel();
+
+	bIsInitialized = true;
 }
 
 void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, const UObject* InContextObject, const UObject* WorldContext)
