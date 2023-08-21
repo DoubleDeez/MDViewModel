@@ -1,32 +1,21 @@
 #pragma once
 
-#include "K2Node_Event.h"
+#include "MDVMNode_DynamicBindingBase.h"
 #include "MDVMNode_ViewModelChanged.generated.h"
-
-class UMDViewModelBase;
 
 /**
  * Custom node for binding to view models changing
  */
 UCLASS()
-class MDVIEWMODELGRAPH_API UMDVMNode_ViewModelChanged : public UK2Node_Event
+class MDVIEWMODELGRAPH_API UMDVMNode_ViewModelChanged : public UMDVMNode_DynamicBindingBase
 {
 	GENERATED_BODY()
 
 public:
-	// Class of the view model we're binding to
-	UPROPERTY()
-	TSubclassOf<UMDViewModelBase> ViewModelClass;
-
-	// Name of the view model we're binding to
-	UPROPERTY()
-	FName ViewModelName = NAME_None;
-
 	// Name of the function that we're binding to
 	UPROPERTY()
 	FName FunctionNameToBind = NAME_None;
-
-
+	
 	//~ Begin UObject Interface
 	virtual bool Modify(bool bAlwaysMarkDirty = true) override;
 	//~ End UObject Interface
@@ -48,7 +37,4 @@ public:
 	//~ End K2Node Interface
 
 	void InitializeViewModelChangedParams(TSubclassOf<UMDViewModelBase> InViewModelClass, const FName& InViewModelName);
-
-private:
-	FNodeTextCache CachedNodeTitle;
 };

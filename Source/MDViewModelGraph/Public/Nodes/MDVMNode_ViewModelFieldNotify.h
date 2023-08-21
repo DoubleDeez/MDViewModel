@@ -1,27 +1,17 @@
 #pragma once
 
-#include "K2Node_Event.h"
+#include "MDVMNode_DynamicBindingBase.h"
 #include "MDVMNode_ViewModelFieldNotify.generated.h"
-
-class UMDViewModelBase;
 
 /**
  * Custom node for binding to Field Notify properties/functions on View Models
  */
 UCLASS()
-class MDVIEWMODELGRAPH_API UMDVMNode_ViewModelFieldNotify : public UK2Node_Event
+class MDVIEWMODELGRAPH_API UMDVMNode_ViewModelFieldNotify : public UMDVMNode_DynamicBindingBase
 {
 	GENERATED_BODY()
 
 public:
-	// Class of the view model we're binding to
-	UPROPERTY()
-	TSubclassOf<UMDViewModelBase> ViewModelClass;
-
-	// Name of the view model we're binding to
-	UPROPERTY()
-	FName ViewModelName = NAME_None;
-
 	// Name of the field notify property/function on the viewmodel we're going to bind to
 	UPROPERTY()
 	FName FieldNotifyName = NAME_None;
@@ -29,7 +19,6 @@ public:
 	// Name of the function that we're binding to the delegate
 	UPROPERTY()
 	FName FunctionNameToBind = NAME_None;
-
 
 	//~ Begin UObject Interface
 	virtual bool Modify(bool bAlwaysMarkDirty = true) override;
@@ -67,6 +56,4 @@ public:
 private:
 	UPROPERTY()
 	FMemberReference FieldNotifyReference;
-
-	FNodeTextCache CachedNodeTitle;
 };

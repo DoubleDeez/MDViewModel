@@ -49,6 +49,8 @@ void UMDViewModelWidgetBlueprintExtension::UpdateAssignment(const FMDViewModelEd
 		FMDViewModelEditorAssignment NewAssignment = Assignments[AssignmentIndex];
 		Assignments.RemoveAt(AssignmentIndex);
 
+		const FName OldName = NewAssignment.Assignment.ViewModelName;
+
 		// The class isn't allowed to change, so copy everything else
 		NewAssignment.Assignment.ProviderTag = UpdatedAssignment.Assignment.ProviderTag;
 		NewAssignment.Assignment.ViewModelName = UpdatedAssignment.Assignment.ViewModelName;
@@ -57,6 +59,11 @@ void UMDViewModelWidgetBlueprintExtension::UpdateAssignment(const FMDViewModelEd
 
 		Assignments.Insert(NewAssignment, AssignmentIndex);
 
+		if (OldName != NewAssignment.Assignment.ViewModelName)
+		{
+			OnAssignmentNameChanged.Broadcast(NewAssignment.Assignment.ViewModelClass, OldName, NewAssignment.Assignment.ViewModelName);
+		}
+		
 		OnAssignmentsChanged.Broadcast();
 
 		FBlueprintEditorUtils::MarkBlueprintAsModified(GetWidgetBlueprint());
