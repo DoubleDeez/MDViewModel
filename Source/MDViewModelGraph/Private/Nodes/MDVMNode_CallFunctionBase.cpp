@@ -1,6 +1,7 @@
 #include "Nodes/MDVMNode_CallFunctionBase.h"
 
 #include "BlueprintActionDatabaseRegistrar.h"
+#include "Kismet2/BlueprintEditorUtils.h"
 #include "KismetCompiler.h"
 #include "Nodes/MDViewModelNodeSpawner.h"
 #include "Nodes/MDVMNode_GetViewModel.h"
@@ -12,6 +13,14 @@
 #include "Util/MDViewModelGraphStatics.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetBlueprint.h"
+#include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
+
+void UMDVMNode_CallFunctionBase::BeginDestroy()
+{
+	UnbindAssignmentNameChanged();
+	
+	Super::BeginDestroy();
+}
 
 void UMDVMNode_CallFunctionBase::GetMenuActions(FBlueprintActionDatabaseRegistrar& InActionRegistrar) const
 {
@@ -105,6 +114,13 @@ void UMDVMNode_CallFunctionBase::GetNodeContextMenuActions(UToolMenu* Menu, UGra
 			)
 		);
 	}
+}
+
+void UMDVMNode_CallFunctionBase::ReconstructNode()
+{
+	Super::ReconstructNode();
+
+	BindAssignmentNameChanged();
 }
 
 void UMDVMNode_CallFunctionBase::AllocateDefaultPins()
@@ -312,6 +328,40 @@ bool UMDVMNode_CallFunctionBase::CanTogglePurity() const
 	}
 
 	return false;
+}
+
+void UMDVMNode_CallFunctionBase::BindAssignmentNameChanged()
+{
+	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(FBlueprintEditorUtils::FindBlueprintForNode(this)))
+	{
+		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
+		{
+			if (!VMExtension->OnAssignmentNameChanged.IsBoundToObject(this))
+			{
+				VMExtension->OnAssignmentNameChanged.AddUObject(this, &UMDVMNode_CallFunctionBase::OnAssignmentNameChanged);
+			}
+		}
+	}
+}
+
+void UMDVMNode_CallFunctionBase::OnAssignmentNameChanged(TSubclassOf<UMDViewModelBase> VMClass, const FName& OldName, const FName& NewName)
+{
+	if (Assignment.ViewModelClass.Get() == VMClass && Assignment.ViewModelName == OldName)
+	{
+		Modify();
+		Assignment.ViewModelName = NewName;
+	}
+}
+
+void UMDVMNode_CallFunctionBase::UnbindAssignmentNameChanged()
+{
+	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(FBlueprintEditorUtils::FindBlueprintForNode(this)))
+	{
+		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
+		{
+			VMExtension->OnAssignmentNameChanged.RemoveAll(this);
+		}
+	}
 }
 
 void UMDVMNode_CallFunctionBase::TogglePurity()
