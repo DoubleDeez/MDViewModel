@@ -47,6 +47,7 @@ public:
 
 #if WITH_EDITOR
 	virtual void GetSupportedViewModelClasses(TArray<FMDViewModelSupportedClass>& OutViewModelClasses);
+	virtual bool DoesSupportAbstractViewModelClasses() const { return false; }
 	virtual FText GetDisplayName() const  { PURE_VIRTUAL(UMDViewModelProviderBase::GetDisplayName, return FText::GetEmpty();) }
 	virtual FText GetDescription() const  { PURE_VIRTUAL(UMDViewModelProviderBase::GetDescription, return FText::GetEmpty();) }
 

@@ -1,5 +1,6 @@
 #include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
 
+#include "EdGraphSchema_K2.h"
 #include "UObject/UObjectIterator.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"

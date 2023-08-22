@@ -37,15 +37,22 @@ public:
 		if (IsValid(Provider))
 		{
 			Provider->GetSupportedViewModelClasses(ProviderSupportedViewModelClasses);
+			bAllowAbstract = Provider->DoesSupportAbstractViewModelClasses();
 		}
 	}
 
+	bool bAllowAbstract = false;
 	TArray<FMDViewModelSupportedClass> ProviderSupportedViewModelClasses;
 
 	virtual bool IsClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const UClass* InClass, TSharedRef< class FClassViewerFilterFuncs > InFilterFuncs ) override
 	{
-		const bool bHasValidFlags = !InClass->HasAnyClassFlags(CLASS_Abstract | CLASS_Hidden | CLASS_HideDropDown | CLASS_Deprecated);
-		if (bHasValidFlags)
+		if (InClass == UMDViewModelBase::StaticClass())
+		{
+			return false;
+		}
+		
+		const bool bHasValidFlags = !InClass->HasAnyClassFlags(CLASS_Hidden | CLASS_HideDropDown | CLASS_Deprecated);
+		if (bHasValidFlags && (bAllowAbstract || !InClass->HasAnyClassFlags(CLASS_Abstract)))
 		{
 			for (const FMDViewModelSupportedClass& SupportedClass : ProviderSupportedViewModelClasses)
 			{
@@ -61,8 +68,8 @@ public:
 
 	virtual bool IsUnloadedClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const TSharedRef< const class IUnloadedBlueprintData > InUnloadedClassData, TSharedRef< class FClassViewerFilterFuncs > InFilterFuncs) override
 	{
-		const bool bHasValidFlags = !InUnloadedClassData->HasAnyClassFlags(CLASS_Abstract | CLASS_Hidden | CLASS_HideDropDown | CLASS_Deprecated);
-		if (bHasValidFlags)
+		const bool bHasValidFlags = !InUnloadedClassData->HasAnyClassFlags(CLASS_Hidden | CLASS_HideDropDown | CLASS_Deprecated);
+		if (bHasValidFlags && (bAllowAbstract || !InUnloadedClassData->HasAnyClassFlags(CLASS_Abstract)))
 		{
 			for (const FMDViewModelSupportedClass& SupportedClass : ProviderSupportedViewModelClasses)
 			{
@@ -165,7 +172,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 		{
 			Provider->OnProviderSettingsInitializedInEditor(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint(), Assignment);
 
-			DetailBuilder.EditDefaultProperty(ViewModelClassHandle)->CustomWidget()
+			FDetailWidgetRow& VMClassWidget = DetailBuilder.EditDefaultProperty(ViewModelClassHandle)->CustomWidget()
 			.NameContent()
 			[
 				ViewModelClassHandle->CreatePropertyNameWidget()
@@ -179,6 +186,11 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 				.Text(this, &FMDViewModelAssignmentEditorObjectCustomization::GetSelectedClassText)
 				.ToolTipText(this, &FMDViewModelAssignmentEditorObjectCustomization::GetSelectedClassToolTipText)
 			];
+
+			if (bIsEditMode)
+			{
+				VMClassWidget.OverrideResetToDefault(HideResetToDefault);
+			}
 
 			TArray<FText> ProviderIssues;
 			Provider->ValidateProviderSettings(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint(), Assignment, ProviderIssues);
