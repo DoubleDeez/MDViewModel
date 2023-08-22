@@ -72,6 +72,12 @@ UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModel(UMDViewModelBase* Vi
 		}
 #endif
 		
+		UE_LOGFMT(LogMDViewModel, Verbose, "Setting View Model to [{VMInstance}] named [{VMName}] of class [{VMClass}] on Widget [{WidgetName}] (Was [{CurrentVM}])",
+			("VMInstance", ViewModel->GetPathName()),
+			("VMName", ViewModelName),
+			("VMClass", ViewModelClass->GetPathName()),
+			("WidgetName", GetUserWidget()->GetPathName()),
+			("CurrentVM", GetPathNameSafe(GetViewModel(ViewModelClass, ViewModelName))));
 		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
 		if (ViewModelName != NAME_None)
 		{
@@ -95,6 +101,9 @@ UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModelOfClass(const UObject
 {
 	if (IsValid(ViewModelClass))
 	{
+		UE_LOGFMT(LogMDViewModel, Verbose, "Creating View Model of Class [{VMClassName}] for Widget [{WidgetName}]",
+			("VMClassName", ViewModelClass->GetPathName()),
+			("WidgetName", GetUserWidget()->GetPathName()));
 		UMDViewModelBase* ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), ViewModelClass);
 		if (IsValid(ViewModel))
 		{
@@ -125,6 +134,11 @@ void UMDViewModelWidgetExtension::ClearViewModel(TSubclassOf<UMDViewModelBase> V
 {
 	if (ViewModelClass != nullptr)
 	{
+		UE_LOGFMT(LogMDViewModel, Verbose, "Clearing View Model named [{VMName}] of Class [{VMClassName}] for Widget [{WidgetName}] (Was [{CurrentVM}])",
+			("VMName", ViewModelName),
+			("VMClassName", ViewModelClass->GetPathName()),
+			("WidgetName", GetUserWidget()->GetPathName()),
+			("CurrentVM", GetPathNameSafe(GetViewModel(ViewModelClass, ViewModelName))));
 		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
 		if (ViewModelName != NAME_None)
 		{
@@ -311,6 +325,9 @@ void UMDViewModelWidgetExtension::PopulateViewModels()
 	}
 #endif
 
+	UE_LOGFMT(LogMDViewModel, Verbose, "Populating View Models for Widget [{WidgetName}]",
+		("WidgetName", GetUserWidget()->GetPathName()));
+	
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
 	MDViewModelUtils::GetViewModelAssignmentsForWidgetClass(Widget->GetClass(), Assignments);
 
@@ -327,6 +344,9 @@ void UMDViewModelWidgetExtension::PopulateViewModels()
 
 void UMDViewModelWidgetExtension::CleanUpViewModels()
 {
+	UE_LOGFMT(LogMDViewModel, Verbose, "Cleaning up View Models for Widget [{WidgetName}]",
+		("WidgetName", GetUserWidget()->GetPathName()));
+	
 	// Broadcast out that we're null-ing out viewmodels
 	{
 		for (auto It = OnViewModelSetDelegates.CreateConstIterator(); It; ++It)

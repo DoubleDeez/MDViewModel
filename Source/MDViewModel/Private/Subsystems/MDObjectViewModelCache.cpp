@@ -14,6 +14,11 @@ void FMDObjectViewModelCache::HandleObjectDestroyed()
 	BroadcastShutdown();
 }
 
+FString FMDObjectViewModelCache::GetCacheDebugName() const
+{
+	return FString::Printf(TEXT("Object Cache (%s)"), *GetPathNameSafe(Object.Get()));
+}
+
 UMDObjectViewModelCacheSystem* UMDObjectViewModelCacheSystem::Get(const UObject* WorldContextObject)
 {
 	const UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull);

@@ -17,6 +17,8 @@ protected:
 	virtual UObject* GetViewModelOwner() const override { return Object.Get(); }
 
 	virtual TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& GetViewModelCache() override { return CachedViewModels; }
+	
+	virtual FString GetCacheDebugName() const override;
 
 private:
 	TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>> CachedViewModels;

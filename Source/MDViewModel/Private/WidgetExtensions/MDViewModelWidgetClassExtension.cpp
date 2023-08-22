@@ -3,6 +3,8 @@
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
 #include "Launch/Resources/Version.h"
+#include "Logging/StructuredLog.h"
+#include "Util/MDViewModelLog.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetExtensions/MDViewModelWidgetExtension.h"
 
@@ -11,6 +13,8 @@ void UMDViewModelWidgetClassExtension::Initialize(UUserWidget* UserWidget)
 	Super::Initialize(UserWidget);
 
 	GatherParentAssignments(UserWidget->GetClass());
+
+	UE_LOGFMT(LogMDViewModel, Verbose, "Initializing View Model Extension for Widget [{WidgetName}]", UserWidget->GetPathName());
 
 	// ensure that we add the extension to the widget
 	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(UserWidget);

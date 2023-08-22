@@ -14,12 +14,14 @@
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerState.h"
 #include "GameplayTagAssetInterface.h"
+#include "Logging/StructuredLog.h"
 #include "Subsystems/MDGlobalViewModelCache.h"
 #include "Subsystems/MDLocalPlayerViewModelCache.h"
 #include "Subsystems/MDObjectViewModelCache.h"
 #include "Subsystems/MDWorldViewModelCache.h"
 #include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelFunctionLibrary.h"
+#include "Util/MDViewModelLog.h"
 #include "ViewModel/MDViewModelBase.h"
 
 #if WITH_EDITOR
@@ -145,6 +147,10 @@ UMDViewModelBase* UMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 	const FMDViewModelProvider_Cached_Settings* Settings = Data.ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
 	if (ensure(Settings != nullptr))
 	{
+		UE_LOGFMT(LogMDViewModel, Verbose, "Setting Cached View Model with Assignment [{Assignment}] with Lifetime [{Lifetime}] for Widget [{WidgetName}]",
+			("WidgetName", Widget.GetPathName()),
+			("Lifetime", Settings->GetLifetimeTag().GetTagName()),
+			("Assignment", Assignment));
 		IMDViewModelCacheInterface* ViewModelCache = ResolveAndBindViewModelCache(Widget, Assignment, Data, *Settings);
 		return SetViewModelFromCache(&Widget, ViewModelCache, Widget, Assignment, Data);
 	}

@@ -26,3 +26,5 @@ public:
 		return HashCombine(GetTypeHash(Key.ViewModelName), GetTypeHash(Key.ViewModelClass));
 	}
 };
+
+MDVIEWMODEL_API FCbWriter& operator<<(FCbWriter& Writer, const FMDViewModelInstanceKey& Key);

@@ -1,5 +1,6 @@
 ﻿#include "Interfaces/MDViewModelCacheInterface.h"
 
+#include "Logging/StructuredLog.h"
 #include "Util/MDViewModelInstanceKey.h"
 #include "Util/MDViewModelLog.h"
 #include "ViewModel/MDViewModelBase.h"
@@ -22,6 +23,9 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const UObject
 	TObjectPtr<UMDViewModelBase>& ViewModel = GetViewModelCache().FindOrAdd(Key);
 	if (!IsValid(ViewModel))
 	{
+		UE_LOGFMT(LogMDViewModel, Verbose, "Creating Cached View Model with Key [{Key}] on Cache [{CacheName}]",
+			("Key", Key),
+			("CacheName", GetCacheDebugName()));
 		ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), Key.ViewModelClass);
 		ViewModel->InitializeViewModelWithContext(ViewModelSettings, GetViewModelOwner(), WorldContextObject);
 	}
@@ -36,6 +40,13 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const UObject
 		UE_LOG(LogMDViewModel, Warning, TEXT("The cached view model [%s] has different view model settings than currently being requested:\r\nCached: %s\r\nRequested: %s"), *ViewModel->GetName(), *CachedSettingsString, *RequestedSettingsString);
 	}
 #endif
+	else
+	{
+		UE_LOGFMT(LogMDViewModel, Verbose, "Retrieving Cached View Model [{ViewModel}] with Key [{Key}] from Cache [{CacheName}]",
+			("ViewModel", ViewModel->GetName()),
+			("Key", Key),
+			("CacheName", GetCacheDebugName()));
+	}
 
 	return ViewModel;
 }
@@ -58,6 +69,8 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetViewModel(const FName& CachedVi
 
 void IMDViewModelCacheInterface::BroadcastShutdown()
 {
+	UE_LOGFMT(LogMDViewModel, Verbose, "Shutting down View Model Cache [{CacheName}]", ("CacheName", GetCacheDebugName()));
+	
 	bIsShutdown = true;
 
 	// Empty out the cache before we shutdown

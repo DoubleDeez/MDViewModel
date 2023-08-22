@@ -30,3 +30,8 @@ UObject* UMDLocalPlayerViewModelCache::GetViewModelOwner() const
 {
 	return GetLocalPlayer();
 }
+
+FString UMDLocalPlayerViewModelCache::GetCacheDebugName() const
+{
+	return FString::Printf(TEXT("Local Player Cached: (%s)"), *GetLocalPlayer()->GetNickname());
+}

@@ -35,3 +35,8 @@ UObject* UMDViewModelCacheComponent::GetViewModelOwner() const
 {
 	return GetOwner();
 }
+
+FString UMDViewModelCacheComponent::GetCacheDebugName() const
+{
+	return FString::Printf(TEXT("Actor Cache (%s)"), *GetNameSafe(GetOwner()));
+}

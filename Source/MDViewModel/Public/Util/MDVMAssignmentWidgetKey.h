@@ -22,3 +22,5 @@ inline uint32 GetTypeHash(const FMDVMAssignmentWidgetKey& Key)
 {
 	return HashCombine(GetTypeHash(Key.Assignment), GetTypeHash(Key.WidgetPtr));
 }
+
+MDVIEWMODEL_API FCbWriter& operator<<(FCbWriter& Writer, const FMDVMAssignmentWidgetKey& Key);

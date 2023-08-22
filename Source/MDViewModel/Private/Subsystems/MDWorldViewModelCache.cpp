@@ -30,3 +30,8 @@ UObject* UMDWorldViewModelCache::GetViewModelOwner() const
 {
 	return GetWorld();
 }
+
+FString UMDWorldViewModelCache::GetCacheDebugName() const
+{
+	return FString::Printf(TEXT("World Cache (%s)"), *GetWorld()->GetMapName());
+}

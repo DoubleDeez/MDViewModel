@@ -24,6 +24,7 @@ public:
 protected:
 	virtual UObject* GetViewModelOwner() const override;
 	virtual TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& GetViewModelCache() override { return CachedViewModels; }
+	virtual FString GetCacheDebugName() const override { return TEXT("Global Cache"); }
 
 private:
 	UPROPERTY(VisibleAnywhere, Transient, Category = "View Model")

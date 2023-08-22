@@ -34,7 +34,6 @@ public:
 	{
 		return !(*this == Other);
 	}
-
 };
 
 inline uint32 GetTypeHash(const FMDViewModelAssignment& Assignment)
@@ -43,3 +42,5 @@ inline uint32 GetTypeHash(const FMDViewModelAssignment& Assignment)
 		HashCombine(GetTypeHash(Assignment.ViewModelClass), GetTypeHash(Assignment.ProviderTag)),
 		GetTypeHash(Assignment.ViewModelName));
 }
+
+MDVIEWMODEL_API FCbWriter& operator<<(FCbWriter& Writer, const FMDViewModelAssignment& Assignment);

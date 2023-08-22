@@ -40,6 +40,8 @@ protected:
 
 	virtual TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& GetViewModelCache() = 0;
 
+	virtual FString GetCacheDebugName() const = 0;
+
 	virtual const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& GetViewModelCache() const;
 
 private:
