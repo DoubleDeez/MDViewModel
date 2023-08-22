@@ -180,17 +180,11 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 			.ValueContent()
 			[
 				SNew(SButton)
-				.IsEnabled(!bIsEditMode)
 				.ButtonStyle(&FAppStyle::Get().GetWidgetStyle<FComboButtonStyle>("ComboButton").ButtonStyle)
 				.OnClicked(this, &FMDViewModelAssignmentEditorObjectCustomization::OnClassPickerButtonClicked)
 				.Text(this, &FMDViewModelAssignmentEditorObjectCustomization::GetSelectedClassText)
 				.ToolTipText(this, &FMDViewModelAssignmentEditorObjectCustomization::GetSelectedClassToolTipText)
 			];
-
-			if (bIsEditMode)
-			{
-				VMClassWidget.OverrideResetToDefault(HideResetToDefault);
-			}
 
 			TArray<FText> ProviderIssues;
 			Provider->ValidateProviderSettings(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint(), Assignment, ProviderIssues);

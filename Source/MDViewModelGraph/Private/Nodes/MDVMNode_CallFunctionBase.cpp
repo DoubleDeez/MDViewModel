@@ -17,7 +17,7 @@
 
 void UMDVMNode_CallFunctionBase::BeginDestroy()
 {
-	UnbindAssignmentNameChanged();
+	UnbindAssignmentChanges();
 	
 	Super::BeginDestroy();
 }
@@ -116,15 +116,10 @@ void UMDVMNode_CallFunctionBase::GetNodeContextMenuActions(UToolMenu* Menu, UGra
 	}
 }
 
-void UMDVMNode_CallFunctionBase::ReconstructNode()
-{
-	Super::ReconstructNode();
-
-	BindAssignmentNameChanged();
-}
-
 void UMDVMNode_CallFunctionBase::AllocateDefaultPins()
 {
+	BindAssignmentChanges();
+	
 	EFunctionFlags OriginalFlags = FUNC_None;
 	UFunction* Func = GetTargetFunction();
 	if (Func != nullptr)
@@ -330,7 +325,7 @@ bool UMDVMNode_CallFunctionBase::CanTogglePurity() const
 	return false;
 }
 
-void UMDVMNode_CallFunctionBase::BindAssignmentNameChanged()
+void UMDVMNode_CallFunctionBase::BindAssignmentChanges()
 {
 	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(FBlueprintEditorUtils::FindBlueprintForNode(this)))
 	{
@@ -339,6 +334,11 @@ void UMDVMNode_CallFunctionBase::BindAssignmentNameChanged()
 			if (!VMExtension->OnAssignmentNameChanged.IsBoundToObject(this))
 			{
 				VMExtension->OnAssignmentNameChanged.AddUObject(this, &UMDVMNode_CallFunctionBase::OnAssignmentNameChanged);
+			}
+			
+			if (!VMExtension->OnAssignmentClassChanged.IsBoundToObject(this))
+			{
+				VMExtension->OnAssignmentClassChanged.AddUObject(this, &UMDVMNode_CallFunctionBase::OnAssignmentClassChanged);
 			}
 		}
 	}
@@ -353,13 +353,36 @@ void UMDVMNode_CallFunctionBase::OnAssignmentNameChanged(TSubclassOf<UMDViewMode
 	}
 }
 
-void UMDVMNode_CallFunctionBase::UnbindAssignmentNameChanged()
+void UMDVMNode_CallFunctionBase::OnAssignmentClassChanged(const FName& VMName, TSubclassOf<UMDViewModelBase> OldClass, TSubclassOf<UMDViewModelBase> NewClass)
+{
+	if (Assignment.ViewModelClass.Get() == OldClass && Assignment.ViewModelName == VMName)
+	{
+		Modify();
+		Assignment.ViewModelClass = NewClass;
+		const UFunction* NewFunc = NewClass->FindFunctionByName(FunctionReference.GetMemberName());
+		if (IsValid(NewFunc))
+		{
+			SetFromFunction(NewFunc);
+		}
+		else
+		{
+			FunctionReference = {};
+		}
+	}
+}
+
+void UMDVMNode_CallFunctionBase::UnbindAssignmentChanges()
 {
 	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(FBlueprintEditorUtils::FindBlueprintForNode(this)))
 	{
 		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
 		{
 			VMExtension->OnAssignmentNameChanged.RemoveAll(this);
+		}
+		
+		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
+		{
+			VMExtension->OnAssignmentClassChanged.RemoveAll(this);
 		}
 	}
 }

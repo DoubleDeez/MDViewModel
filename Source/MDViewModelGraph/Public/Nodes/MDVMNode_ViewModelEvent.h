@@ -51,4 +51,6 @@ public:
 
 	void InitializeViewModelEventParams(TSubclassOf<UMDViewModelBase> InViewModelClass, const FName& InViewModelName, const FName& InDelegatePropertyName);
 
+protected:
+	virtual void OnAssignmentChanged() override;
 };

@@ -263,22 +263,28 @@ void UMDVMNode_ViewModelFieldNotify::InitializeViewModelFieldNotifyParams(TSubcl
 		ViewModelName = InViewModelName;
 		FieldNotifyName = InFieldNotifyName;
 
-		constexpr bool bIsConsideredSelfContext = false;
-		const FFieldVariant Field = GetTargetFieldNotify();
-		if (const FProperty* Property = Field.Get<FProperty>())
-		{
-			FieldNotifyReference.SetFromField<FProperty>(Property, bIsConsideredSelfContext);
-		}
-		else if (const UFunction* Function = Field.Get<UFunction>())
-		{
-			FieldNotifyReference.SetFromField<UFunction>(Function, bIsConsideredSelfContext);
-		}
-
-		CustomFunctionName = FName(*FString::Printf(TEXT("BndEvt__%s_%s_%s_%s"), *GetBlueprint()->GetName(), *ViewModelClass->GetName(), *GetName(), *FieldNotifyReference.GetMemberName().ToString()));
 		bOverrideFunction = false;
 		bInternalEvent = true;
-		CachedNodeTitle.MarkDirty();
+		OnAssignmentChanged();
 	}
+}
+
+void UMDVMNode_ViewModelFieldNotify::OnAssignmentChanged()
+{
+	Super::OnAssignmentChanged();
+
+	constexpr bool bIsConsideredSelfContext = false;
+	const FFieldVariant Field = GetTargetFieldNotify();
+	if (const FProperty* Property = Field.Get<FProperty>())
+	{
+		FieldNotifyReference.SetFromField<FProperty>(Property, bIsConsideredSelfContext);
+	}
+	else if (const UFunction* Function = Field.Get<UFunction>())
+	{
+		FieldNotifyReference.SetFromField<UFunction>(Function, bIsConsideredSelfContext);
+	}
+	
+	CustomFunctionName = FName(*FString::Printf(TEXT("BndEvt__%s_%s_%s_%s"), *GetBlueprint()->GetName(), *ViewModelClass->GetName(), *GetName(), *FieldNotifyReference.GetMemberName().ToString()));
 }
 
 FFieldVariant UMDVMNode_ViewModelFieldNotify::GetTargetFieldNotify() const

@@ -53,6 +53,9 @@ public:
 
 	void InitializeViewModelFieldNotifyParams(TSubclassOf<UMDViewModelBase> InViewModelClass, const FName& InViewModelName, const FName& InFieldNotifyName);
 
+protected:
+	virtual void OnAssignmentChanged() override;
+	
 private:
 	UPROPERTY()
 	FMemberReference FieldNotifyReference;

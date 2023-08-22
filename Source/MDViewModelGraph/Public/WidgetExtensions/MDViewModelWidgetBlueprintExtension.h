@@ -31,6 +31,9 @@ public:
 	DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnViewModelAssignmentNameChanged, TSubclassOf<UMDViewModelBase>, const FName& /*OldName*/, const FName& /*NewName*/);
 	FOnViewModelAssignmentNameChanged OnAssignmentNameChanged;
 
+	DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnViewModelAssignmentClassChanged, const FName&, TSubclassOf<UMDViewModelBase> /*OldClass*/, TSubclassOf<UMDViewModelBase> /*NewClass*/);
+	FOnViewModelAssignmentClassChanged OnAssignmentClassChanged;
+
 protected:
 	virtual void HandleBeginCompilation(FWidgetBlueprintCompilerContext& InCreationContext) override;
 	virtual void HandleFinishCompilingClass(UWidgetBlueprintGeneratedClass* Class) override;

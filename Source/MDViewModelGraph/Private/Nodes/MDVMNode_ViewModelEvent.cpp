@@ -188,13 +188,19 @@ void UMDVMNode_ViewModelEvent::InitializeViewModelEventParams(TSubclassOf<UMDVie
 		ViewModelName = InViewModelName;
 		DelegatePropertyName = InDelegatePropertyName;
 
-		constexpr bool bIsConsideredSelfContext = false;
-		const FMulticastDelegateProperty* Prop = GetTargetDelegateProperty();
-		EventReference.SetFromField<UFunction>(Prop->SignatureFunction, bIsConsideredSelfContext);
-
-		CustomFunctionName = FName(*FString::Printf(TEXT("BndEvt__%s_%s_%s_%s"), *GetBlueprint()->GetName(), *ViewModelClass->GetName(), *GetName(), *EventReference.GetMemberName().ToString()));
 		bOverrideFunction = false;
 		bInternalEvent = true;
-		CachedNodeTitle.MarkDirty();
+		OnAssignmentChanged();
 	}
+}
+
+void UMDVMNode_ViewModelEvent::OnAssignmentChanged()
+{
+	Super::OnAssignmentChanged();
+
+	constexpr bool bIsConsideredSelfContext = false;
+	const FMulticastDelegateProperty* Prop = GetTargetDelegateProperty();
+	EventReference.SetFromField<UFunction>(Prop->SignatureFunction, bIsConsideredSelfContext);
+	
+	CustomFunctionName = FName(*FString::Printf(TEXT("BndEvt__%s_%s_%s_%s"), *GetBlueprint()->GetName(), *ViewModelClass->GetName(), *GetName(), *EventReference.GetMemberName().ToString()));
 }

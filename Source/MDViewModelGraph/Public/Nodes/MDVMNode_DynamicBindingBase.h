@@ -11,7 +11,7 @@ class MDVIEWMODELGRAPH_API UMDVMNode_DynamicBindingBase : public UK2Node_Event
 	GENERATED_BODY()
 
 public:
-	virtual void ReconstructNode() override;
+	virtual void AllocateDefaultPins() override;
 	virtual void BeginDestroy() override;
 	
 	// Class of the view model we're binding to
@@ -25,8 +25,11 @@ public:
 protected:
 	FNodeTextCache CachedNodeTitle;
 
+	virtual void OnAssignmentChanged();
+
 private:
-	void BindAssignmentNameChanged();
+	void BindAssignmentChanges();
 	void OnAssignmentNameChanged(TSubclassOf<UMDViewModelBase> VMClass, const FName& OldName, const FName& NewName);
-	void UnbindAssignmentNameChanged();
+	void OnAssignmentClassChanged(const FName& VMName, TSubclassOf<UMDViewModelBase> OldClass, TSubclassOf<UMDViewModelBase> NewClass);
+	void UnbindAssignmentChanges();
 };

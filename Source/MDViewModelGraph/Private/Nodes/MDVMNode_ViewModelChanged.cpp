@@ -143,9 +143,16 @@ void UMDVMNode_ViewModelChanged::InitializeViewModelChangedParams(TSubclassOf<UM
 		ViewModelClass = InViewModelClass;
 		ViewModelName = InViewModelName;
 
-		CustomFunctionName = FName(*FString::Printf(TEXT("BndEvt__%s_%s_%s_Changed"), *GetBlueprint()->GetName(), *ViewModelClass->GetName(), *GetName()));
 		bOverrideFunction = false;
 		bInternalEvent = true;
-		CachedNodeTitle.MarkDirty();
+
+		OnAssignmentChanged();
 	}
+}
+
+void UMDVMNode_ViewModelChanged::OnAssignmentChanged()
+{
+	Super::OnAssignmentChanged();
+	
+	CustomFunctionName = FName(*FString::Printf(TEXT("BndEvt__%s_%s_%s_Changed"), *GetBlueprint()->GetName(), *ViewModelClass->GetName(), *GetName()));
 }

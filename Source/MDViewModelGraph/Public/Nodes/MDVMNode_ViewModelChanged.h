@@ -37,4 +37,7 @@ public:
 	//~ End K2Node Interface
 
 	void InitializeViewModelChangedParams(TSubclassOf<UMDViewModelBase> InViewModelClass, const FName& InViewModelName);
+
+protected:
+	virtual void OnAssignmentChanged() override;
 };

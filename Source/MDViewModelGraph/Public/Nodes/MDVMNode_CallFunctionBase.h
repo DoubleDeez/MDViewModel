@@ -20,7 +20,6 @@ public:
 	virtual void GetNodeContextMenuActions(UToolMenu* Menu, UGraphNodeContextMenuContext* Context) const override;
 	virtual bool IncludeParentNodeContextMenu() const override { return true; }
 
-	virtual void ReconstructNode() override;
 	virtual void AllocateDefaultPins() override;
 
 	virtual bool IsNodePure() const override { return bIsSetPure; }
@@ -43,9 +42,10 @@ protected:
 	virtual UBlueprintNodeSpawner* CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const UFunction* Function, const UWidgetBlueprint* WidgetBP) const { return nullptr;}
 	
 private:
-	void BindAssignmentNameChanged();
+	void BindAssignmentChanges();
 	void OnAssignmentNameChanged(TSubclassOf<UMDViewModelBase> VMClass, const FName& OldName, const FName& NewName);
-	void UnbindAssignmentNameChanged();
+	void OnAssignmentClassChanged(const FName& VMName, TSubclassOf<UMDViewModelBase> OldClass, TSubclassOf<UMDViewModelBase> NewClass);
+	void UnbindAssignmentChanges();
 	
 	void TogglePurity();
 	
