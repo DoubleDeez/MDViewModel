@@ -4,8 +4,6 @@
 #include "K2Node_Variable.h"
 #include "Nodes/MDVMNode_CallFunctionBase.h"
 #include "Nodes/MDVMNode_GetProperty.h"
-#include "RigVMCore/RigVMStruct.h"
-#include "RigVMCore/RigVMStruct.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetBlueprint.h"
 
