@@ -29,6 +29,7 @@ public:
 
 	UEdGraphPin* GetTruePin() const;
 	UEdGraphPin* GetFalsePin() const;
+	UEdGraphPin* GetIsValidPin() const;
 	
 	virtual ERedirectType DoPinsMatchForReconstruction(const UEdGraphPin* NewPin, int32 NewPinIndex, const UEdGraphPin* OldPin, int32 OldPinIndex) const override;
 

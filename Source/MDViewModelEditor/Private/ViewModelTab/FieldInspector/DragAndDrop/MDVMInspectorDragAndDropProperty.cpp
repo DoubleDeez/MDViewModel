@@ -1,7 +1,7 @@
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropProperty.h"
 
 #include "EdGraphSchema_K2_Actions.h"
-#include "K2Node_VariableGet.h"
+#include "Nodes/MDVMNode_GetProperty.h"
 #include "ViewModel/MDViewModelBase.h"
 
 
@@ -22,15 +22,13 @@ UEdGraphNode* FMDVMInspectorDragAndDropProperty::CreateNodeOnDrop(UEdGraph& Grap
 		return nullptr;
 	}
 
-	// TODO - MDVMNode_PropertyGet
-	return FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_VariableGet>(
+	return FEdGraphSchemaAction_K2NewNode::SpawnNode<UMDVMNode_GetProperty>(
 		&Graph,
 		GraphPosition,
 		EK2NewNodeFlags::SelectNewNode,
-		[&](UK2Node_VariableGet* NewInstance)
+		[&](UMDVMNode_GetProperty* NewInstance)
 		{
-			NewInstance->SetFromProperty(PropertyPtr.Get(), false, VMAssignment.ViewModelClass.Get());
-			//NewInstance->InitializeViewModelFunctionParams(VMAssignment, PropertyPtr.Get());
+			NewInstance->InitializeViewModelPropertyParams(VMAssignment, PropertyPtr.Get());
 		}
 	);
 }

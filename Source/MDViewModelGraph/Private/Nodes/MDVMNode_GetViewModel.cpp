@@ -157,6 +157,11 @@ UEdGraphPin* UMDVMNode_GetViewModel::GetFalsePin() const
 	return FindPin(TEXT("False"));
 }
 
+UEdGraphPin* UMDVMNode_GetViewModel::GetIsValidPin() const
+{
+	return FindPin(TEXT("IsValid"));
+}
+
 UK2Node::ERedirectType UMDVMNode_GetViewModel::DoPinsMatchForReconstruction(const UEdGraphPin* NewPin, int32 NewPinIndex, const UEdGraphPin* OldPin, int32 OldPinIndex) const
 {	
 	ERedirectType Result = Super::DoPinsMatchForReconstruction(NewPin, NewPinIndex, OldPin, OldPinIndex);
