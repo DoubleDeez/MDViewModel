@@ -2,6 +2,7 @@
 
 #include "PropertyInfoViewStyle.h"
 #include "ViewModel/MDViewModelBase.h"
+#include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropActionBase.h"
 #include "WidgetBlueprint.h"
 
 FMDViewModelDebugLineItemBase::FMDViewModelDebugLineItemBase(const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, bool bIsFieldNotify, UWidgetBlueprint* WidgetBP, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
@@ -20,6 +21,11 @@ void FMDViewModelDebugLineItemBase::UpdateViewModel(const FName& InViewModelName
 {
 	ViewModelName = InViewModelName;
 	ViewModelClass = InViewModelClass;
+}
+
+TSharedRef<FMDVMInspectorDragAndDropActionBase> FMDViewModelDebugLineItemBase::CreateDragAndDropAction() const
+{
+	return {};
 }
 
 FMDViewModelAssignmentReference FMDViewModelDebugLineItemBase::GetViewModelAssignmentReference() const

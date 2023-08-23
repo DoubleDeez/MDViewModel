@@ -1,12 +1,12 @@
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMDragAndDropWrapperButton.h"
 
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropActionBase.h"
-#include "ViewModelTab/FieldInspector/MDViewModelFunctionDebugLineItem.h"
+#include "ViewModelTab/FieldInspector/MDViewModelDebugLineItemBase.h"
 
-void SMDVMDragAndDropWrapperButton::Construct(const FArguments& InArgs, TSharedRef<FMDViewModelFunctionDebugLineItem> Parent)
+void SMDVMDragAndDropWrapperButton::Construct(const FArguments& InArgs, TSharedRef<FMDViewModelDebugLineItemBase> Parent)
 {
 	bCanDrag = InArgs._bCanDrag;
-	FunctionItem = Parent;
+	LineItem = Parent;
 
 	ButtonStyle.Normal = FSlateBrush(FSlateNoResource());
 	ButtonStyle.Pressed = FSlateBrush(FSlateNoResource());
@@ -27,13 +27,13 @@ void SMDVMDragAndDropWrapperButton::Construct(const FArguments& InArgs, TSharedR
 
 TOptional<EMouseCursor::Type> SMDVMDragAndDropWrapperButton::GetCursor() const
 {
-	return (bCanDrag.Get(false) && FunctionItem.IsValid()) ? EMouseCursor::GrabHand : SCompoundWidget::GetCursor();
+	return (bCanDrag.Get(false) && LineItem.IsValid()) ? EMouseCursor::GrabHand : SCompoundWidget::GetCursor();
 }
 
 FReply SMDVMDragAndDropWrapperButton::OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
 	FReply Reply = SButton::OnMouseButtonDown(MyGeometry, MouseEvent);
-	if (bCanDrag.Get(false) && FunctionItem.IsValid() && MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+	if (bCanDrag.Get(false) && LineItem.IsValid() && MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
 	{
 		Reply = Reply.DetectDrag(AsShared(), EKeys::LeftMouseButton);
 	}
@@ -43,9 +43,9 @@ FReply SMDVMDragAndDropWrapperButton::OnMouseButtonDown(const FGeometry& MyGeome
 
 FReply SMDVMDragAndDropWrapperButton::OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	if (bCanDrag.Get(false) && FunctionItem.IsValid())
+	if (bCanDrag.Get(false) && LineItem.IsValid())
 	{
-		return FReply::Handled().BeginDragDrop(FunctionItem->CreateDragAndDropAction());
+		return FReply::Handled().BeginDragDrop(LineItem->CreateDragAndDropAction());
 	}
 
 	return FReply::Unhandled();

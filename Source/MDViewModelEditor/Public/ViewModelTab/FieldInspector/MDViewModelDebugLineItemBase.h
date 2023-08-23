@@ -4,6 +4,7 @@
 #include "Templates/SubclassOf.h"
 #include "Util/MDViewModelAssignmentReference.h"
 
+class FMDVMInspectorDragAndDropActionBase;
 class UMDViewModelBase;
 class UWidgetBlueprint;
 
@@ -19,6 +20,8 @@ public:
 	{
 		return HashCombine(GetTypeHash(ViewModelName), GetTypeHash(ViewModelClass));
 	}
+
+	virtual TSharedRef<FMDVMInspectorDragAndDropActionBase> CreateDragAndDropAction() const;
 
 	FMDViewModelAssignmentReference GetViewModelAssignmentReference() const;
 

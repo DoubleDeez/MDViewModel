@@ -24,7 +24,10 @@ public:
 
 	virtual TSharedRef<SWidget> GetNameIcon() override;
 
+	virtual TSharedRef<SWidget> GenerateNameWidget(TSharedPtr<FString> InSearchString) override;
 	virtual TSharedRef<SWidget> GenerateValueWidget(TSharedPtr<FString> InSearchString) override;
+
+	virtual TSharedRef<FMDVMInspectorDragAndDropActionBase> CreateDragAndDropAction() const override;
 
 	FText GetDisplayValue() const;
 

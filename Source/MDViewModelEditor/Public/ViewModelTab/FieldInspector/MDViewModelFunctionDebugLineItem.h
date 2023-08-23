@@ -1,8 +1,6 @@
 #pragma once
 #include "MDViewModelDebugLineItemBase.h"
 
-class FMDVMInspectorDragAndDropActionBase;
-
 class FMDViewModelFunctionDebugLineItem : public FMDViewModelDebugLineItemBase
 {
 public:
@@ -33,7 +31,7 @@ public:
 
 	virtual TSharedRef<SWidget> GenerateValueWidget(TSharedPtr<FString> InSearchString) override;
 
-	TSharedRef<FMDVMInspectorDragAndDropActionBase> CreateDragAndDropAction() const;
+	virtual TSharedRef<FMDVMInspectorDragAndDropActionBase> CreateDragAndDropAction() const override;
 
 	void UpdateIsDebugging(bool InIsDebugging);
 	

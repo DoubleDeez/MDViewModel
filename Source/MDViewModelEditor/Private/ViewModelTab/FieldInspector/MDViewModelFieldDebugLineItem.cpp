@@ -4,6 +4,8 @@
 #include "EdGraphSchema_K2.h"
 #include "Kismet2/KismetDebugUtilities.h"
 #include "Util/MDViewModelGraphStatics.h"
+#include "ViewModelTab/FieldInspector/DragAndDrop/MDVMDragAndDropWrapperButton.h"
+#include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropProperty.h"
 #include "WidgetBlueprint.h"
 #include "Widgets/Images/SLayeredImage.h"
 #include "Widgets/Input/SButton.h"
@@ -29,49 +31,74 @@ TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GetNameIcon()
 			SecondaryColor
 		);
 
-		return SNew(SLayeredImage, SecondaryIcon, SecondaryColor)
-			.Image(IconBrush)
-			.ColorAndOpacity(BaseColor)
-			.ToolTipText(UEdGraphSchema_K2::TypeToText(ItemProperty));
+		return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFieldDebugLineItem>(AsShared()))
+			.bCanDrag(true)
+			[
+				SNew(SLayeredImage, SecondaryIcon, SecondaryColor)
+				.Image(IconBrush)
+				.ColorAndOpacity(BaseColor)
+				.ToolTipText(UEdGraphSchema_K2::TypeToText(ItemProperty))
+			];
 	}
 
 	return FDebugLineItem::GetNameIcon();
 }
 
+TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GenerateNameWidget(TSharedPtr<FString> InSearchString)
+{
+	return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFieldDebugLineItem>(AsShared()))
+		.bCanDrag(true)
+		[
+			FMDViewModelDebugLineItemBase::GenerateNameWidget(InSearchString)
+		];
+}
+
 TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GenerateValueWidget(TSharedPtr<FString> InSearchString)
 {
-	return SNew(SWidgetSwitcher)
-	.WidgetIndex(this, &FMDViewModelFieldDebugLineItem::GetShouldDisplayFieldNotifyIndex)
-	+SWidgetSwitcher::Slot()
-	[
-		SNew(SButton)
-		.ContentPadding(FMargin(3.0, 2.0))
-		.OnClicked(this, &FMDViewModelFieldDebugLineItem::OnAddOrViewBoundFunctionClicked)
+	return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFieldDebugLineItem>(AsShared()))
+		.bCanDrag(true)
 		[
 			SNew(SWidgetSwitcher)
-			.WidgetIndex(this, &FMDViewModelFieldDebugLineItem::GetAddOrViewBoundFunctionIndex)
+			.WidgetIndex(this, &FMDViewModelFieldDebugLineItem::GetShouldDisplayFieldNotifyIndex)
 			+SWidgetSwitcher::Slot()
 			[
-				SNew(SImage)
-				.ColorAndOpacity(FSlateColor::UseForeground())
-				.Image(FAppStyle::Get().GetBrush("Icons.SelectInViewport"))
-				.ToolTipText(INVTEXT("Focus the existing bound function."))
+				SNew(SButton)
+				.ContentPadding(FMargin(3.0, 2.0))
+				.OnClicked(this, &FMDViewModelFieldDebugLineItem::OnAddOrViewBoundFunctionClicked)
+				[
+					SNew(SWidgetSwitcher)
+					.WidgetIndex(this, &FMDViewModelFieldDebugLineItem::GetAddOrViewBoundFunctionIndex)
+					+SWidgetSwitcher::Slot()
+					[
+						SNew(SImage)
+						.ColorAndOpacity(FSlateColor::UseForeground())
+						.Image(FAppStyle::Get().GetBrush("Icons.SelectInViewport"))
+						.ToolTipText(INVTEXT("Focus the existing bound function."))
+					]
+					+SWidgetSwitcher::Slot()
+					[
+						SNew(SImage)
+						.ColorAndOpacity(FSlateColor::UseForeground())
+						.Image(FAppStyle::Get().GetBrush("Icons.Plus"))
+						.ToolTipText(INVTEXT("Create a BP event bound to this view model field notify property"))
+					]
+				]
 			]
 			+SWidgetSwitcher::Slot()
 			[
-				SNew(SImage)
-				.ColorAndOpacity(FSlateColor::UseForeground())
-				.Image(FAppStyle::Get().GetBrush("Icons.Plus"))
-				.ToolTipText(INVTEXT("Create a BP event bound to this view model field notify property"))
+				SNew(STextBlock)
+				.Text(this, &FMDViewModelFieldDebugLineItem::GetDisplayValue)
+				.ToolTipText(this, &FMDViewModelFieldDebugLineItem::GetDisplayValue)
 			]
-		]
-	]
-	+SWidgetSwitcher::Slot()
-	[
-		SNew(STextBlock)
-		.Text(this, &FMDViewModelFieldDebugLineItem::GetDisplayValue)
-		.ToolTipText(this, &FMDViewModelFieldDebugLineItem::GetDisplayValue)
-	];
+		];	
+}
+
+TSharedRef<FMDVMInspectorDragAndDropActionBase> FMDViewModelFieldDebugLineItem::CreateDragAndDropAction() const
+{
+	return FMDVMInspectorDragAndDropProperty::Create(
+		PropertyPtr,
+		GetViewModelAssignmentReference()
+	);
 }
 
 FText FMDViewModelFieldDebugLineItem::GetDisplayValue() const
