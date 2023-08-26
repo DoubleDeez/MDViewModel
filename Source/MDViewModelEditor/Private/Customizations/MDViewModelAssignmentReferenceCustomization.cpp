@@ -1,11 +1,13 @@
 #include "Customizations/MDViewModelAssignmentReferenceCustomization.h"
 
 #include "Blueprint/UserWidget.h"
+#include "Blueprint/WidgetBlueprintGeneratedClass.h"
 #include "DetailWidgetRow.h"
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "IDetailChildrenBuilder.h"
+#include "Launch/Resources/Version.h"
 #include "Util/MDViewModelGraphStatics.h"
 #include "Util/MDViewModelUtils.h"
 #include "PropertyHandle.h"
@@ -13,6 +15,7 @@
 #include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelAssignmentReference.h"
 #include "ViewModel/MDViewModelBase.h"
+#include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
 
@@ -37,6 +40,21 @@ namespace MDViewModelAssignmentReferenceCustomization_Private
 		}
 
 		return false;
+	}
+
+	void GatherViewModelAssignments(TSubclassOf<UUserWidget> WidgetClass, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments)
+	{
+		for (auto* WidgetBPClass = Cast<UWidgetBlueprintGeneratedClass>(WidgetClass); IsValid(WidgetBPClass); WidgetBPClass = Cast<UWidgetBlueprintGeneratedClass>(WidgetBPClass->GetSuperClass()))
+		{
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
+			if (const UMDViewModelWidgetClassExtension* ClassExtension = WidgetBPClass->GetExtension<UMDViewModelWidgetClassExtension>())
+#else
+			if (const UMDViewModelWidgetClassExtension* ClassExtension = WidgetBPClass->GetExtension<UMDViewModelWidgetClassExtension>(false))
+#endif
+			{
+				OutViewModelAssignments.Append(ClassExtension->GetAssignments());
+			}
+		}
 	}
 }
 
@@ -120,7 +138,7 @@ TSharedRef<SWidget> FMDViewModelAssignmentReferenceCustomization::MakeAssignment
 	{
 
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
-		MDViewModelUtils::GetViewModelAssignmentsForWidgetClass(WidgetClass, ViewModelAssignments);
+		MDViewModelAssignmentReferenceCustomization_Private::GatherViewModelAssignments(WidgetClass, ViewModelAssignments);
 
 		for (const auto& Pair : ViewModelAssignments)
 		{
@@ -206,7 +224,7 @@ void SMDViewModelAssignmentReferenceGraphPin::GetWidgetViewModelAssignments(TMap
 	else
 	{
 		const TSubclassOf<UUserWidget> WidgetClass = Cast<UClass>(WidgetPin->PinType.PinSubCategoryObject.Get());
-		MDViewModelUtils::GetViewModelAssignmentsForWidgetClass(WidgetClass, OutViewModelAssignments);
+		MDViewModelAssignmentReferenceCustomization_Private::GatherViewModelAssignments(WidgetClass, OutViewModelAssignments);
 	}
 }
 
