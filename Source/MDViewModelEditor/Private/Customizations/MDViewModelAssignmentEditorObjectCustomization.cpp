@@ -9,6 +9,7 @@
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/MDViewModelAssignmentDialog.h"
 #include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
 
@@ -172,7 +173,9 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 		{
 			Provider->OnProviderSettingsInitializedInEditor(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint(), Assignment);
 
-			FDetailWidgetRow& VMClassWidget = DetailBuilder.EditDefaultProperty(ViewModelClassHandle)->CustomWidget()
+			const FComboButtonStyle& ComboButtonStyle = FAppStyle::Get().GetWidgetStyle<FComboButtonStyle>("ComboButton");
+			
+			DetailBuilder.EditDefaultProperty(ViewModelClassHandle)->CustomWidget()
 			.NameContent()
 			[
 				ViewModelClassHandle->CreatePropertyNameWidget()
@@ -180,10 +183,42 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 			.ValueContent()
 			[
 				SNew(SButton)
-				.ButtonStyle(&FAppStyle::Get().GetWidgetStyle<FComboButtonStyle>("ComboButton").ButtonStyle)
+				.ButtonStyle(&ComboButtonStyle.ButtonStyle)
 				.OnClicked(this, &FMDViewModelAssignmentEditorObjectCustomization::OnClassPickerButtonClicked)
-				.Text(this, &FMDViewModelAssignmentEditorObjectCustomization::GetSelectedClassText)
 				.ToolTipText(this, &FMDViewModelAssignmentEditorObjectCustomization::GetSelectedClassToolTipText)
+				[
+					SNew(SHorizontalBox)
+					+SHorizontalBox::Slot()
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Visibility(EVisibility::HitTestInvisible)
+						.Text(this, &FMDViewModelAssignmentEditorObjectCustomization::GetSelectedClassText)
+					]
+					+SHorizontalBox::Slot()
+					.AutoWidth()
+					.HAlign(HAlign_Right)
+					.VAlign(VAlign_Center)
+					.Padding(ComboButtonStyle.DownArrowPadding)
+					[
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						.VAlign(VAlign_Top)
+						.Padding(FMargin(ComboButtonStyle.ShadowOffset.X, ComboButtonStyle.ShadowOffset.Y, 0, 0))
+						[
+							SNew(SImage)
+							.Image(&ComboButtonStyle.DownArrowImage)
+							.ColorAndOpacity(ComboButtonStyle.ShadowColorAndOpacity)
+						]
+						+ SOverlay::Slot()
+						.VAlign(VAlign_Top)
+						[
+							SNew(SImage)
+							.Image(&ComboButtonStyle.DownArrowImage)
+							.ColorAndOpacity(FSlateColor::UseForeground())
+						]
+					]
+				]
 			];
 
 			TArray<FText> ProviderIssues;
