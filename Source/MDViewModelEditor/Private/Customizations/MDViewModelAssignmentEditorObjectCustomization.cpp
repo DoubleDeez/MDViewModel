@@ -6,6 +6,7 @@
 #include "Engine/Engine.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Kismet2/SClassPickerDialog.h"
+#include "MDViewModelEditorConfig.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/MDViewModelAssignmentDialog.h"
 #include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
@@ -397,7 +398,7 @@ FReply FMDViewModelAssignmentEditorObjectCustomization::OnClassPickerButtonClick
 			ClassPickerOptions.bShowNoneOption = false;
 			ClassPickerOptions.ClassFilters.Add(MakeShareable(new FMDViewModelProviderClassFilter(Provider)));
 			ClassPickerOptions.InitiallySelectedClass = GetCurrentViewModelClass();
-			ClassPickerOptions.NameTypeToDisplay = EClassViewerNameTypeToDisplay::Dynamic;
+			ClassPickerOptions.NameTypeToDisplay = GetDefault<UMDViewModelEditorConfig>()->GetNameTypeToDisplay();
 
 			UClass* Class = nullptr;
 			if (SClassPickerDialog::PickClass(INVTEXT("Select the View Model Class"), ClassPickerOptions, Class, UClass::StaticClass()))

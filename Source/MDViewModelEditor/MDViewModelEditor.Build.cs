@@ -21,6 +21,7 @@ public class MDViewModelEditor : ModuleRules
             {
 	            "BlueprintGraph",
                 "CoreUObject",
+                "DeveloperSettings",
                 "Engine",
                 "GraphEditor",
                 "InputCore",
