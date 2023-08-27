@@ -15,12 +15,12 @@ class SMDViewModelAssignmentDialog;
 class MDVIEWMODELEDITOR_API FMDViewModelAssignmentEditorObjectCustomization : public IDetailCustomization
 {
 public:
-	static TSharedRef<IDetailCustomization> MakeInstance(TSharedRef<SMDViewModelAssignmentDialog> Dialog, bool bIsEditMode)
+	static TSharedRef<IDetailCustomization> MakeInstance(TSharedRef<SMDViewModelAssignmentDialog> Dialog)
 	{
-		return MakeShared<FMDViewModelAssignmentEditorObjectCustomization>(Dialog, bIsEditMode);
+		return MakeShared<FMDViewModelAssignmentEditorObjectCustomization>(Dialog);
 	}
 
-	FMDViewModelAssignmentEditorObjectCustomization(TSharedRef<SMDViewModelAssignmentDialog> InDialog, bool bIsEditMode);
+	FMDViewModelAssignmentEditorObjectCustomization(TSharedRef<SMDViewModelAssignmentDialog> InDialog);
 
 	virtual void CustomizeDetails(IDetailLayoutBuilder& DetailBuilder) override;
 
@@ -59,5 +59,4 @@ private:
 	TWeakPtr<IDetailLayoutBuilder> CachedDetailBuilder;
 	TWeakObjectPtr<UMDViewModelAssignmentEditorObject> EditorObjectPtr;
 	TSharedRef<SMDViewModelAssignmentDialog> Dialog;
-	bool bIsEditMode;
 };

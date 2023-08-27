@@ -28,6 +28,7 @@ public:
 		{
 		}
 
+		SLATE_EVENT(FSimpleDelegate, OnDuplicateItemRequested)
 		SLATE_EVENT(FSimpleDelegate, OnEditItemRequested)
 		SLATE_EVENT(FSimpleDelegate, OnDeleteItemConfirmed)
 
@@ -50,6 +51,8 @@ private:
 
 	void OnEditClicked() const;
 	bool CanEdit() const;
+	void OnDuplicateClicked() const;
+	bool CanDuplicate() const;
 	void OnDeleteClicked() const;
 	bool CanDelete() const;
 
@@ -58,6 +61,7 @@ private:
 	FSlateBrush BackgroundBrush;
 	FButtonStyle ButtonStyle;
 
+	FSimpleDelegate OnDuplicateItemRequested;
 	FSimpleDelegate OnEditItemRequested;
 	FSimpleDelegate OnDeleteItemConfirmed;
 };

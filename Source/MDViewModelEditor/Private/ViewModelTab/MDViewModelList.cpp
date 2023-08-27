@@ -113,6 +113,7 @@ void SMDViewModelList::OnItemSelected(TSharedPtr<FMDViewModelEditorAssignment> I
 TSharedRef<ITableRow> SMDViewModelList::OnGenerateRow(TSharedPtr<FMDViewModelEditorAssignment> Item, const TSharedRef<STableViewBase>& OwningTable)
 {
 	return SNew(SMDViewModelListItem, OwningTable, Item)
+		.OnDuplicateItemRequested(this, &SMDViewModelList::OnDuplicateItem, Item)
 		.OnEditItemRequested(this, &SMDViewModelList::OnEditItem, Item)
 		.OnDeleteItemConfirmed(this, &SMDViewModelList::OnDeleteItem, Item);
 }
@@ -233,6 +234,14 @@ FReply SMDViewModelList::OnAddViewModel()
 	}
 
 	return FReply::Handled();
+}
+
+void SMDViewModelList::OnDuplicateItem(TSharedPtr<FMDViewModelEditorAssignment> Item)
+{
+	if (UMDViewModelWidgetBlueprintExtension* BPExtension = UWidgetBlueprintExtension::RequestExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
+	{
+		SMDViewModelAssignmentDialog::OpenDuplicateDialog(BPExtension, Item);
+	}
 }
 
 void SMDViewModelList::OnEditItem(TSharedPtr<FMDViewModelEditorAssignment> Item)

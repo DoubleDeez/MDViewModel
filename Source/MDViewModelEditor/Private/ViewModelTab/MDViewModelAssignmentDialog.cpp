@@ -126,7 +126,7 @@ public:
 
 void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSharedRef<SWindow>& InParentWindow)
 {
-	bIsEditMode = InArgs._bIsEditMode;
+	Mode = InArgs._Mode;
 	BPExtensionPtr = InArgs._BPExtensionPtr;
 	EditorItem = InArgs._EditorItem;
 
@@ -141,7 +141,11 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 	if (EditorItem.IsValid())
 	{
 		EditorObject->PopulateFromAssignment(*EditorItem.Get(), GetWidgetBlueprint());
-		OriginalAssignmentName = EditorObject->ViewModelInstanceName;
+		
+		if (Mode == EMDVMDialogMode::Edit)
+		{
+			OriginalAssignmentName = EditorObject->ViewModelInstanceName;
+		}
 	}
 
 	FDetailsViewArgs DetailsViewArgs;
@@ -153,7 +157,7 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 	const TSharedRef<IDetailsView> DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
 	DetailsView->RegisterInstancedCustomPropertyTypeLayout(TEXT("InstancedStruct"), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FMDVMExpanderDetails::MakeInstance));
 	TSharedRef<SMDViewModelAssignmentDialog> SharedThis = StaticCastSharedRef<SMDViewModelAssignmentDialog>(AsShared());
-	DetailsView->RegisterInstancedCustomPropertyLayout(UMDViewModelAssignmentEditorObject::StaticClass(), FOnGetDetailCustomizationInstance::CreateStatic(&FMDViewModelAssignmentEditorObjectCustomization::MakeInstance, SharedThis, bIsEditMode));
+	DetailsView->RegisterInstancedCustomPropertyLayout(UMDViewModelAssignmentEditorObject::StaticClass(), FOnGetDetailCustomizationInstance::CreateStatic(&FMDViewModelAssignmentEditorObjectCustomization::MakeInstance, SharedThis));
 	DetailsView->SetObject(EditorObject.Get());
 
 	ChildSlot
@@ -227,7 +231,12 @@ void SMDViewModelAssignmentDialog::OpenEditDialog(UMDViewModelWidgetBlueprintExt
 	return OpenDialog_Internal(BPExtension, EditorItem);
 }
 
-void SMDViewModelAssignmentDialog::OpenDialog_Internal(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem)
+void SMDViewModelAssignmentDialog::OpenDuplicateDialog(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem)
+{
+	return OpenDialog_Internal(BPExtension, EditorItem, true);
+}
+
+void SMDViewModelAssignmentDialog::OpenDialog_Internal(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem, bool bDuplicateItem)
 {
 	if (const TSharedPtr<SWindow> ActiveDialogWindow = ActiveDialogWindowPtr.Pin())
 	{
@@ -236,7 +245,7 @@ void SMDViewModelAssignmentDialog::OpenDialog_Internal(UMDViewModelWidgetBluepri
 		return;
 	}
 	
-	const bool bIsEditMode = EditorItem.IsValid();
+	const bool bIsEditMode = EditorItem.IsValid() && !bDuplicateItem;
 	const TSharedRef<SWindow> PickerWindow = SNew(SWindow)
 		.Title(bIsEditMode ? INVTEXT("Edit a View Model Assignment") : INVTEXT("Add a View Model Assignment"))
 		.SizingRule( ESizingRule::UserSized )
@@ -250,7 +259,7 @@ void SMDViewModelAssignmentDialog::OpenDialog_Internal(UMDViewModelWidgetBluepri
 	const TSharedRef<SMDViewModelAssignmentDialog> AssignmentDialog = SNew(SMDViewModelAssignmentDialog, PickerWindow)
 		.BPExtensionPtr(BPExtension)
 		.EditorItem(EditorItem)
-		.bIsEditMode(bIsEditMode);
+		.Mode(bIsEditMode ? EMDVMDialogMode::Edit : (bDuplicateItem ? EMDVMDialogMode::Duplicate : EMDVMDialogMode::Add));
 
 	PickerWindow->SetContent(AssignmentDialog);
 
@@ -278,7 +287,7 @@ void SMDViewModelAssignmentDialog::OnDialogClosed(const TSharedRef<SWindow>& Win
 
 EVisibility SMDViewModelAssignmentDialog::GetAddVisibility() const
 {
-	if (bIsEditMode || !EditorObject.IsValid())
+	if (Mode == EMDVMDialogMode::Edit || !EditorObject.IsValid())
 	{
 		return EVisibility::Collapsed;
 	}
@@ -305,7 +314,7 @@ EVisibility SMDViewModelAssignmentDialog::GetAddVisibility() const
 
 EVisibility SMDViewModelAssignmentDialog::GetSaveVisibility() const
 {
-	if (!bIsEditMode || !EditorObject.IsValid())
+	if (Mode != EMDVMDialogMode::Edit || !EditorObject.IsValid())
 	{
 		return EVisibility::Collapsed;
 	}
@@ -371,7 +380,7 @@ bool SMDViewModelAssignmentDialog::IsAssignmentUnique() const
 {
 	if (EditorObject.IsValid())
 	{
-		if (bIsEditMode && OriginalAssignmentName.IsSet() && EditorObject->ViewModelInstanceName == OriginalAssignmentName.GetValue())
+		if (Mode == EMDVMDialogMode::Edit && OriginalAssignmentName.IsSet() && EditorObject->ViewModelInstanceName == OriginalAssignmentName.GetValue())
 		{
 			// We haven't changed the name we came in with, so assume we're still unique
 			return true;

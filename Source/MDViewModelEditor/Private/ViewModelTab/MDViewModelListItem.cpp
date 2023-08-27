@@ -47,6 +47,7 @@ FText FMDVMDragAndDropViewModel::GetNodeTitle() const
 
 void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwningTable, const TSharedPtr<FMDViewModelEditorAssignment>& Item)
 {
+	OnDuplicateItemRequested = InArgs._OnDuplicateItemRequested;
 	OnEditItemRequested = InArgs._OnEditItemRequested;
 	OnDeleteItemConfirmed = InArgs._OnDeleteItemConfirmed;
 
@@ -175,7 +176,7 @@ void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder
 {
 	ContextMenuBuilder.BeginSection(TEXT("ViewModel"), INVTEXT("View Model"));
 
-	// TODO - Find References, Copy, Duplicate
+	// TODO - Find References, Copy
 
 	ContextMenuBuilder.AddMenuEntry(
 		INVTEXT("Edit Assignment"),
@@ -184,6 +185,16 @@ void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder
 		FUIAction(
 			FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnEditClicked),
 			FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanEdit)
+		)
+	);
+
+	ContextMenuBuilder.AddMenuEntry(
+		INVTEXT("Duplicate Assignment"),
+		INVTEXT("Opens the view model assignment dialog prepropulated with this assignment's settings."),
+		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Edit")),
+		FUIAction(
+			FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnDuplicateClicked),
+			FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanDuplicate)
 		)
 	);
 
@@ -235,6 +246,17 @@ bool SMDViewModelListItem::CanEdit() const
 {
 	// TODO - check not in PIE
 	return Assignment.IsValid() && !Assignment->bIsSuper;
+}
+
+void SMDViewModelListItem::OnDuplicateClicked() const
+{
+	OnDuplicateItemRequested.ExecuteIfBound();
+}
+
+bool SMDViewModelListItem::CanDuplicate() const
+{
+	// TODO - check not in PIE
+	return Assignment.IsValid();
 }
 
 void SMDViewModelListItem::OnDeleteClicked() const

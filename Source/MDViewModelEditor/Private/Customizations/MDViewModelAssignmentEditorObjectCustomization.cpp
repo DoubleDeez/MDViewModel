@@ -88,9 +88,8 @@ public:
 };
 
 
-FMDViewModelAssignmentEditorObjectCustomization::FMDViewModelAssignmentEditorObjectCustomization(TSharedRef<SMDViewModelAssignmentDialog> InDialog, bool bIsEditMode)
+FMDViewModelAssignmentEditorObjectCustomization::FMDViewModelAssignmentEditorObjectCustomization(TSharedRef<SMDViewModelAssignmentDialog> InDialog)
 	: Dialog(InDialog)
-	, bIsEditMode(bIsEditMode)
 {
 }
 
@@ -104,7 +103,6 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 	}
 
 	const FResetToDefaultOverride HideResetToDefault = FResetToDefaultOverride::Hide();
-
 	const TSharedRef<IPropertyHandle> ProviderTagHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ViewModelProvider), UMDViewModelAssignmentEditorObject::StaticClass());
 
 	DetailBuilder.EditDefaultProperty(ProviderTagHandle)->OverrideResetToDefault(HideResetToDefault).CustomWidget()
@@ -125,11 +123,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 
 	if (UMDViewModelAssignmentEditorObject* EditorObject = EditorObjectPtr.Get())
 	{
-		const TSharedRef<IPropertyHandle> ViewModelClassHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ViewModelClass), UMDViewModelAssignmentEditorObject::StaticClass());
 		const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider);
-		
-		const FMDViewModelAssignment Assignment = EditorObject->CreateAssignment().Assignment;
-
 		const TSharedRef<IPropertyHandle> ProviderSettingsHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ProviderSettings), UMDViewModelAssignmentEditorObject::StaticClass());
 		if (IsValid(Provider) && EditorObject->ProviderSettings.IsValid())
 		{
@@ -170,6 +164,8 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 			DetailBuilder.HideProperty(ViewModelSettingsHandle);
 		}
 
+		const FMDViewModelAssignment Assignment = EditorObject->CreateAssignment().Assignment;
+		const TSharedRef<IPropertyHandle> ViewModelClassHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ViewModelClass), UMDViewModelAssignmentEditorObject::StaticClass());
 		if (IsValid(Provider))
 		{
 			Provider->OnProviderSettingsInitializedInEditor(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint(), Assignment);

@@ -37,6 +37,7 @@ private:
 
 	FReply OnAddViewModel();
 
+	void OnDuplicateItem(TSharedPtr<FMDViewModelEditorAssignment> Item);
 	void OnEditItem(TSharedPtr<FMDViewModelEditorAssignment> Item);
 	void OnDeleteItem(TSharedPtr<FMDViewModelEditorAssignment> Item);
 

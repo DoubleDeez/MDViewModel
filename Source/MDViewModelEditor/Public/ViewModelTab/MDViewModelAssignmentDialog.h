@@ -9,6 +9,13 @@ class UMDViewModelWidgetBlueprintExtension;
 struct FMDViewModelClassItem;
 class UMDViewModelAssignmentEditorObject;
 
+enum class EMDVMDialogMode : uint8
+{
+	Add,
+	Edit,
+	Duplicate
+};
+
 /**
  *
  */
@@ -16,11 +23,11 @@ class MDVIEWMODELEDITOR_API SMDViewModelAssignmentDialog : public SCompoundWidge
 {
 public:
 	SLATE_BEGIN_ARGS(SMDViewModelAssignmentDialog)
-		: _bIsEditMode(false)
+		: _Mode(EMDVMDialogMode::Add)
 		{
 		}
 
-		SLATE_ARGUMENT(bool, bIsEditMode)
+		SLATE_ARGUMENT(EMDVMDialogMode, Mode)
 		SLATE_ARGUMENT(TWeakObjectPtr<UMDViewModelWidgetBlueprintExtension>, BPExtensionPtr)
 		SLATE_ARGUMENT(TSharedPtr<FMDViewModelEditorAssignment>, EditorItem)
 
@@ -33,9 +40,10 @@ public:
 
 	static void OpenAssignmentDialog(UMDViewModelWidgetBlueprintExtension* BPExtension);
 	static void OpenEditDialog(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem);
+	static void OpenDuplicateDialog(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem);
 
 private:
-	static void OpenDialog_Internal(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem = nullptr);
+	static void OpenDialog_Internal(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem = nullptr, bool bDuplicateItem = false);
 	static void OnDialogClosed(const TSharedRef<SWindow>& Window);
 	static TWeakPtr<SWindow> ActiveDialogWindowPtr;
 	
@@ -47,7 +55,7 @@ private:
 
 	bool IsAssignmentUnique() const;
 
-	bool bIsEditMode = false;
+	EMDVMDialogMode Mode = EMDVMDialogMode::Add;
 
 	TSharedPtr<FMDViewModelEditorAssignment> EditorItem;
 
