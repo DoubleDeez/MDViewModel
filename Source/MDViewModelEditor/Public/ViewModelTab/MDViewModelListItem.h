@@ -6,6 +6,7 @@
 #include "Widgets/Views/SListView.h"
 #include "Widgets/Views/STableRow.h"
 
+class FBlueprintEditor;
 struct FMDViewModelEditorAssignment;
 class FMenuBuilder;
 
@@ -34,7 +35,7 @@ public:
 
 	SLATE_END_ARGS()
 
-	void Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwningTable, const TSharedPtr<FMDViewModelEditorAssignment>& Item);
+	void Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwningTable, const TSharedPtr<FMDViewModelEditorAssignment>& Item, TWeakPtr<FBlueprintEditor> InBlueprintEditor);
 
 	virtual TOptional<EMouseCursor::Type> GetCursor() const override;
 
@@ -49,6 +50,7 @@ private:
 
 	FReply OnContextButtonClicked();
 
+	void OnFindReferencesClicked() const;
 	void OnEditClicked() const;
 	bool CanEdit() const;
 	void OnDuplicateClicked() const;
@@ -56,7 +58,10 @@ private:
 	void OnDeleteClicked() const;
 	bool CanDelete() const;
 
+	FString GenerateSearchString() const;
+
 	TSharedPtr<FMDViewModelEditorAssignment> Assignment;
+	TWeakPtr<FBlueprintEditor> BlueprintEditor;
 
 	FSlateBrush BackgroundBrush;
 	FButtonStyle ButtonStyle;

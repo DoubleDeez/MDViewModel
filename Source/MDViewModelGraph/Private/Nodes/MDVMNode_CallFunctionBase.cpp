@@ -163,6 +163,12 @@ void UMDVMNode_CallFunctionBase::GetPinHoverText(const UEdGraphPin& Pin, FString
 	}
 }
 
+FText UMDVMNode_CallFunctionBase::GetNodeTitle(ENodeTitleType::Type TitleType) const
+{
+	// Force full title
+	return Super::GetNodeTitle(ENodeTitleType::FullTitle);
+}
+
 FText UMDVMNode_CallFunctionBase::GetFunctionContextString() const
 {
 	const UClass* VMClass = Assignment.ViewModelClass.Get();

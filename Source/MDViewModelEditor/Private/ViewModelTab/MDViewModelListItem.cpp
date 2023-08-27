@@ -1,5 +1,7 @@
 #include "ViewModelTab/MDViewModelListItem.h"
 
+#include "BlueprintEditor.h"
+#include "BlueprintModes/WidgetBlueprintApplicationModes.h"
 #include "Brushes/SlateColorBrush.h"
 #include "DetailLayoutBuilder.h"
 #include "EdGraphSchema_K2_Actions.h"
@@ -10,6 +12,8 @@
 #include "Util/MDViewModelEditorAssignment.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
+#include "WidgetBlueprint.h"
+#include "WidgetBlueprintEditor.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
@@ -45,8 +49,10 @@ FText FMDVMDragAndDropViewModel::GetNodeTitle() const
 	return FText::Format(INVTEXT("Get {0} ({1})"), VMClassName, FText::FromName(VMAssignment.ViewModelName));
 }
 
-void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwningTable, const TSharedPtr<FMDViewModelEditorAssignment>& Item)
+void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwningTable, const TSharedPtr<FMDViewModelEditorAssignment>& Item, TWeakPtr<FBlueprintEditor> InBlueprintEditor)
 {
+	BlueprintEditor = InBlueprintEditor;
+	
 	OnDuplicateItemRequested = InArgs._OnDuplicateItemRequested;
 	OnEditItemRequested = InArgs._OnEditItemRequested;
 	OnDeleteItemConfirmed = InArgs._OnDeleteItemConfirmed;
@@ -187,11 +193,20 @@ void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder
 			FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanEdit)
 		)
 	);
+	
+	ContextMenuBuilder.AddMenuEntry(
+		INVTEXT("Find References"),
+		INVTEXT("Search for references to this view model in this blueprint."),
+		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Find")),
+		FUIAction(
+			FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnFindReferencesClicked)
+		)
+	);
 
 	ContextMenuBuilder.AddMenuEntry(
 		INVTEXT("Duplicate Assignment"),
 		INVTEXT("Opens the view model assignment dialog prepropulated with this assignment's settings."),
-		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Edit")),
+		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Duplicate")),
 		FUIAction(
 			FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnDuplicateClicked),
 			FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanDuplicate)
@@ -237,6 +252,20 @@ FReply SMDViewModelListItem::OnContextButtonClicked()
 	return FReply::Handled();
 }
 
+void SMDViewModelListItem::OnFindReferencesClicked() const
+{
+	if (const TSharedPtr<FBlueprintEditor> BPEditor = BlueprintEditor.Pin())
+	{
+		// Widget BP's have the find window in graph mode
+		if (IsValid(Cast<UWidgetBlueprint>(BPEditor->GetBlueprintObj())))
+		{
+			BPEditor->SetCurrentMode(FWidgetBlueprintApplicationModes::GraphMode);
+		}
+
+		BPEditor->SummonSearchUI(true, GenerateSearchString());
+	}
+}
+
 void SMDViewModelListItem::OnEditClicked() const
 {
 	OnEditItemRequested.ExecuteIfBound();
@@ -272,4 +301,18 @@ bool SMDViewModelListItem::CanDelete() const
 {
 	// TODO - check not in PIE
 	return Assignment.IsValid() && !Assignment->bIsSuper;
+}
+
+FString SMDViewModelListItem::GenerateSearchString() const
+{
+	if (Assignment.IsValid())
+	{
+		return FText::FormatNamed(INVTEXT("Pins(Name=Assignment && DefaultValue=({ClassName}) && DefaultValue=({Name})) || \"{DisplayName} ({Name})\" || \"{DisplayName} - {Name}\""),
+			TEXT("ClassName"), FText::FromString(Assignment->Assignment.ViewModelClass->GetPathName()),
+			TEXT("DisplayName"), Assignment->Assignment.ViewModelClass->GetDisplayNameText(),
+			TEXT("Name"), FText::FromName(Assignment->Assignment.ViewModelName)
+		).ToString();
+	}
+
+	return TEXT("");
 }

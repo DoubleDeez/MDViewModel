@@ -25,7 +25,7 @@ void SMDViewModelEditor::Construct(const FArguments& InArgs, TSharedPtr<FWidgetB
 		.MinSize(300.f)
 		.Value(0.15f)
 		[
-			SAssignNew(ViewModelListWidget, SMDViewModelList, WidgetBP)
+			SAssignNew(ViewModelListWidget, SMDViewModelList, WidgetBP, BlueprintEditor)
 			.OnViewModelSelected(this, &SMDViewModelEditor::OnViewModelSelected)
 		]
 		+SSplitter::Slot()

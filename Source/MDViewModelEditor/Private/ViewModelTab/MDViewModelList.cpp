@@ -22,12 +22,13 @@ SMDViewModelList::~SMDViewModelList()
 	}
 }
 
-void SMDViewModelList::Construct(const FArguments& InArgs, UWidgetBlueprint* InBlueprint)
+void SMDViewModelList::Construct(const FArguments& InArgs, UWidgetBlueprint* InBlueprint, TSharedPtr<FBlueprintEditor> InBlueprintEditor)
 {
 	check(IsValid(InBlueprint));
 	WidgetBP = InBlueprint;
 	WidgetClass = WidgetBP->GeneratedClass;
 	OnViewModelSelected = InArgs._OnViewModelSelected;
+	BlueprintEditor = InBlueprintEditor;
 
 	if (UMDViewModelWidgetBlueprintExtension* BPExtension = UWidgetBlueprintExtension::RequestExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
 	{
@@ -112,7 +113,7 @@ void SMDViewModelList::OnItemSelected(TSharedPtr<FMDViewModelEditorAssignment> I
 
 TSharedRef<ITableRow> SMDViewModelList::OnGenerateRow(TSharedPtr<FMDViewModelEditorAssignment> Item, const TSharedRef<STableViewBase>& OwningTable)
 {
-	return SNew(SMDViewModelListItem, OwningTable, Item)
+	return SNew(SMDViewModelListItem, OwningTable, Item, BlueprintEditor)
 		.OnDuplicateItemRequested(this, &SMDViewModelList::OnDuplicateItem, Item)
 		.OnEditItemRequested(this, &SMDViewModelList::OnEditItem, Item)
 		.OnDeleteItemConfirmed(this, &SMDViewModelList::OnDeleteItem, Item);

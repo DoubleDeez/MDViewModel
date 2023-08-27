@@ -26,6 +26,7 @@ public:
 	
 	virtual void GetPinHoverText(const UEdGraphPin& Pin, FString& HoverTextOut) const override;
 
+	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 	virtual FText GetFunctionContextString() const override;
 	virtual FText GetFunctionContextFormat() const;
 	
