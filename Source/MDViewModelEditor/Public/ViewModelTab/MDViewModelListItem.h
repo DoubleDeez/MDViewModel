@@ -7,6 +7,7 @@
 #include "Widgets/Views/STableRow.h"
 
 struct FMDViewModelEditorAssignment;
+class FMenuBuilder;
 
 class FMDVMDragAndDropViewModel : public FMDVMInspectorDragAndDropActionBase
 {
@@ -40,12 +41,17 @@ public:
 
 	virtual FReply OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 
+	void OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder);
+
 private:
-	EVisibility GetButtonVisibility() const;
 	EVisibility GetSourceTextVisibility() const;
 
-	FReply OnEditClicked() const;
-	FReply OnDeleteClicked() const;
+	FReply OnContextButtonClicked();
+
+	void OnEditClicked() const;
+	bool CanEdit() const;
+	void OnDeleteClicked() const;
+	bool CanDelete() const;
 
 	TSharedPtr<FMDViewModelEditorAssignment> Assignment;
 

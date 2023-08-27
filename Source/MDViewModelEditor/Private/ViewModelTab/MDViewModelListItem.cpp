@@ -3,6 +3,8 @@
 #include "Brushes/SlateColorBrush.h"
 #include "DetailLayoutBuilder.h"
 #include "EdGraphSchema_K2_Actions.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Misc/MessageDialog.h"
 #include "Nodes/MDVMNode_GetViewModel.h"
 #include "Util/MDViewModelEditorAssignment.h"
@@ -52,17 +54,11 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<
 
 	BackgroundBrush = static_cast<FSlateBrush>(FSlateColorBrush(FLinearColor::Transparent));
 
-	ButtonStyle = FAppStyle::Get().GetWidgetStyle< FButtonStyle >("FlatButton");
+	ButtonStyle = FAppStyle::Get().GetWidgetStyle<FButtonStyle>("FlatButton");
 	ButtonStyle.NormalPadding = FMargin(2.f);
 	ButtonStyle.PressedPadding = FMargin(2.f);
 
 	const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(Assignment->Assignment.ProviderTag);
-
-	const FText SourceText = Item->bIsSuper ? INVTEXT("Super") : FText::GetEmpty();
-	const FText SourceToolTipText = Item->bIsSuper
-		? INVTEXT("This viewmodel is assigned in a parent blueprint therefore it cannot be edited.")
-		: FText::GetEmpty();
-
 	const bool bIsViewModelClassValid = Item->Assignment.ViewModelClass != nullptr;
 
 	STableRow<TSharedPtr<FMDViewModelEditorAssignment>>::Construct(
@@ -89,54 +85,27 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<
 					]
 					+SHorizontalBox::Slot()
 					.AutoWidth()
-					.VAlign(VAlign_Top)
+					.Padding(4, 0)
 					[
-						SNew(SOverlay)
-						+SOverlay::Slot()
+						SNew(STextBlock)
+						.Visibility(this, &SMDViewModelListItem::GetSourceTextVisibility)
+						.Text(INVTEXT("Super"))
+						.ToolTipText(INVTEXT("This viewmodel is assigned in a parent blueprint therefore it cannot be edited."))
+					]
+					+SHorizontalBox::Slot()
+					.AutoWidth()
+					[
+						SNew(SButton)
+						.Cursor(EMouseCursor::Default)
+						.ButtonStyle(&ButtonStyle)
+						.ContentPadding(2.f)
+						.OnClicked(this, &SMDViewModelListItem::OnContextButtonClicked)
+						.ToolTipText(INVTEXT("Open the context menu for the view model assignment"))
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
 						[
-							SNew(SHorizontalBox)
-							.Visibility(this, &SMDViewModelListItem::GetButtonVisibility)
-							+SHorizontalBox::Slot()
-							.AutoWidth()
-							.VAlign(VAlign_Top)
-							[
-								SNew(SButton)
-								.Cursor(EMouseCursor::Default)
-								.ButtonStyle(&ButtonStyle)
-								.ContentPadding(2.f)
-								.OnClicked(this, &SMDViewModelListItem::OnEditClicked)
-								.ToolTipText(INVTEXT("Edit this view model assignment"))
-								.HAlign(HAlign_Center)
-								.VAlign(VAlign_Center)
-								[
-									SNew(SImage)
-									.Image(FAppStyle::Get().GetBrush("Icons.Edit"))
-								]
-							]
-							+SHorizontalBox::Slot()
-							.AutoWidth()
-							.VAlign(VAlign_Top)
-							[
-								SNew(SButton)
-								.Cursor(EMouseCursor::Default)
-								.ButtonStyle(&ButtonStyle)
-								.ContentPadding(2.f)
-								.OnClicked(this, &SMDViewModelListItem::OnDeleteClicked)
-								.ToolTipText(INVTEXT("Remove this view model assignment"))
-								.HAlign(HAlign_Center)
-								.VAlign(VAlign_Center)
-								[
-									SNew(SImage)
-									.Image(FAppStyle::Get().GetBrush(TEXT("GenericCommands.Delete")))
-								]
-							]
-						]
-						+SOverlay::Slot()
-						[
-							SNew(STextBlock)
-							.Visibility(this, &SMDViewModelListItem::GetSourceTextVisibility)
-							.Text(SourceText)
-							.ToolTipText(SourceToolTipText)
+							SNew(SImage)
+							.Image(FAppStyle::Get().GetBrush(TEXT("Menu.SubMenuIndicator")))
 						]
 					]
 				]
@@ -202,19 +171,38 @@ FReply SMDViewModelListItem::OnDragDetected(const FGeometry& MyGeometry, const F
 	return Reply;
 }
 
-EVisibility SMDViewModelListItem::GetButtonVisibility() const
+void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder)
 {
-	if (!Assignment->bIsSuper)
-	{
-		return EVisibility::Visible;
-	}
+	ContextMenuBuilder.BeginSection(TEXT("ViewModel"), INVTEXT("View Model"));
 
-	return EVisibility::Hidden;
+	// TODO - Find References, Copy, Duplicate
+
+	ContextMenuBuilder.AddMenuEntry(
+		INVTEXT("Edit Assignment"),
+		INVTEXT("Opens the view model assignment dialog to edit this assignment."),
+		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Edit")),
+		FUIAction(
+			FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnEditClicked),
+			FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanEdit)
+		)
+	);
+
+	ContextMenuBuilder.AddMenuEntry(
+		INVTEXT("Delete Assignment"),
+		INVTEXT("Remove this view model assignment."),
+		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("GenericCommands.Delete")),
+		FUIAction(
+			FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnDeleteClicked),
+			FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanDelete)
+		)
+	);
+	
+	ContextMenuBuilder.EndSection();
 }
 
 EVisibility SMDViewModelListItem::GetSourceTextVisibility() const
 {
-	if (Assignment->bIsSuper)
+	if (Assignment.IsValid() && Assignment->bIsSuper)
 	{
 		return EVisibility::Visible;
 	}
@@ -222,19 +210,44 @@ EVisibility SMDViewModelListItem::GetSourceTextVisibility() const
 	return EVisibility::Collapsed;
 }
 
-FReply SMDViewModelListItem::OnEditClicked() const
+FReply SMDViewModelListItem::OnContextButtonClicked()
 {
-	OnEditItemRequested.ExecuteIfBound();
+	FMenuBuilder ContextMenuBuilder(true, nullptr);
+	OnContextMenuOpening(ContextMenuBuilder);
+
+	TSharedPtr<IMenu> Menu = FSlateApplication::Get().PushMenu(
+		AsShared(),
+		FWidgetPath(),
+		ContextMenuBuilder.MakeWidget(),
+		FSlateApplication::Get().GetCursorPos(),
+		FPopupTransitionEffect(FPopupTransitionEffect::ContextMenu)
+	);
+
 	return FReply::Handled();
 }
 
-FReply SMDViewModelListItem::OnDeleteClicked() const
+void SMDViewModelListItem::OnEditClicked() const
+{
+	OnEditItemRequested.ExecuteIfBound();
+}
+
+bool SMDViewModelListItem::CanEdit() const
+{
+	// TODO - check not in PIE
+	return Assignment.IsValid() && !Assignment->bIsSuper;
+}
+
+void SMDViewModelListItem::OnDeleteClicked() const
 {
 	const EAppReturnType::Type ReturnType = FMessageDialog::Open(EAppMsgType::YesNo, INVTEXT("Are you sure you want to delete this view model assignment?"));
 	if (ReturnType == EAppReturnType::Yes)
 	{
 		OnDeleteItemConfirmed.ExecuteIfBound();
 	}
+}
 
-	return FReply::Handled();
+bool SMDViewModelListItem::CanDelete() const
+{
+	// TODO - check not in PIE
+	return Assignment.IsValid() && !Assignment->bIsSuper;
 }

@@ -30,6 +30,7 @@ public:
 private:
 	void OnItemSelected(TSharedPtr<FMDViewModelEditorAssignment> Item, ESelectInfo::Type SelectInfo);
 	TSharedRef<ITableRow> OnGenerateRow(TSharedPtr<FMDViewModelEditorAssignment> Item, const TSharedRef<STableViewBase>& OwningTable);
+	TSharedPtr<SWidget> OnContextMenuOpening();
 	void PopulateAssignments();
 
 	void OnAssignmentsChanged();

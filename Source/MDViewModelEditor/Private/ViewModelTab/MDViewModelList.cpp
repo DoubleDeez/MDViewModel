@@ -1,9 +1,8 @@
 #include "ViewModelTab/MDViewModelList.h"
 
-#include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
+#include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Launch/Resources/Version.h"
-#include "Util/MDViewModelUtils.h"
 #include "ScopedTransaction.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "ViewModelTab/MDViewModelAssignmentDialog.h"
@@ -64,6 +63,8 @@ void SMDViewModelList::Construct(const FArguments& InArgs, UWidgetBlueprint* InB
 			.ListItemsSource(&Assignments)
 			.OnGenerateRow(this, &SMDViewModelList::OnGenerateRow)
 			.OnSelectionChanged(this, &SMDViewModelList::OnItemSelected)
+			.OnContextMenuOpening(this, &SMDViewModelList::OnContextMenuOpening)
+			.AllowOverscroll(EAllowOverscroll::No)
 		]
 		+SVerticalBox::Slot()
 		.AutoHeight()
@@ -100,7 +101,6 @@ void SMDViewModelList::RefreshList()
 	PopulateAssignments();
 	if (AssignmentList.IsValid())
 	{
-		// TODO - Attempt to maintain the selected item
 		AssignmentList->RequestListRefresh();
 	}
 }
@@ -115,6 +115,30 @@ TSharedRef<ITableRow> SMDViewModelList::OnGenerateRow(TSharedPtr<FMDViewModelEdi
 	return SNew(SMDViewModelListItem, OwningTable, Item)
 		.OnEditItemRequested(this, &SMDViewModelList::OnEditItem, Item)
 		.OnDeleteItemConfirmed(this, &SMDViewModelList::OnDeleteItem, Item);
+}
+
+TSharedPtr<SWidget> SMDViewModelList::OnContextMenuOpening()
+{
+	FMenuBuilder ContextMenuBuilder(true, nullptr);
+
+	TArray<TSharedPtr<FMDViewModelEditorAssignment>> SelectedItems = AssignmentList->GetSelectedItems();
+	if (SelectedItems.Num() == 1 && SelectedItems[0].IsValid())
+	{
+		const TSharedPtr<SMDViewModelListItem> ListItem = StaticCastSharedPtr<SMDViewModelListItem>(AssignmentList->WidgetFromItem(SelectedItems[0]));
+		if (ListItem.IsValid())
+		{
+			ListItem->OnContextMenuOpening(ContextMenuBuilder);
+		}
+	}
+	
+	ContextMenuBuilder.BeginSection("ViewModelList", INVTEXT("View Model List"));
+	{
+		// TODO - Paste view model assignment
+		//ContextMenuBuilder.AddMenuEntry();
+	}
+	ContextMenuBuilder.EndSection();
+
+	return ContextMenuBuilder.MakeWidget();
 }
 
 void SMDViewModelList::PopulateAssignments()
