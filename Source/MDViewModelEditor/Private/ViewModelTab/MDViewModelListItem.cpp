@@ -9,6 +9,7 @@
 #include "Editor/EditorEngine.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "HAL/PlatformApplicationMisc.h"
 #include "Misc/MessageDialog.h"
 #include "Nodes/MDVMNode_GetViewModel.h"
 #include "Util/MDViewModelEditorAssignment.h"
@@ -196,6 +197,15 @@ void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder
 	);
 	
 	ContextMenuBuilder.AddMenuEntry(
+		INVTEXT("Copy Assignment"),
+		INVTEXT("Copy this view model assignment to the clipboard to be pasted in another blueprint."),
+		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("GenericCommands.Copy")),
+		FUIAction(
+			FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnCopyClicked)
+		)
+	);
+	
+	ContextMenuBuilder.AddMenuEntry(
 		INVTEXT("Find References"),
 		INVTEXT("Search for references to this view model in this blueprint."),
 		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Find")),
@@ -265,6 +275,14 @@ void SMDViewModelListItem::OnFindReferencesClicked() const
 
 		BPEditor->SummonSearchUI(true, GenerateSearchString());
 	}
+}
+
+void SMDViewModelListItem::OnCopyClicked() const
+{
+	FString AssignmentString;
+	FMDViewModelEditorAssignment::StaticStruct()->ExportText(AssignmentString, Assignment.Get(), Assignment.Get(), nullptr, PPF_Copy, nullptr);
+
+	FPlatformApplicationMisc::ClipboardCopy(*AssignmentString);
 }
 
 void SMDViewModelListItem::OnEditClicked() const

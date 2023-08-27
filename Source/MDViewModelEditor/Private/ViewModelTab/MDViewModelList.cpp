@@ -4,6 +4,7 @@
 #include "Editor.h"
 #include "Editor/EditorEngine.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "HAL/PlatformApplicationMisc.h"
 #include "Launch/Resources/Version.h"
 #include "ScopedTransaction.h"
 #include "Util/MDViewModelEditorAssignment.h"
@@ -138,8 +139,15 @@ TSharedPtr<SWidget> SMDViewModelList::OnContextMenuOpening()
 	
 	ContextMenuBuilder.BeginSection("ViewModelList", INVTEXT("View Model List"));
 	{
-		// TODO - Paste view model assignment
-		//ContextMenuBuilder.AddMenuEntry();
+		ContextMenuBuilder.AddMenuEntry(
+			INVTEXT("Paste Assignment"),
+			INVTEXT("Paste a view model assignment from the clipboard."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("GenericCommands.Paste")),
+			FUIAction(
+				FExecuteAction::CreateSP(this, &SMDViewModelList::OnPasteClicked),
+				FCanExecuteAction::CreateSP(this, &SMDViewModelList::CanPaste)
+			)
+		);
 	}
 	ContextMenuBuilder.EndSection();
 
@@ -243,6 +251,68 @@ FReply SMDViewModelList::OnAddViewModel()
 bool SMDViewModelList::CanAddViewModel() const
 {
 	return !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
+}
+
+void SMDViewModelList::OnPasteClicked()
+{
+	FString AssignmentString;
+	FPlatformApplicationMisc::ClipboardPaste(AssignmentString);
+	
+	FMDViewModelEditorAssignment Assignment;
+	UScriptStruct* AssignmentStruct = FMDViewModelEditorAssignment::StaticStruct();
+	AssignmentStruct->ImportText(*AssignmentString, &Assignment, nullptr, PPF_Copy, GError, AssignmentStruct->GetName());
+	
+	Assignment.bIsSuper = false;
+
+	if (UMDViewModelWidgetBlueprintExtension* BPExtension = UWidgetBlueprintExtension::RequestExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
+	{
+		if (BPExtension->DoesContainViewModelAssignment(Assignment.Assignment.ViewModelClass, FGameplayTag::EmptyTag, Assignment.Assignment.ViewModelName))
+		{
+			Assignment.Assignment.ViewModelName = *FString::Printf(TEXT("%s_Copy"), *Assignment.Assignment.ViewModelName.ToString());
+
+			while (BPExtension->DoesContainViewModelAssignment(Assignment.Assignment.ViewModelClass, FGameplayTag::EmptyTag, Assignment.Assignment.ViewModelName))
+			{
+				FString AssignmentName = Assignment.Assignment.ViewModelName.ToString();
+				if (AssignmentName.EndsWith(TEXT("_Copy")))
+				{
+					Assignment.Assignment.ViewModelName = *FString::Printf(TEXT("%s_01"), *AssignmentName);
+				}
+				else
+				{
+					int32 Index = INDEX_NONE;
+					AssignmentName.FindLastChar(TEXT('_'), Index);
+					const int32 SuffixNum = FCString::Atoi(*AssignmentName.RightChop(Index + 1));
+					Assignment.Assignment.ViewModelName = *FString::Printf(TEXT("%s_%02d"), *AssignmentName.Left(Index), SuffixNum + 1);
+				}
+			}
+		}
+		
+		FScopedTransaction Transaction = FScopedTransaction(INVTEXT("Pasted View Model Assignment"));
+		BPExtension->Modify();
+		BPExtension->AddAssignment(MoveTemp(Assignment));
+	}
+}
+
+bool SMDViewModelList::CanPaste() const
+{
+	if (GEditor->bIsSimulatingInEditor || GEditor->PlayWorld != nullptr)
+	{
+		return false;
+	}
+	
+	FString AssignmentString;
+	FPlatformApplicationMisc::ClipboardPaste(AssignmentString);
+
+	if (AssignmentString.IsEmpty() || !AssignmentString.StartsWith(TEXT("(")))
+	{
+		return false;
+	}
+
+	FMDViewModelEditorAssignment Assignment;
+	UScriptStruct* AssignmentStruct = FMDViewModelEditorAssignment::StaticStruct();
+	AssignmentStruct->ImportText(*AssignmentString, &Assignment, nullptr, PPF_Copy, GError, AssignmentStruct->GetName());
+
+	return Assignment.Assignment.IsValid();
 }
 
 void SMDViewModelList::OnDuplicateItem(TSharedPtr<FMDViewModelEditorAssignment> Item)

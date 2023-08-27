@@ -51,6 +51,7 @@ private:
 	FReply OnContextButtonClicked();
 
 	void OnFindReferencesClicked() const;
+	void OnCopyClicked() const;
 	void OnEditClicked() const;
 	bool CanEdit() const;
 	void OnDuplicateClicked() const;

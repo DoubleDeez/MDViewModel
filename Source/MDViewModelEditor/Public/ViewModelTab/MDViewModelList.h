@@ -39,6 +39,9 @@ private:
 	FReply OnAddViewModel();
 	bool CanAddViewModel() const;
 
+	void OnPasteClicked();
+	bool CanPaste() const;
+
 	void OnDuplicateItem(TSharedPtr<FMDViewModelEditorAssignment> Item);
 	void OnEditItem(TSharedPtr<FMDViewModelEditorAssignment> Item);
 	void OnDeleteItem(TSharedPtr<FMDViewModelEditorAssignment> Item);
