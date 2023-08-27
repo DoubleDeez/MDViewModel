@@ -65,6 +65,7 @@ TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GenerateValueWidget(TSharedP
 				SNew(SButton)
 				.ContentPadding(FMargin(3.0, 2.0))
 				.OnClicked(this, &FMDViewModelFieldDebugLineItem::OnAddOrViewBoundFunctionClicked)
+				.IsEnabled(this, &FMDViewModelFieldDebugLineItem::CanCreateNodes)
 				[
 					SNew(SWidgetSwitcher)
 					.WidgetIndex(this, &FMDViewModelFieldDebugLineItem::GetAddOrViewBoundFunctionIndex)
@@ -339,6 +340,11 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 FDebugLineItem* FMDViewModelFieldDebugLineItem::Duplicate() const
 {
 	return new FMDViewModelFieldDebugLineItem(PropertyPtr.Get(), ValuePtr, DisplayName, Description, DebugViewModel, bIsFieldNotify, WidgetBP.Get(), ViewModelClass, ViewModelName);
+}
+
+bool FMDViewModelFieldDebugLineItem::CanCreateNodes() const
+{
+	return FMDViewModelDebugLineItemBase::CanCreateNodes() || GetAddOrViewBoundFunctionIndex() == 0;
 }
 
 int32 FMDViewModelFieldDebugLineItem::GetShouldDisplayFieldNotifyIndex() const

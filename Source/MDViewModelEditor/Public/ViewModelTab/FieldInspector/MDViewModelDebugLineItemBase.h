@@ -38,6 +38,8 @@ protected:
 
 	virtual FText GetDescription() const override;
 
+	virtual bool CanCreateNodes() const;
+
 	mutable TOptional<TArray<FDebugTreeItemPtr>> CachedChildren;
 
 	mutable TMap<FName, FDebugTreeItemPtr> CachedPropertyItems;

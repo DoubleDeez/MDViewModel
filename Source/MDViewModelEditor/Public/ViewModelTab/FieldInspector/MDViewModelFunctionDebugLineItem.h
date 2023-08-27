@@ -42,6 +42,8 @@ protected:
 
 	virtual FDebugLineItem* Duplicate() const override;
 
+	virtual bool CanCreateNodes() const override;
+
 private:
 	int32 GetShouldDisplayFieldNotifyIndex() const;
 	FReply OnAddOrViewBoundFieldNotifyFunctionClicked() const;

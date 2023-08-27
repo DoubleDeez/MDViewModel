@@ -37,6 +37,7 @@ private:
 	void OnAssignmentsChanged();
 
 	FReply OnAddViewModel();
+	bool CanAddViewModel() const;
 
 	void OnDuplicateItem(TSharedPtr<FMDViewModelEditorAssignment> Item);
 	void OnEditItem(TSharedPtr<FMDViewModelEditorAssignment> Item);

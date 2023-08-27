@@ -1,5 +1,7 @@
 #include "ViewModelTab/FieldInspector/MDViewModelDebugLineItemBase.h"
 
+#include "Editor.h"
+#include "Editor/EditorEngine.h"
 #include "PropertyInfoViewStyle.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropActionBase.h"
@@ -79,4 +81,9 @@ FText FMDViewModelDebugLineItemBase::GetDisplayName() const
 FText FMDViewModelDebugLineItemBase::GetDescription() const
 {
 	return Description;
+}
+
+bool FMDViewModelDebugLineItemBase::CanCreateNodes() const
+{
+	return !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
 }

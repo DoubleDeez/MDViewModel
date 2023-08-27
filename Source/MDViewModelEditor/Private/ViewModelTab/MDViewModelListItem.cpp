@@ -5,6 +5,8 @@
 #include "Brushes/SlateColorBrush.h"
 #include "DetailLayoutBuilder.h"
 #include "EdGraphSchema_K2_Actions.h"
+#include "Editor.h"
+#include "Editor/EditorEngine.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Misc/MessageDialog.h"
@@ -13,7 +15,6 @@
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
 #include "WidgetBlueprint.h"
-#include "WidgetBlueprintEditor.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
@@ -273,8 +274,7 @@ void SMDViewModelListItem::OnEditClicked() const
 
 bool SMDViewModelListItem::CanEdit() const
 {
-	// TODO - check not in PIE
-	return Assignment.IsValid() && !Assignment->bIsSuper;
+	return Assignment.IsValid() && !Assignment->bIsSuper && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
 }
 
 void SMDViewModelListItem::OnDuplicateClicked() const
@@ -284,8 +284,7 @@ void SMDViewModelListItem::OnDuplicateClicked() const
 
 bool SMDViewModelListItem::CanDuplicate() const
 {
-	// TODO - check not in PIE
-	return Assignment.IsValid();
+	return Assignment.IsValid() && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
 }
 
 void SMDViewModelListItem::OnDeleteClicked() const
@@ -299,8 +298,7 @@ void SMDViewModelListItem::OnDeleteClicked() const
 
 bool SMDViewModelListItem::CanDelete() const
 {
-	// TODO - check not in PIE
-	return Assignment.IsValid() && !Assignment->bIsSuper;
+	return Assignment.IsValid() && !Assignment->bIsSuper && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
 }
 
 FString SMDViewModelListItem::GenerateSearchString() const

@@ -17,6 +17,8 @@ public:
 protected:
 	virtual FDebugLineItem* Duplicate() const override;
 
+	virtual bool CanCreateNodes() const override;
+
 private:
 	FReply OnAddOrViewBoundFunctionClicked() const;
 	int32 GetAddOrViewBoundFunctionIndex() const;

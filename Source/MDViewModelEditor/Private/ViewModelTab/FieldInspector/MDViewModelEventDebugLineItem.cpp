@@ -11,6 +11,7 @@ TSharedRef<SWidget> FMDViewModelEventDebugLineItem::GenerateValueWidget(TSharedP
 	return SNew(SButton)
 	.ContentPadding(FMargin(3.0, 2.0))
 	.OnClicked(this, &FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked)
+	.IsEnabled(this, &FMDViewModelEventDebugLineItem::CanCreateNodes)
 	[
 		SNew(SWidgetSwitcher)
 		.WidgetIndex(this, &FMDViewModelEventDebugLineItem::GetAddOrViewBoundFunctionIndex)
@@ -34,6 +35,11 @@ TSharedRef<SWidget> FMDViewModelEventDebugLineItem::GenerateValueWidget(TSharedP
 FDebugLineItem* FMDViewModelEventDebugLineItem::Duplicate() const
 {
 	return new FMDViewModelEventDebugLineItem(WeakDelegateProp.Get(), DebugViewModel, bIsFieldNotify, WidgetBP.Get(), ViewModelClass, ViewModelName);
+}
+
+bool FMDViewModelEventDebugLineItem::CanCreateNodes() const
+{
+	return FMDViewModelDebugLineItemBase::CanCreateNodes() || GetAddOrViewBoundFunctionIndex() == 0;
 }
 
 FReply FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked() const

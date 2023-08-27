@@ -1,6 +1,8 @@
 #include "ViewModelTab/MDViewModelList.h"
 
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
+#include "Editor.h"
+#include "Editor/EditorEngine.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Launch/Resources/Version.h"
 #include "ScopedTransaction.h"
@@ -74,6 +76,7 @@ void SMDViewModelList::Construct(const FArguments& InArgs, UWidgetBlueprint* InB
 			SNew(SButton)
 			.HAlign(HAlign_Center)
 			.OnClicked(this, &SMDViewModelList::OnAddViewModel)
+			.IsEnabled(this, &SMDViewModelList::CanAddViewModel)
 			[
 				SNew(SHorizontalBox)
 				+SHorizontalBox::Slot()
@@ -235,6 +238,11 @@ FReply SMDViewModelList::OnAddViewModel()
 	}
 
 	return FReply::Handled();
+}
+
+bool SMDViewModelList::CanAddViewModel() const
+{
+	return !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
 }
 
 void SMDViewModelList::OnDuplicateItem(TSharedPtr<FMDViewModelEditorAssignment> Item)
