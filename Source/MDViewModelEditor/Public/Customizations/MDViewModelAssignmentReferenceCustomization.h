@@ -46,6 +46,10 @@ public:
 private:
 	void GetWidgetViewModelAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments) const;
 	const UEdGraphPin* GetWidgetPin() const;
+	const UEdGraphPin* GetViewModelPin() const;
+
+	TSubclassOf<UUserWidget> GetConnectedWidgetClass() const;
+	TSubclassOf<UMDViewModelBase> GetConnectedViewModelClass() const;
 
 	TSharedRef<SWidget> MakeAssignmentMenu();
 	void SetSelectedAssignment(FMDViewModelAssignment Assignment) const;

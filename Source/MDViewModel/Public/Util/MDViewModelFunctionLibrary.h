@@ -24,7 +24,7 @@ public:
 	static UMDViewModelBase* SetViewModel(UUserWidget* Widget, UMDViewModelBase* ViewModel, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = TEXT("Default"));
 	// Set a view model on a widget
 	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Set View Model", meta = (DefaultToSelf = "Widget", AutoCreateRefTerm = "Assignment", DeterminesOutputType = "ViewModel"))
-	static UMDViewModelBase* BP_SetViewModel(UPARAM(meta = (VMAssignment = "Assignment")) UUserWidget* Widget, UMDViewModelBase* ViewModel, const FMDViewModelAssignmentReference& Assignment);
+	static UMDViewModelBase* BP_SetViewModel(UPARAM(meta = (VMAssignment = "Assignment")) UUserWidget* Widget, UPARAM(meta = (VMAssignment = "Assignment")) UMDViewModelBase* ViewModel, const FMDViewModelAssignmentReference& Assignment);
 
 	UFUNCTION(BlueprintCallable, Category = "View Model", meta = (DefaultToSelf = "Widget", DeprecatedFunction, DeprecationMessage = "This function is deprecated, replace it with the new Clear View Model node."))
 	static void ClearViewModel(UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = TEXT("Default"));
