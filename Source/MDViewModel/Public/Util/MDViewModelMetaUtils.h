@@ -20,20 +20,38 @@ struct TMDVMFuncTraits<void(TFirstArg, TArgs...)>
 
 // Fix syntax highlighting caused by code analysis engine not detecting FieldNotify names
 #if defined(__RESHARPER__)
-// Bind a native function on a UObject to a field changing
+// Bind a native function on a UObject to a field changing, returns an FDelegateHandle to use for unbinding with MDVM_UNBIND_FIELD_CHANGE
+// FUNCTION's first parameter must match the type of field being bound to
 #define MDVM_BIND_FIELD_CHANGED(VIEW_MODEL, FIELD_TYPE, FIELD_NAME, OBJECT, FUNCTION, ...) \
 	[&]() { \
-		static_assert(sizeof(decltype(VIEW_MODEL)::FFieldNotificationClassDescriptor::FIELD_NAME) != 0, "Non-existant field on view model"); \
 		FIELD_TYPE FIELD_NAME; \
-		TDelegate<void(TMDVMFuncTraits<decltype(FUNCTION)>::FirstArgType)>::CreateUObject(OBJECT, FUNCTION, __VA_ARGS__).Execute(FIELD_NAME); \
+		TDelegate<void(TMDVMFuncTraits<decltype(FUNCTION)>::FirstArgType)>::CreateUObject(OBJECT, FUNCTION, ##__VA_ARGS__).Execute(FIELD_NAME); \
 		return FDelegateHandle(); \
 	}()
 #else
-// Bind a native function on a UObject to a field changing
+// Bind a native function on a UObject to a field changing, returns an FDelegateHandle to use for unbinding with MDVM_UNBIND_FIELD_CHANGE
+// FUNCTION's first parameter must match the type of field being bound to
 #define MDVM_BIND_FIELD_CHANGED(VIEW_MODEL, FIELD_TYPE, FIELD_NAME, OBJECT, FUNCTION, ...) \
 	VIEW_MODEL->AddTypedFieldValueChangedDelegate<FIELD_TYPE>( \
-	TMDVMResolveVMType<decltype(VIEW_MODEL)>::FFieldNotificationClassDescriptor::FIELD_NAME, \
-	TDelegate<void(TMDVMFuncTraits<decltype(FUNCTION)>::FirstArgType)>::CreateUObject(OBJECT, FUNCTION, __VA_ARGS__))
+		TMDVMResolveVMType<decltype(VIEW_MODEL)>::FFieldNotificationClassDescriptor::FIELD_NAME, \
+		TDelegate<void(TMDVMFuncTraits<decltype(FUNCTION)>::FirstArgType)>::CreateUObject(OBJECT, FUNCTION, ##__VA_ARGS__) \
+	)
+#endif
+
+// Fix syntax highlighting caused by code analysis engine not detecting FieldNotify names
+#if defined(__RESHARPER__)
+// Unbind a function bound with MDVM_BIND_FIELD_CHANGED, returns true if a binding was removed
+#define MDVM_UNBIND_FIELD_CHANGED(VIEW_MODEL, FIELD_NAME, HANDLE) \
+	[&]() { \
+		return true; \
+	}()
+#else
+// Unbind a function bound with MDVM_BIND_FIELD_CHANGED, returns true if a binding was removed
+#define MDVM_UNBIND_FIELD_CHANGED(VIEW_MODEL, FIELD_NAME, HANDLE) \
+	VIEW_MODEL->RemoveFieldValueChangedDelegate( \
+		TMDVMResolveVMType<decltype(VIEW_MODEL)>::FFieldNotificationClassDescriptor::FIELD_NAME, \
+		HANDLE \
+	)
 #endif
 
 // Fix syntax highlighting caused by code analysis engine not detecting FieldNotify names
