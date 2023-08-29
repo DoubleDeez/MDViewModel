@@ -1,14 +1,14 @@
 #include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
 
 #include "EdGraphSchema_K2.h"
+#include "Engine/Blueprint.h"
 #include "UObject/UObjectIterator.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
 #include "ViewModelProviders/MDViewModelProvider_Cached.h"
-#include "WidgetBlueprint.h"
 
 
-void UMDViewModelAssignmentEditorObject::PopulateFromAssignment(const FMDViewModelEditorAssignment& Assignment, UWidgetBlueprint* WidgetBlueprint)
+void UMDViewModelAssignmentEditorObject::PopulateFromAssignment(const FMDViewModelEditorAssignment& Assignment, UBlueprint* Blueprint)
 {
 	ViewModelClass = Assignment.Assignment.ViewModelClass;
 	ViewModelProvider = Assignment.Assignment.ProviderTag;
@@ -25,7 +25,7 @@ void UMDViewModelAssignmentEditorObject::PopulateFromAssignment(const FMDViewMod
 			ProviderSettings.InitializeAs(Provider->GetProviderSettingsStruct());
 		}
 
-		Provider->OnProviderSettingsInitializedInEditor(ProviderSettings, WidgetBlueprint, Assignment.Assignment);
+		Provider->OnProviderSettingsInitializedInEditor(ProviderSettings, Blueprint, Assignment.Assignment);
 	}
 	else
 	{

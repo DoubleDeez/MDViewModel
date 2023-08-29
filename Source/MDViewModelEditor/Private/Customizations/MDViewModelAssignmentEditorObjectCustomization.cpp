@@ -5,6 +5,7 @@
 #include "DetailWidgetRow.h"
 #include "Engine/Engine.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "IDetailGroup.h"
 #include "Kismet2/SClassPickerDialog.h"
 #include "MDViewModelEditorConfig.h"
 #include "ViewModel/MDViewModelBase.h"
@@ -39,7 +40,7 @@ public:
 		if (IsValid(Provider))
 		{
 			Provider->GetSupportedViewModelClasses(ProviderSupportedViewModelClasses);
-			bAllowAbstract = Provider->DoesSupportAbstractViewModelClasses();
+			bAllowAbstract = !Provider->DoesCreateViewModels();
 		}
 	}
 
@@ -143,9 +144,9 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 				ViewModelSettingsHandle->SetOnChildPropertyValueChanged(FSimpleDelegate::CreateSP(this, &FMDViewModelAssignmentEditorObjectCustomization::OnViewModelPropertyChanged));
 				DetailBuilder.EditDefaultProperty(ViewModelSettingsHandle)->ShouldAutoExpand(true).OverrideResetToDefault(HideResetToDefault);
 			}
-			else if (EditorObject->ViewModelProvider == TAG_MDVMProvider_Manual)
+			else if (Provider->DoesCreateViewModels())
 			{
-				// Manual provider doesn't initialize view models so we don't need to warn here.
+				// Provider doesn't initialize view models so we don't need to warn here.
 				DetailBuilder.HideProperty(ViewModelSettingsHandle);
 			}
 			else
@@ -164,11 +165,13 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 			DetailBuilder.HideProperty(ViewModelSettingsHandle);
 		}
 
+		int32 CustomSortOrder = 9000;
+
 		const FMDViewModelAssignment Assignment = EditorObject->CreateAssignment().Assignment;
 		const TSharedRef<IPropertyHandle> ViewModelClassHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ViewModelClass), UMDViewModelAssignmentEditorObject::StaticClass());
 		if (IsValid(Provider))
 		{
-			Provider->OnProviderSettingsInitializedInEditor(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint(), Assignment);
+			Provider->OnProviderSettingsInitializedInEditor(EditorObject->ProviderSettings, Dialog->GetBlueprint(), Assignment);
 
 			const FComboButtonStyle& ComboButtonStyle = FAppStyle::Get().GetWidgetStyle<FComboButtonStyle>("ComboButton");
 			
@@ -219,12 +222,12 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 			];
 
 			TArray<FText> ProviderIssues;
-			Provider->ValidateProviderSettings(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint(), Assignment, ProviderIssues);
+			Provider->ValidateProviderSettings(EditorObject->ProviderSettings, Dialog->GetBlueprint(), Assignment, ProviderIssues);
 
 			if (!ProviderIssues.IsEmpty())
 			{
 				IDetailCategoryBuilder& ProviderValidationCategory = DetailBuilder.EditCategory(TEXT("Provider Validation"));
-				ProviderValidationCategory.SetSortOrder(9001);
+				ProviderValidationCategory.SetSortOrder(++CustomSortOrder);
 
 				for (const FText& Issue : ProviderIssues)
 				{
@@ -245,12 +248,12 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 		if (const UMDViewModelBase* ViewModelCDO = EditorObject->ViewModelClass.GetDefaultObject())
 		{
 			TArray<FText> ViewModelIssues;
-			ViewModelCDO->ValidateViewModelSettings(EditorObject->ViewModelSettings, Dialog->GetWidgetBlueprint(), Assignment, ViewModelIssues);
+			ViewModelCDO->ValidateViewModelSettings(EditorObject->ViewModelSettings, Dialog->GetBlueprint(), Assignment, ViewModelIssues);
 
 			if (!ViewModelIssues.IsEmpty())
 			{
 				IDetailCategoryBuilder& ViewModelValidationCategory = DetailBuilder.EditCategory(TEXT("View Model Validation"));
-				ViewModelValidationCategory.SetSortOrder(9002);
+				ViewModelValidationCategory.SetSortOrder(++CustomSortOrder);
 
 				for (const FText& Issue : ViewModelIssues)
 				{
@@ -259,6 +262,180 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 						SNew(STextBlock)
 						.Text(Issue)
 						.AutoWrapText(true)
+					];
+				}
+			}
+
+			// Context object hinting
+			if (IsValid(Provider) && Provider->DoesCreateViewModels())
+			{
+				UBlueprint* Blueprint = Dialog->GetBlueprint();
+
+				TArray<TSubclassOf<UObject>> ProviderExpectedContextObjectClasses;
+				Provider->GetExpectedContextObjectTypes(EditorObject->ProviderSettings, EditorObject->ViewModelSettings, Blueprint, ProviderExpectedContextObjectClasses);
+				ProviderExpectedContextObjectClasses = ProviderExpectedContextObjectClasses.FilterByPredicate([](const TSubclassOf<UObject>& Class) { return Class != nullptr; });
+				
+				TArray<TSubclassOf<UObject>> ViewModelSupportedContextObjectClasses;
+				ViewModelCDO->GetSupportedContextObjectTypes(EditorObject->ViewModelSettings, Blueprint, ViewModelSupportedContextObjectClasses);
+				ViewModelSupportedContextObjectClasses = ViewModelSupportedContextObjectClasses.FilterByPredicate([](const TSubclassOf<UObject>& Class) { return Class != nullptr; });
+
+				// Determine which provided classes match what the view model supports
+				TSet<TSubclassOf<UObject>> ExactMatches;
+				TSet<TSubclassOf<UObject>> PossibleMatches;
+
+				for (const TSubclassOf<UObject>& VMContextClass : ViewModelSupportedContextObjectClasses)
+				{
+					for (const TSubclassOf<UObject>& ProvidedContextClass : ProviderExpectedContextObjectClasses)
+					{
+						if (VMContextClass == ProvidedContextClass)
+						{
+							ExactMatches.Add(VMContextClass);
+						}
+						else if (ProvidedContextClass->IsChildOf(VMContextClass) || ProvidedContextClass->ImplementsInterface(VMContextClass))
+						{
+							ExactMatches.Add(VMContextClass);
+							ExactMatches.Add(ProvidedContextClass);
+						}
+						else if (VMContextClass->IsChildOf(ProvidedContextClass) || TSubclassOf<UInterface>(VMContextClass.Get()) != nullptr)
+						{
+							// The supported type is a child of the provided type so the actual provided type _could_ be the supported type
+							// OR
+							// The provided type _could_ implement an interface so it's a maybe
+							PossibleMatches.Add(VMContextClass);
+							PossibleMatches.Add(ProvidedContextClass);
+						}
+					}
+				}
+
+				const FText ContextObjectHintText = [&]()
+				{
+					if (ProviderExpectedContextObjectClasses.IsEmpty())
+					{
+						return INVTEXT("This Provider does not specify its supplied context objects for the current settings.");
+					}
+					
+					if (ViewModelSupportedContextObjectClasses.IsEmpty())
+					{
+						return INVTEXT("This view model does not specify its supported context objects for the current settings. Override GetSupportedContextObjectTypes to specify them.");
+					}
+					
+					if (PossibleMatches.IsEmpty() && ExactMatches.IsEmpty())
+					{
+						return INVTEXT("This view model does not support any of the provided context objects.");
+					}
+
+					if (ExactMatches.IsEmpty())
+					{
+						return INVTEXT("This view model might support the provided context object, compatibility can only be determined at runtime");
+					}
+					
+					bool bAllClassesHaveExactMatch = true;
+					for (const TSubclassOf<UObject>& ProvidedContextClass : ProviderExpectedContextObjectClasses)
+					{
+						if (!ExactMatches.Contains(ProvidedContextClass))
+						{
+							bAllClassesHaveExactMatch = false;
+							break;
+						}
+					}
+
+					if (bAllClassesHaveExactMatch)
+					{
+						if (ProviderExpectedContextObjectClasses.Num() > 1)
+						{
+							return INVTEXT("The selected view model supports all the potentially provided context objects.");
+						}
+						else
+						{
+							return INVTEXT("The selected view model supports the provided context object.");
+						}
+					}
+
+					return INVTEXT("The selected view model only supports some of the potentially provided context objects, compatibility can only be determined at runtime.");
+				}();
+				
+				IDetailCategoryBuilder& ContextObjectTypeCheckCategory = DetailBuilder.EditCategory(TEXT("Context Object Type Check"));
+				ContextObjectTypeCheckCategory.SetSortOrder(++CustomSortOrder);
+				
+				ContextObjectTypeCheckCategory.AddCustomRow(ContextObjectHintText).WholeRowContent()
+				[
+					SNew(SBox)
+					.Padding(4.f)
+					[
+						SNew(STextBlock)
+						.Text(ContextObjectHintText)
+						.AutoWrapText(true)
+					]
+				];
+
+				IDetailGroup& Group = ContextObjectTypeCheckCategory.AddGroup(TEXT("ContextObjectClasses"), INVTEXT("Context Object Classes"), false, true);
+				Group.HeaderRow()
+				.NameContent()
+				[
+					SNew(STextBlock)
+					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 8))
+					.Text(ProviderExpectedContextObjectClasses.Num() > 1 ? INVTEXT("Provided Context Object Types") : INVTEXT("Provided Context Object Type"))
+					.ToolTipText(ProviderExpectedContextObjectClasses.Num() > 1 ? INVTEXT("The provider will initialize the view model with one of these context object types") : INVTEXT("The provider will initialize the view model with this context object type"))
+				]
+				.ValueContent()
+				[
+					SNew(STextBlock)
+					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 8))
+					.Text(ViewModelSupportedContextObjectClasses.Num() > 1 ? INVTEXT("Supported View Model Context Object Types") : INVTEXT("Supported View Model Context Object Type"))
+					.ToolTipText(ViewModelSupportedContextObjectClasses.Num() > 1 ? INVTEXT("The view model supports being initialized with any of these context object types") : INVTEXT("The view model can be initialized with this context object type"))
+				];
+
+				auto SortingFunc = [&] (const TSubclassOf<UObject>& A, const TSubclassOf<UObject>& B)
+				{
+					if (ExactMatches.Contains(A) != ExactMatches.Contains(B))
+					{
+						return ExactMatches.Contains(A);
+					}
+
+					if (PossibleMatches.Contains(A) != PossibleMatches.Contains(B))
+					{
+						return PossibleMatches.Contains(A);
+					}
+
+					return A->GetDisplayNameText().CompareTo(B->GetDisplayNameText()) < 0;
+				};
+				
+				ProviderExpectedContextObjectClasses.StableSort(SortingFunc);
+				ViewModelSupportedContextObjectClasses.StableSort(SortingFunc);
+
+				const FSlateFontInfo RegularStyle = FCoreStyle::GetDefaultFontStyle("Regular", 8);
+				const FSlateFontInfo BoldStyle = FCoreStyle::GetDefaultFontStyle("Bold", 8);
+
+				const FSlateColor ExactMatchColor = FColorList::LimeGreen;
+				const FSlateColor PossibleMatchColor = FLinearColor(1.f, 0.65f, 0.f);
+				const FSlateColor NoMatchColor = FLinearColor(0.5f, 0.5f, 0.5f);
+
+				const int32 NumRows = FMath::Max(ProviderExpectedContextObjectClasses.Num(), ViewModelSupportedContextObjectClasses.Num());
+				for (int32 i = 0; i < NumRows; ++i)
+				{
+					const TSubclassOf<UObject> ProvidedContextClass = ProviderExpectedContextObjectClasses.IsValidIndex(i) ? ProviderExpectedContextObjectClasses[i] : nullptr;
+					const TSubclassOf<UObject> VMContextClass = ViewModelSupportedContextObjectClasses.IsValidIndex(i) ? ViewModelSupportedContextObjectClasses[i] : nullptr;
+					const bool bIsProvidedClassInMatches = ExactMatches.Contains(ProvidedContextClass) || PossibleMatches.Contains(VMContextClass);
+					const bool bIsVMClassInMatches = ExactMatches.Contains(VMContextClass) || PossibleMatches.Contains(VMContextClass);
+					
+					Group.AddWidgetRow()
+					.NameContent()
+					[
+						IsValid(ProvidedContextClass)
+							? SNew(STextBlock)
+							.Text(ProvidedContextClass->GetDisplayNameText())
+							.Font(bIsProvidedClassInMatches ? BoldStyle : RegularStyle)
+							.ColorAndOpacity(bIsProvidedClassInMatches ? (ExactMatches.Contains(ProvidedContextClass) ? ExactMatchColor : PossibleMatchColor) : NoMatchColor)
+							: SNew(STextBlock)
+					]
+					.ValueContent()
+					[
+						IsValid(VMContextClass)
+							? SNew(STextBlock)
+							.Text(VMContextClass->GetDisplayNameText())
+							.Font(bIsVMClassInMatches ? BoldStyle : RegularStyle)
+							.ColorAndOpacity(bIsVMClassInMatches ? (ExactMatches.Contains(VMContextClass) ? ExactMatchColor : PossibleMatchColor) : NoMatchColor)
+							: SNew(STextBlock)
 					];
 				}
 			}
@@ -339,7 +516,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::OnProviderSelected(FGamepl
 		if (const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider))
 		{
 			EditorObject->ProviderSettings.InitializeAs(Provider->GetProviderSettingsStruct());
-			Provider->OnProviderSettingsInitializedInEditor(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint(), EditorObject->CreateAssignment().Assignment);
+			Provider->OnProviderSettingsInitializedInEditor(EditorObject->ProviderSettings, Dialog->GetBlueprint(), EditorObject->CreateAssignment().Assignment);
 		}
 		else
 		{
@@ -447,7 +624,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::OnViewModelPropertyChanged
 	{
 		if (const UMDViewModelBase* ViewModelCDO = EditorObject->ViewModelClass.GetDefaultObject())
 		{
-			ViewModelCDO->OnViewModelSettingsPropertyChanged(EditorObject->ViewModelSettings, Dialog->GetWidgetBlueprint(), EditorObject->CreateAssignment().Assignment);
+			ViewModelCDO->OnViewModelSettingsPropertyChanged(EditorObject->ViewModelSettings, Dialog->GetBlueprint(), EditorObject->CreateAssignment().Assignment);
 		}
 	}
 
@@ -462,7 +639,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::OnAssignmentUpdated() cons
 	{
 		if (const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider))
 		{
-			Provider->OnAssignmentUpdated(EditorObject->ProviderSettings, Dialog->GetWidgetBlueprint(), EditorObject->CreateAssignment().Assignment);
+			Provider->OnAssignmentUpdated(EditorObject->ProviderSettings, Dialog->GetBlueprint(), EditorObject->CreateAssignment().Assignment);
 		}
 	}
 }

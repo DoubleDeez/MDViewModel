@@ -13,7 +13,7 @@ struct FMDViewModelAssignment;
 class UUserWidget;
 
 #if WITH_EDITOR
-class UWidgetBlueprint;
+class UBlueprint;
 #endif
 
 /**
@@ -44,8 +44,10 @@ public:
 #if WITH_EDITOR
 	// Override this to expose properties in the view model assignment editor, called on the CDO
 	virtual UScriptStruct* GetViewModelSettingsStruct() const { return nullptr; }
-	virtual void OnViewModelSettingsPropertyChanged(FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint, const FMDViewModelAssignment& Assignment) const {};
-	virtual bool ValidateViewModelSettings(const FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint, const FMDViewModelAssignment& Assignment, TArray<FText>& OutIssues) const { return true; }
+	virtual void OnViewModelSettingsPropertyChanged(FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, const FMDViewModelAssignment& Assignment) const {};
+	virtual bool ValidateViewModelSettings(const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, const FMDViewModelAssignment& Assignment, TArray<FText>& OutIssues) const { return true; }
+	virtual void GetSupportedContextObjectTypes(const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, TArray<TSubclassOf<UObject>>& OutClasses) const {};
+	virtual void GetStoredContextObjectTypes(const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, TArray<TSubclassOf<UObject>>& OutClasses) const { GetSupportedContextObjectTypes(ViewModelSettings, Blueprint, OutClasses); };
 #endif
 
 	struct MDVIEWMODEL_API FFieldNotificationClassDescriptor : public ::UE::FieldNotification::IClassDescriptor

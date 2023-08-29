@@ -24,8 +24,7 @@ public:
 	virtual FGameplayTag GetProviderTag() const override { return TAG_MDVMProvider_Manual; }
 
 #if WITH_EDITOR
-	// We don't create VM instances so we allow abstract view models to be assigned
-	virtual bool DoesSupportAbstractViewModelClasses() const override { return true; }
+	virtual bool DoesCreateViewModels() const override { return false; }
 	virtual FText GetDisplayName() const override { return INVTEXT("Manual Set"); }
 	virtual FText GetDescription() const override { return INVTEXT("The view model will have to be manually set on the widget at runtime."); }
 #endif

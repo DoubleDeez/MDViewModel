@@ -70,6 +70,31 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<
 	const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(Assignment->Assignment.ProviderTag);
 	const bool bIsViewModelClassValid = Item->Assignment.ViewModelClass != nullptr;
 
+	const FText ViewModelToolTip = [&]()
+	{
+		if (bIsViewModelClassValid)
+		{
+			TArray<TSubclassOf<UObject>> SupportedContextObjects;
+			Item->Assignment.ViewModelClass.GetDefaultObject()->GetStoredContextObjectTypes(Assignment->Data.ViewModelSettings, GetBlueprint(), SupportedContextObjects);
+			
+			FText VMToolTip = Item->Assignment.ViewModelClass->GetToolTipText();
+
+			if (!SupportedContextObjects.IsEmpty())
+			{
+				VMToolTip = FText::Format(INVTEXT("{0}\n\nStored Context Object {1}|plural(one=Type,other=Types):"), VMToolTip, SupportedContextObjects.Num());
+
+				for (const TSubclassOf<UObject>& Class : SupportedContextObjects)
+				{
+					VMToolTip = FText::Format(INVTEXT("{0}\n{1}"), VMToolTip, Class->GetDisplayNameText());
+				}
+			}
+
+			return VMToolTip;
+		}
+
+		return INVTEXT("This view model is invalid, the class may have been renamed or deleted");
+	}();
+
 	STableRow<TSharedPtr<FMDViewModelEditorAssignment>>::Construct(
 		STableRow<TSharedPtr<FMDViewModelEditorAssignment>>::FArguments()
 		.Padding(0.0f)
@@ -90,7 +115,7 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<
 						SNew(STextBlock)
 						.Text(bIsViewModelClassValid ? Item->Assignment.ViewModelClass->GetDisplayNameText() : INVTEXT("NULL"))
 						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
-						.ToolTipText(bIsViewModelClassValid ? Item->Assignment.ViewModelClass->GetToolTipText() : INVTEXT("This view model is invalid, the class may have been renamed or deleted"))
+						.ToolTipText(ViewModelToolTip)
 					]
 					+SHorizontalBox::Slot()
 					.AutoWidth()
@@ -180,11 +205,15 @@ FReply SMDViewModelListItem::OnDragDetected(const FGeometry& MyGeometry, const F
 	return Reply;
 }
 
+FReply SMDViewModelListItem::OnMouseButtonDoubleClick(const FGeometry& InMyGeometry, const FPointerEvent& InMouseEvent)
+{
+	OnEditClicked();
+	return FReply::Handled();
+}
+
 void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder)
 {
 	ContextMenuBuilder.BeginSection(TEXT("ViewModel"), INVTEXT("View Model"));
-
-	// TODO - Find References, Copy
 
 	ContextMenuBuilder.AddMenuEntry(
 		INVTEXT("Edit Assignment"),
@@ -331,4 +360,14 @@ FString SMDViewModelListItem::GenerateSearchString() const
 	}
 
 	return TEXT("");
+}
+
+UBlueprint* SMDViewModelListItem::GetBlueprint() const
+{
+	if (const TSharedPtr<FBlueprintEditor> BPEditor = BlueprintEditor.Pin())
+	{
+		return BPEditor->GetBlueprintObj();
+	}
+
+	return nullptr;
 }

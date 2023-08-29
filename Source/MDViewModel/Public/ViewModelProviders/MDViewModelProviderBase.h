@@ -47,14 +47,15 @@ public:
 
 #if WITH_EDITOR
 	virtual void GetSupportedViewModelClasses(TArray<FMDViewModelSupportedClass>& OutViewModelClasses);
-	virtual bool DoesSupportAbstractViewModelClasses() const { return false; }
+	virtual bool DoesCreateViewModels() const { return true; }
 	virtual FText GetDisplayName() const  { PURE_VIRTUAL(UMDViewModelProviderBase::GetDisplayName, return FText::GetEmpty();) }
 	virtual FText GetDescription() const  { PURE_VIRTUAL(UMDViewModelProviderBase::GetDescription, return FText::GetEmpty();) }
 
 	virtual UScriptStruct* GetProviderSettingsStruct() const { return nullptr; }
-	virtual void OnProviderSettingsInitializedInEditor(FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint, const FMDViewModelAssignment& Assignment) const {};
-	virtual void OnAssignmentUpdated(FInstancedStruct& ProviderSettings, UWidgetBlueprint* WidgetBlueprint, const FMDViewModelAssignment& Assignment) const {};
-	virtual bool ValidateProviderSettings(const FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint, const FMDViewModelAssignment& Assignment, TArray<FText>& OutIssues) const { return true; }
+	virtual void OnProviderSettingsInitializedInEditor(FInstancedStruct& Settings, UBlueprint* Blueprint, const FMDViewModelAssignment& Assignment) const {};
+	virtual void OnAssignmentUpdated(FInstancedStruct& ProviderSettings, UBlueprint* Blueprint, const FMDViewModelAssignment& Assignment) const {};
+	virtual bool ValidateProviderSettings(const FInstancedStruct& Settings, UBlueprint* Blueprint, const FMDViewModelAssignment& Assignment, TArray<FText>& OutIssues) const { return true; }
+	virtual void GetExpectedContextObjectTypes(const FInstancedStruct& ProviderSettings, const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, TArray<TSubclassOf<UObject>>& OutContextObjectClasses) const {}
 #endif
 
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnViewModelUpdated, TSubclassOf<UMDViewModelBase>);

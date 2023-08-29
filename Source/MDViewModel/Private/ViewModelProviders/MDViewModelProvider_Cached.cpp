@@ -159,7 +159,7 @@ UMDViewModelBase* UMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 }
 
 #if WITH_EDITOR
-bool UMDViewModelProvider_Cached::ValidateProviderSettings(const FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint, const FMDViewModelAssignment& Assignment, TArray<FText>& OutIssues) const
+bool UMDViewModelProvider_Cached::ValidateProviderSettings(const FInstancedStruct& Settings, UBlueprint* Blueprint, const FMDViewModelAssignment& Assignment, TArray<FText>& OutIssues) const
 {
 	const FMDViewModelProvider_Cached_Settings* SettingsPtr = Settings.GetPtr<FMDViewModelProvider_Cached_Settings>();
 	if (SettingsPtr == nullptr)
@@ -186,10 +186,10 @@ bool UMDViewModelProvider_Cached::ValidateProviderSettings(const FInstancedStruc
 		}
 	}
 
-	return Super::ValidateProviderSettings(Settings, WidgetBlueprint, Assignment, OutIssues);
+	return Super::ValidateProviderSettings(Settings, Blueprint, Assignment, OutIssues);
 }
 
-void UMDViewModelProvider_Cached::OnProviderSettingsInitializedInEditor(FInstancedStruct& Settings, UWidgetBlueprint* WidgetBlueprint, const FMDViewModelAssignment& Assignment) const
+void UMDViewModelProvider_Cached::OnProviderSettingsInitializedInEditor(FInstancedStruct& Settings, UBlueprint* Blueprint, const FMDViewModelAssignment& Assignment) const
 {
 	FMDViewModelProvider_Cached_Settings* SettingsPtr = Settings.GetMutablePtr<FMDViewModelProvider_Cached_Settings>();
 	if (ensure(SettingsPtr))
@@ -200,18 +200,18 @@ void UMDViewModelProvider_Cached::OnProviderSettingsInitializedInEditor(FInstanc
 			PRAGMA_DISABLE_DEPRECATION_WARNINGS
 			SettingsPtr->ViewModelLifetimeTag = MDVMCachedProvider_Private::RemapLifetime(SettingsPtr->ViewModelLifetime);
 			PRAGMA_ENABLE_DEPRECATION_WARNINGS
-			FBlueprintEditorUtils::MarkBlueprintAsModified(WidgetBlueprint);
+			FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 		}
 		
-		SettingsPtr->RelativeViewModel.OnGetWidgetClass.BindWeakLambda(WidgetBlueprint, [WidgetBlueprint]()
+		SettingsPtr->RelativeViewModel.OnGetWidgetClass.BindWeakLambda(Blueprint, [Blueprint]()
 		{
-			return IsValid(WidgetBlueprint) ? Cast<UClass>(WidgetBlueprint->GeneratedClass) : nullptr;
+			return IsValid(Blueprint) ? Cast<UClass>(Blueprint->GeneratedClass) : nullptr;
 		});
 
-		if (SettingsPtr->ViewModelLifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty && IsValid(WidgetBlueprint))
+		if (SettingsPtr->ViewModelLifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty && IsValid(Blueprint))
 		{
-			const UFunction* Function = SettingsPtr->RelativePropertyReference.ResolveMember<UFunction>(WidgetBlueprint->SkeletonGeneratedClass);
-			const FObjectPropertyBase* Property = SettingsPtr->RelativePropertyReference.ResolveMember<FObjectPropertyBase>(WidgetBlueprint->SkeletonGeneratedClass);
+			const UFunction* Function = SettingsPtr->RelativePropertyReference.ResolveMember<UFunction>(Blueprint->SkeletonGeneratedClass);
+			const FObjectPropertyBase* Property = SettingsPtr->RelativePropertyReference.ResolveMember<FObjectPropertyBase>(Blueprint->SkeletonGeneratedClass);
 			SettingsPtr->RelativePropertyName = (Function != nullptr) ? Function->GetFName() : ((Property != nullptr) ? Property->GetFName() : NAME_None);
 		}
 		else if (SettingsPtr->ViewModelLifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_RelativeViewModelProperty && IsValid(SettingsPtr->RelativeViewModel.ViewModelClass.LoadSynchronous()))
@@ -223,22 +223,22 @@ void UMDViewModelProvider_Cached::OnProviderSettingsInitializedInEditor(FInstanc
 	}
 }
 
-void UMDViewModelProvider_Cached::OnAssignmentUpdated(FInstancedStruct& ProviderSettings, UWidgetBlueprint* WidgetBlueprint, const FMDViewModelAssignment& Assignment) const
+void UMDViewModelProvider_Cached::OnAssignmentUpdated(FInstancedStruct& ProviderSettings, UBlueprint* Blueprint, const FMDViewModelAssignment& Assignment) const
 {
 	FMDViewModelProvider_Cached_Settings* SettingsPtr = ProviderSettings.GetMutablePtr<FMDViewModelProvider_Cached_Settings>();
 	if (ensure(SettingsPtr))
 	{
 #if WITH_EDITORONLY_DATA
 		const FGameplayTag& LifetimeTag = SettingsPtr->GetLifetimeTag();
-		if (LifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty && IsValid(WidgetBlueprint) && IsValid(WidgetBlueprint->SkeletonGeneratedClass))
+		if (LifetimeTag == TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty && IsValid(Blueprint) && IsValid(Blueprint->SkeletonGeneratedClass))
 		{
-			if (const FProperty* Property = WidgetBlueprint->SkeletonGeneratedClass->FindPropertyByName(SettingsPtr->RelativePropertyName))
+			if (const FProperty* Property = Blueprint->SkeletonGeneratedClass->FindPropertyByName(SettingsPtr->RelativePropertyName))
 			{
-				SettingsPtr->RelativePropertyReference.SetFromField<FProperty>(Property, WidgetBlueprint->SkeletonGeneratedClass);
+				SettingsPtr->RelativePropertyReference.SetFromField<FProperty>(Property, Blueprint->SkeletonGeneratedClass);
 			}
-			else if (const UFunction* Function = WidgetBlueprint->SkeletonGeneratedClass->FindFunctionByName(SettingsPtr->RelativePropertyName))
+			else if (const UFunction* Function = Blueprint->SkeletonGeneratedClass->FindFunctionByName(SettingsPtr->RelativePropertyName))
 			{
-				SettingsPtr->RelativePropertyReference.SetFromField<UFunction>(Function, WidgetBlueprint->SkeletonGeneratedClass);
+				SettingsPtr->RelativePropertyReference.SetFromField<UFunction>(Function, Blueprint->SkeletonGeneratedClass);
 			}
 			else
 			{
@@ -267,6 +267,96 @@ void UMDViewModelProvider_Cached::OnAssignmentUpdated(FInstancedStruct& Provider
 			SettingsPtr->RelativePropertyName = NAME_None;
 		}
 #endif
+	}
+}
+
+void UMDViewModelProvider_Cached::GetExpectedContextObjectTypes(const FInstancedStruct& ProviderSettings, const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, TArray<TSubclassOf<UObject>>& OutContextObjectClasses) const
+{
+	const FMDViewModelProvider_Cached_Settings* SettingsPtr = ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
+	if (ensure(SettingsPtr))
+	{
+		GetExpectedContextObjectType(*SettingsPtr, ViewModelSettings, Blueprint, OutContextObjectClasses);
+	}
+}
+
+void UMDViewModelProvider_Cached::GetExpectedContextObjectType(const FMDViewModelProvider_Cached_Settings& ProviderSettings, const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, TArray<TSubclassOf<UObject>>& OutContextObjectClasses) const
+{
+	const FGameplayTag& Lifetime = ProviderSettings.GetLifetimeTag();
+	UClass* AssignedObjectClass = Blueprint->SkeletonGeneratedClass != nullptr ? Blueprint->SkeletonGeneratedClass : Blueprint->GeneratedClass;
+	if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_Global)
+	{
+		OutContextObjectClasses.Add(UGameInstance::StaticClass());
+	}
+	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_LocalPlayer)
+	{
+		OutContextObjectClasses.Add(ULocalPlayer::StaticClass());
+	}
+	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_World)
+	{
+		OutContextObjectClasses.Add(UWorld::StaticClass());
+	}
+	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_OwningPlayerController)
+	{
+		OutContextObjectClasses.Add(APlayerController::StaticClass());
+	}
+	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_OwningHUD)
+	{
+		OutContextObjectClasses.Add(AHUD::StaticClass());
+	}
+	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_OwningPawn)
+	{
+		OutContextObjectClasses.Add(APawn::StaticClass());
+	}
+	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_OwningPlayerState)
+	{
+		OutContextObjectClasses.Add(APlayerState::StaticClass());
+	}
+	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_GameState)
+	{
+		OutContextObjectClasses.Add(AGameStateBase::StaticClass());
+	}
+	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_ViewTarget)
+	{
+		OutContextObjectClasses.Add(AActor::StaticClass());
+	}
+	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_ViewTargetPlayerState)
+	{
+		OutContextObjectClasses.Add(APlayerState::StaticClass());
+	}
+	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_Relative)
+	{
+		const TSubclassOf<UMDViewModelBase> ViewModelClass = ProviderSettings.RelativeViewModel.ViewModelClass.LoadSynchronous();
+		if (const UMDViewModelBase* ViewModelCDO = ViewModelClass.GetDefaultObject())
+		{
+			ViewModelCDO->GetStoredContextObjectTypes(ViewModelSettings, Blueprint, OutContextObjectClasses);
+		}
+	}
+	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty)
+	{
+		const FMemberReference& Reference = ProviderSettings.RelativePropertyReference;
+		const UFunction* Function = Reference.ResolveMember<UFunction>(AssignedObjectClass);
+		const FObjectPropertyBase* Property = CastField<FObjectPropertyBase>(IsValid(Function) ? Function->GetReturnProperty() : Reference.ResolveMember<FProperty>(AssignedObjectClass));
+
+		if (Property != nullptr)
+		{
+			OutContextObjectClasses.Add(Property->PropertyClass);
+		}
+	}
+	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_RelativeViewModelProperty)
+	{
+		UClass* RelativeVMClass = ProviderSettings.RelativeViewModel.ViewModelClass.LoadSynchronous();
+		const FMemberReference& Reference = ProviderSettings.RelativePropertyReference;
+		const UFunction* Function = Reference.ResolveMember<UFunction>(RelativeVMClass);
+		const FObjectPropertyBase* Property = CastField<FObjectPropertyBase>(IsValid(Function) ? Function->GetReturnProperty() : Reference.ResolveMember<FProperty>(RelativeVMClass));
+
+		if (Property != nullptr)
+		{
+			OutContextObjectClasses.Add(Property->PropertyClass);
+		}
+	}
+	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_WorldActor)
+	{
+		OutContextObjectClasses.Add(ProviderSettings.WorldActorFilter.ActorClass.IsNull() ? AActor::StaticClass() : ProviderSettings.WorldActorFilter.ActorClass.LoadSynchronous());
 	}
 }
 #endif

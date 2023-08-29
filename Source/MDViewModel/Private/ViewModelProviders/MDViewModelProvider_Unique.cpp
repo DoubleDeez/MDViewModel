@@ -1,6 +1,7 @@
 #include "ViewModelProviders/MDViewModelProvider_Unique.h"
 
 #include "Blueprint/UserWidget.h"
+#include "Engine/Blueprint.h"
 #include "Logging/StructuredLog.h"
 #include "Util/MDViewModelAssignment.h"
 #include "Util/MDViewModelAssignmentData.h"
@@ -23,3 +24,13 @@ UMDViewModelBase* UMDViewModelProvider_Unique::SetViewModel(UUserWidget& Widget,
 
 	return nullptr;
 }
+
+#if WITH_EDITOR
+void UMDViewModelProvider_Unique::GetExpectedContextObjectTypes(const FInstancedStruct& ProviderSettings, const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, TArray<TSubclassOf<UObject>>& OutContextObjectClasses) const
+{
+	if (IsValid(Blueprint))
+	{
+		OutContextObjectClasses.Add(Blueprint->SkeletonGeneratedClass != nullptr ? Blueprint->SkeletonGeneratedClass : Blueprint->GeneratedClass);
+	}
+}
+#endif

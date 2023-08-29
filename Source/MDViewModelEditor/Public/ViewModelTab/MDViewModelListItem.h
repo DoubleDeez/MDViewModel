@@ -43,6 +43,8 @@ public:
 
 	virtual FReply OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 
+	virtual FReply OnMouseButtonDoubleClick(const FGeometry& InMyGeometry, const FPointerEvent& InMouseEvent) override;
+
 	void OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder);
 
 private:
@@ -60,6 +62,8 @@ private:
 	bool CanDelete() const;
 
 	FString GenerateSearchString() const;
+
+	UBlueprint* GetBlueprint() const;
 
 	TSharedPtr<FMDViewModelEditorAssignment> Assignment;
 	TWeakPtr<FBlueprintEditor> BlueprintEditor;

@@ -8,7 +8,7 @@
 #include "MDViewModelAssignmentEditorObject.generated.h"
 
 class UMDViewModelBase;
-class UWidgetBlueprint;
+class UBlueprint;
 
 /**
  * Editor-time object used a proxy to display the settings when assigning a view model to a widget
@@ -19,7 +19,7 @@ class MDVIEWMODELEDITOR_API UMDViewModelAssignmentEditorObject : public UObject
 	GENERATED_BODY()
 
 public:
-	void PopulateFromAssignment(const FMDViewModelEditorAssignment& Assignment, UWidgetBlueprint* WidgetBlueprint);
+	void PopulateFromAssignment(const FMDViewModelEditorAssignment& Assignment, UBlueprint* Blueprint);
 
 	FMDViewModelEditorAssignment CreateAssignment() const;
 

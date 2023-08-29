@@ -133,14 +133,14 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 	ParentWindow = InParentWindow;
 	EditorObject = TStrongObjectPtr<UMDViewModelAssignmentEditorObject>(NewObject<UMDViewModelAssignmentEditorObject>());
 
-	if (const UWidgetBlueprint* WidgetBlueprint = GetWidgetBlueprint())
+	if (const UBlueprint* Blueprint = GetBlueprint())
 	{
-		EditorObject->WidgetSkeletonClass = WidgetBlueprint->SkeletonGeneratedClass;
+		EditorObject->WidgetSkeletonClass = Blueprint->SkeletonGeneratedClass;
 	}
 
 	if (EditorItem.IsValid())
 	{
-		EditorObject->PopulateFromAssignment(*EditorItem.Get(), GetWidgetBlueprint());
+		EditorObject->PopulateFromAssignment(*EditorItem.Get(), GetBlueprint());
 		
 		if (Mode == EMDVMDialogMode::Edit)
 		{
@@ -192,6 +192,13 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 				.Visibility(this, &SMDViewModelAssignmentDialog::GetSaveVisibility)
 				.OnClicked(this, &SMDViewModelAssignmentDialog::OnSaveClicked)
 			]
+			+SUniformGridPanel::Slot(0,0)
+			[
+				SNew(STextBlock)
+				.Text(INVTEXT("The assignment's Name and Class pairing is not unique."))
+				.ToolTipText(INVTEXT("Enter a different View Model Instance Name to continue."))
+				.Visibility(this, &SMDViewModelAssignmentDialog::GetNotUniqueVisibility)
+			]
 			+SUniformGridPanel::Slot(1,0)
 			[
 				SNew(SButton)
@@ -211,7 +218,7 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 	];
 }
 
-UWidgetBlueprint* SMDViewModelAssignmentDialog::GetWidgetBlueprint() const
+UBlueprint* SMDViewModelAssignmentDialog::GetBlueprint() const
 {
 	if (const UMDViewModelWidgetBlueprintExtension* BPExtension = BPExtensionPtr.Get())
 	{
@@ -304,7 +311,7 @@ EVisibility SMDViewModelAssignmentDialog::GetAddVisibility() const
 
 	const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider);
 	TArray<FText> UnusedIssues;
-	if (!Provider->ValidateProviderSettings(EditorObject->ProviderSettings, GetWidgetBlueprint(), EditorObject->CreateAssignment().Assignment, UnusedIssues))
+	if (!Provider->ValidateProviderSettings(EditorObject->ProviderSettings, GetBlueprint(), EditorObject->CreateAssignment().Assignment, UnusedIssues))
 	{
 		return EVisibility::Collapsed;
 	}
@@ -331,12 +338,17 @@ EVisibility SMDViewModelAssignmentDialog::GetSaveVisibility() const
 
 	const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider);
 	TArray<FText> UnusedIssues;
-	if (!IsValid(Provider) || !Provider->ValidateProviderSettings(EditorObject->ProviderSettings, GetWidgetBlueprint(), EditorObject->CreateAssignment().Assignment, UnusedIssues))
+	if (!IsValid(Provider) || !Provider->ValidateProviderSettings(EditorObject->ProviderSettings, GetBlueprint(), EditorObject->CreateAssignment().Assignment, UnusedIssues))
 	{
 		return EVisibility::Collapsed;
 	}
 
 	return EVisibility::Visible;
+}
+
+EVisibility SMDViewModelAssignmentDialog::GetNotUniqueVisibility() const
+{
+	return IsAssignmentUnique() ? EVisibility::Collapsed : EVisibility::Visible;
 }
 
 FReply SMDViewModelAssignmentDialog::OnAddClicked() const
