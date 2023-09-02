@@ -49,7 +49,7 @@ public:
 	virtual void GetSupportedViewModelClasses(TArray<FMDViewModelSupportedClass>& OutViewModelClasses);
 	virtual bool DoesCreateViewModels() const { return true; }
 	virtual FText GetDisplayName() const  { PURE_VIRTUAL(UMDViewModelProviderBase::GetDisplayName, return FText::GetEmpty();) }
-	virtual FText GetDescription() const  { PURE_VIRTUAL(UMDViewModelProviderBase::GetDescription, return FText::GetEmpty();) }
+	virtual FText GetDescription(const FInstancedStruct& ProviderSettings) const  { PURE_VIRTUAL(UMDViewModelProviderBase::GetDescription, return FText::GetEmpty();) }
 
 	virtual UScriptStruct* GetProviderSettingsStruct() const { return nullptr; }
 	virtual void OnProviderSettingsInitializedInEditor(FInstancedStruct& Settings, UBlueprint* Blueprint, const FMDViewModelAssignment& Assignment) const {};

@@ -466,7 +466,7 @@ FText FMDViewModelAssignmentEditorObjectCustomization::GetSelectedProviderToolTi
 	{
 		if (const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(EditorObject->ViewModelProvider))
 		{
-			return Provider->GetDescription();
+			return Provider->GetDescription(EditorObject->ProviderSettings);
 		}
 		else
 		{
@@ -496,7 +496,7 @@ TSharedRef<SWidget> FMDViewModelAssignmentEditorObjectCustomization::OnGetProvid
 			{
 				MenuBuilder.AddMenuEntry(
 					Provider->GetDisplayName(),
-					Provider->GetDescription(),
+					Provider->GetDescription({}),
 					FSlateIcon(),
 					FUIAction(
 						FExecuteAction::CreateSP(this, &FMDViewModelAssignmentEditorObjectCustomization::OnProviderSelected, Provider->GetProviderTag())

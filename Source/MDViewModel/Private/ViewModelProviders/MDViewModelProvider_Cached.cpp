@@ -159,6 +159,28 @@ UMDViewModelBase* UMDViewModelProvider_Cached::SetViewModel(UUserWidget& Widget,
 }
 
 #if WITH_EDITOR
+FText UMDViewModelProvider_Cached::GetDescription(const FInstancedStruct& ProviderSettings) const
+{
+	const FMDViewModelProvider_Cached_Settings* SettingsPtr = ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
+	if (SettingsPtr == nullptr)
+	{
+		// Settings are null for static references to this provider (eg. in the provider selector)
+		return INVTEXT("The view model will be grabbed from (or added to) the selected cache, keyed by the view model name and class.");
+	}
+	
+	static const FText DescriptionFormat = INVTEXT("The view model will be grabbed from (or added to) the selected cache, keyed by the view model name and class.\n\nSelected Lifetime: {0}\n{1}");
+
+	const FGameplayTag& LifetimeTag = SettingsPtr->GetLifetimeTag();
+	FString TagComment;
+	FName TagSource;
+	bool bTagIsExplicit;
+	bool bTagIsRestricted;
+	bool bTagAllowsNonRestrictedChildren;
+
+	UGameplayTagsManager::Get().GetTagEditorData(LifetimeTag.GetTagName(), TagComment, TagSource, bTagIsExplicit, bTagIsRestricted, bTagAllowsNonRestrictedChildren);
+	return FText::Format(DescriptionFormat, FText::FromName(LifetimeTag.GetTagName()), FText::FromString(TagComment));
+}
+
 bool UMDViewModelProvider_Cached::ValidateProviderSettings(const FInstancedStruct& Settings, UBlueprint* Blueprint, const FMDViewModelAssignment& Assignment, TArray<FText>& OutIssues) const
 {
 	const FMDViewModelProvider_Cached_Settings* SettingsPtr = Settings.GetPtr<FMDViewModelProvider_Cached_Settings>();

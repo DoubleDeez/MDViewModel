@@ -168,7 +168,7 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<
 						SNew(STextBlock)
 						.Font(IDetailLayoutBuilder::GetDetailFontItalic())
 						.Text(IsValid(Provider) ? Provider->GetDisplayName() : INVTEXT("Invalid Provider"))
-						.ToolTipText(IsValid(Provider) ? Provider->GetDescription() : INVTEXT("The selected provider is not valid, it may have been deleted or is in an unloaded module."))
+						.ToolTipText(IsValid(Provider) ? Provider->GetDescription(Item->Data.ProviderSettings) : INVTEXT("The selected provider is not valid, it may have been deleted or is in an unloaded module."))
 					]
 				]
 			]

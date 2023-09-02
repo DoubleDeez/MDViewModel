@@ -191,7 +191,7 @@ public:
 
 #if WITH_EDITOR
 	virtual FText GetDisplayName() const override { return INVTEXT("Cached Viewmodel"); }
-	virtual FText GetDescription() const override { return INVTEXT("The view model will be grabbed from (or added to) the selected cache, keyed by the view model name and class."); }
+	virtual FText GetDescription(const FInstancedStruct& ProviderSettings) const override;
 
 	virtual UScriptStruct* GetProviderSettingsStruct() const override { return FMDViewModelProvider_Cached_Settings::StaticStruct(); }
 	virtual bool ValidateProviderSettings(const FInstancedStruct& Settings, UBlueprint* Blueprint, const FMDViewModelAssignment& Assignment, TArray<FText>& OutIssues) const override;

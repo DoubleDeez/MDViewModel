@@ -21,7 +21,7 @@ public:
 
 #if WITH_EDITOR
 	virtual FText GetDisplayName() const override { return INVTEXT("Unique Instance"); }
-	virtual FText GetDescription() const override { return INVTEXT("A unique view model instance will be created for the assigned widget."); }
+	virtual FText GetDescription(const FInstancedStruct& ProviderSettings) const override { return INVTEXT("A unique view model instance will be created for the assigned widget."); }
 	virtual void GetExpectedContextObjectTypes(const FInstancedStruct& ProviderSettings, const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, TArray<TSubclassOf<UObject>>& OutContextObjectClasses) const override;
 #endif
 };

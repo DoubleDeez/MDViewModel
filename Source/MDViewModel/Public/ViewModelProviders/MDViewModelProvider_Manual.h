@@ -26,6 +26,6 @@ public:
 #if WITH_EDITOR
 	virtual bool DoesCreateViewModels() const override { return false; }
 	virtual FText GetDisplayName() const override { return INVTEXT("Manual Set"); }
-	virtual FText GetDescription() const override { return INVTEXT("The view model will have to be manually set on the widget at runtime."); }
+	virtual FText GetDescription(const FInstancedStruct& ProviderSettings) const override { return INVTEXT("The view model will have to be manually set on the widget at runtime."); }
 #endif
 };
