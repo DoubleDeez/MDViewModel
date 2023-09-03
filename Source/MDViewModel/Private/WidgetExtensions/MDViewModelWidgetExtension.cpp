@@ -60,17 +60,15 @@ UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModel(UMDViewModelBase* Vi
 			return nullptr;
 		}
 		
-#if WITH_EDITOR
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
 		MDViewModelUtils::SearchViewModelAssignments(Assignments, GetUserWidget()->GetClass(), ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
 		if (Assignments.IsEmpty())
 		{
 			UE_LOGFMT(LogMDViewModel, Error, "Attempting to set View Model of type [{VMType}] with name [{VMName}] but Widget [{Widget}] does not have a matching assignment.",
-				("VMType", ViewModelClass->GetDisplayNameText().ToString()),
+				("VMType", ViewModelClass->GetFName()),
 				("VMName", ViewModelName),
 				("Widget", GetUserWidget()->GetClass()->GetPathName()));
 		}
-#endif
 		
 		UE_LOGFMT(LogMDViewModel, Verbose, "Setting View Model to [{VMInstance}] named [{VMName}] of class [{VMClass}] on Widget [{WidgetName}] (Was [{CurrentVM}])",
 			("VMInstance", ViewModel->GetPathName()),
@@ -78,6 +76,7 @@ UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModel(UMDViewModelBase* Vi
 			("VMClass", ViewModelClass->GetPathName()),
 			("WidgetName", GetUserWidget()->GetPathName()),
 			("CurrentVM", GetPathNameSafe(GetViewModel(ViewModelClass, ViewModelName))));
+		
 		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
 		if (ViewModelName != NAME_None)
 		{

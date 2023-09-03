@@ -2,8 +2,8 @@
 
 #include "Bindings/MDViewModelDelegateBinding.h"
 #include "EdGraphSchema_K2.h"
-#include "Util/MDViewModelUtils.h"
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "Util/MDViewModelGraphStatics.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetBlueprintExtension.h"
 #include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
@@ -140,7 +140,7 @@ void UMDVMNode_ViewModelEvent::ValidateNodeDuringCompilation(FCompilerResultsLog
 	else
 	{
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
-		MDViewModelUtils::SearchViewModelAssignments(ViewModelAssignments, BP->GeneratedClass.Get(), ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
+		FMDViewModelGraphStatics::SearchViewModelAssignmentsForBlueprint(BP, ViewModelAssignments, ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
 
 		// Only Native assignments are valid during compile, we need to go through the BP otherwise
 		if (ViewModelAssignments.IsEmpty())

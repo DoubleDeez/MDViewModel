@@ -28,6 +28,33 @@ void FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(const UBluepr
 	}
 }
 
+void FMDViewModelGraphStatics::SearchViewModelAssignmentsForBlueprint(const UBlueprint* Blueprint, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments, TSubclassOf<UMDViewModelBase> ViewModelClass, const FGameplayTag& ProviderTag, const FName& ViewModelName)
+{
+	GetViewModelAssignmentsForBlueprint(Blueprint, OutViewModelAssignments);
+
+	// Remove assignments that don't match the filter
+	for (auto It = OutViewModelAssignments.CreateIterator(); It; ++It)
+	{
+		if (ProviderTag.IsValid() && !ProviderTag.MatchesTagExact(It.Key().ProviderTag))
+		{
+			It.RemoveCurrent();
+			continue;
+		}
+
+		if (ViewModelName != NAME_None && ViewModelName != It.Key().ViewModelName)
+		{
+			It.RemoveCurrent();
+			continue;
+		}
+
+		if (ViewModelClass != nullptr && ViewModelClass != It.Key().ViewModelClass)
+		{
+			It.RemoveCurrent();
+			continue;
+		}
+	}
+}
+
 bool FMDViewModelGraphStatics::DoesBlueprintBindToViewModelEvent(const UBlueprint* BP, const FName& EventName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
 {
 	return FindExistingViewModelEventNode(BP, EventName, ViewModelClass, ViewModelName) != nullptr;
