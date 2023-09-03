@@ -4,7 +4,6 @@
 #include "Templates/SubclassOf.h"
 #include "MDViewModelDelegateBinding.generated.h"
 
-class UUserWidget;
 class UMDViewModelBase;
 
 /** Entry for a delegate to assign after a blueprint has been instanced */
@@ -47,5 +46,5 @@ public:
 	virtual void UnbindDynamicDelegates(UObject* InInstance) const override;
 
 private:
-	void OnViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, int32 EntryIndex, TWeakObjectPtr<UUserWidget> BoundWidget) const;
+	void OnViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, int32 EntryIndex, TWeakObjectPtr<UObject> BoundObject) const;
 };

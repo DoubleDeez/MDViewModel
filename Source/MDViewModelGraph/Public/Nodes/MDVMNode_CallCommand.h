@@ -5,7 +5,7 @@
 
 #include "MDVMNode_CallCommand.generated.h"
 
-class UWidgetBlueprint;
+class UBlueprint;
 
 /**
  * Node to shortcut getting a view model instance and calling a function on it
@@ -21,5 +21,5 @@ public:
 protected:
 	virtual bool IsFunctionValidForNode(const UFunction& Func) const override;
 
-	virtual UBlueprintNodeSpawner* CreateNodeSpawner(const FMDViewModelAssignmentReference& Assignment, const UFunction* Function, const UWidgetBlueprint* WidgetBP) const override;
+	virtual UBlueprintNodeSpawner* CreateNodeSpawner(const FMDViewModelAssignmentReference& Assignment, const UFunction* Function, const UBlueprint* Blueprint) const override;
 };

@@ -14,15 +14,19 @@ void UMDViewModelDelegateBinding::BindDynamicDelegates(UObject* InInstance) cons
 		{
 			if (UMDViewModelWidgetClassExtension* Extension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
 			{
-				TWeakObjectPtr<UUserWidget> WeakWidget = Widget;
+				TWeakObjectPtr<UObject> WeakObject = Widget;
 				for (int32 i = 0; i < ViewModelDelegateBindings.Num(); ++i)
 				{
 					const FMDViewModelDelegateBindingEntry& Entry = ViewModelDelegateBindings[i];
-					auto Delegate = FMDVMOnViewModelSet::FDelegate::CreateUObject(this, &UMDViewModelDelegateBinding::OnViewModelChanged, i, WeakWidget);
+					auto Delegate = FMDVMOnViewModelSet::FDelegate::CreateUObject(this, &UMDViewModelDelegateBinding::OnViewModelChanged, i, WeakObject);
 					Extension->QueueListenForChanges(Widget, MoveTemp(Delegate), Entry.ViewModelClass, Entry.ViewModelName);
 				}
 			}
 		}
+	}
+	else
+	{
+		// TODO - Actor View Models
 	}
 }
 
@@ -36,11 +40,15 @@ void UMDViewModelDelegateBinding::UnbindDynamicDelegates(UObject* InInstance) co
 			Extension->StopListeningForAllNativeViewModelsChanged(this);
 		}
 	}
+	else
+	{
+		// TODO - Actor View Models
+	}
 }
 
-void UMDViewModelDelegateBinding::OnViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, int32 EntryIndex, TWeakObjectPtr<UUserWidget> BoundWidget) const
+void UMDViewModelDelegateBinding::OnViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, int32 EntryIndex, TWeakObjectPtr<UObject> BoundObject) const
 {
-	if (!ensure(ViewModelDelegateBindings.IsValidIndex(EntryIndex)) || !BoundWidget.IsValid())
+	if (!ensure(ViewModelDelegateBindings.IsValidIndex(EntryIndex)) || !BoundObject.IsValid())
 	{
 		return;
 	}
@@ -50,7 +58,7 @@ void UMDViewModelDelegateBinding::OnViewModelChanged(UMDViewModelBase* OldViewMo
 	if (const FMulticastDelegateProperty* MulticastDelegateProp = FindFProperty<FMulticastDelegateProperty>(Entry.ViewModelClass, Entry.DelegatePropertyName))
 	{
 		FScriptDelegate Delegate;
-		Delegate.BindUFunction(BoundWidget.Get(), Entry.FunctionNameToBind);
+		Delegate.BindUFunction(BoundObject.Get(), Entry.FunctionNameToBind);
 
 		if (IsValid(OldViewModel))
 		{

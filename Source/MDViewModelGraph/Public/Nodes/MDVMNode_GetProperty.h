@@ -4,7 +4,7 @@
 #include "Util/MDViewModelAssignmentReference.h"
 #include "MDVMNode_GetProperty.generated.h"
 
-class UWidgetBlueprint;
+class UBlueprint;
 /**
  * Custom node for getting a variable from a view model with built-in view model validation
  */
@@ -28,10 +28,10 @@ public:
 	virtual void ExpandNode(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph) override;
 	virtual void ValidateNodeDuringCompilation(FCompilerResultsLog& MessageLog) const override;
 
-	void InitializeViewModelPropertyParams(const FMDViewModelAssignmentReference& VMAssignment, const FProperty* Property, const UWidgetBlueprint* WidgetBP = nullptr);
+	void InitializeViewModelPropertyParams(const FMDViewModelAssignmentReference& VMAssignment, const FProperty* Property, const UBlueprint* Blueprint = nullptr);
 
 protected:
-	UBlueprintNodeSpawner* CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const FProperty* Property, const UWidgetBlueprint* WidgetBP) const;
+	UBlueprintNodeSpawner* CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const FProperty* Property, const UBlueprint* Blueprint) const;
 	
 private:
 	void BindAssignmentChanges();
@@ -46,7 +46,7 @@ private:
 	FMDViewModelAssignmentReference Assignment;
 
 	UPROPERTY()
-	TWeakObjectPtr<const UWidgetBlueprint> ExpectedWidgetBP;
+	TWeakObjectPtr<const UBlueprint> ExpectedBlueprintPtr;
 
 	FNodeTextCache TitleCache;
 };

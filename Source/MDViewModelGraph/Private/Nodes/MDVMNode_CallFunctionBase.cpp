@@ -24,7 +24,7 @@ void UMDVMNode_CallFunctionBase::BeginDestroy()
 
 void UMDVMNode_CallFunctionBase::GetMenuActions(FBlueprintActionDatabaseRegistrar& InActionRegistrar) const
 {
-	const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(InActionRegistrar.GetActionKeyFilter());
+	const UBlueprint* WidgetBP = Cast<UBlueprint>(InActionRegistrar.GetActionKeyFilter());
 	if (WidgetBP == nullptr || (WidgetBP->GeneratedClass == nullptr && WidgetBP->SkeletonGeneratedClass == nullptr))
 	{
 		return;
@@ -67,8 +67,8 @@ bool UMDVMNode_CallFunctionBase::IsActionFilteredOut(const FBlueprintActionFilte
 {
 	for (const UBlueprint* Blueprint : Filter.Context.Blueprints)
 	{
-		const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(Blueprint);
-		if (WidgetBP == nullptr || WidgetBP->GeneratedClass == nullptr || ExpectedWidgetBP != Blueprint)
+		const UBlueprint* WidgetBP = Cast<UBlueprint>(Blueprint);
+		if (WidgetBP == nullptr || WidgetBP->GeneratedClass == nullptr || ExpectedBlueprintPtr != Blueprint)
 		{
 			return true;
 		}
@@ -315,7 +315,7 @@ void UMDVMNode_CallFunctionBase::ValidateNodeDuringCompilation(FCompilerResultsL
 	}
 
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-	FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(Cast<UWidgetBlueprint>(GetBlueprint()), Assignments);
+	FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(GetBlueprint(), Assignments);
 
 	bool bWidgetHasAssignment = false;
 	for (const auto& Pair : Assignments)
@@ -335,11 +335,11 @@ void UMDVMNode_CallFunctionBase::ValidateNodeDuringCompilation(FCompilerResultsL
 	}
 }
 
-void UMDVMNode_CallFunctionBase::InitializeViewModelFunctionParams(const FMDViewModelAssignmentReference& VMAssignment, const UFunction* Function, const UWidgetBlueprint* WidgetBP)
+void UMDVMNode_CallFunctionBase::InitializeViewModelFunctionParams(const FMDViewModelAssignmentReference& VMAssignment, const UFunction* Function, const UBlueprint* WidgetBP)
 {
 	SetFromFunction(Function);
 	Assignment = VMAssignment;
-	ExpectedWidgetBP = WidgetBP;
+	ExpectedBlueprintPtr = WidgetBP;
 	bIsSetPure = bIsPureFunc;
 }
 
@@ -355,7 +355,8 @@ bool UMDVMNode_CallFunctionBase::CanTogglePurity() const
 
 void UMDVMNode_CallFunctionBase::BindAssignmentChanges()
 {
-	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(FBlueprintEditorUtils::FindBlueprintForNode(this)))
+	UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNode(this);
+	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(Blueprint))
 	{
 		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
 		{
@@ -364,6 +365,10 @@ void UMDVMNode_CallFunctionBase::BindAssignmentChanges()
 				VMExtension->OnAssignmentChanged.AddUObject(this, &UMDVMNode_CallFunctionBase::OnAssignmentChanged);
 			}
 		}
+	}
+	else if (IsValid(Blueprint))
+	{
+		// TODO - Actor View Models
 	}
 }
 
@@ -388,12 +393,17 @@ void UMDVMNode_CallFunctionBase::OnAssignmentChanged(const FName& OldName, const
 
 void UMDVMNode_CallFunctionBase::UnbindAssignmentChanges()
 {
-	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(FBlueprintEditorUtils::FindBlueprintForNode(this)))
+	UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNode(this);
+	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(Blueprint))
 	{
 		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
 		{
 			VMExtension->OnAssignmentChanged.RemoveAll(this);
 		}
+	}
+	else if (IsValid(Blueprint))
+	{
+		// TODO - Actor View Models
 	}
 }
 

@@ -13,10 +13,6 @@ struct FMDViewModelAssignment;
 class UUserWidget;
 class UMDViewModelBase;
 
-#if WITH_EDITOR
-class UWidgetBlueprint;
-#endif
-
 struct FMDViewModelSupportedClass
 {
 	TSubclassOf<UMDViewModelBase> Class;

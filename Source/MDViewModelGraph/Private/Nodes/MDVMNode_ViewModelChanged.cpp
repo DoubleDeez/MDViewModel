@@ -97,10 +97,10 @@ void UMDVMNode_ViewModelChanged::RegisterDynamicBinding(UDynamicBlueprintBinding
 
 void UMDVMNode_ViewModelChanged::ValidateNodeDuringCompilation(FCompilerResultsLog& MessageLog) const
 {
-	const UWidgetBlueprint* const BP = Cast<UWidgetBlueprint>(GetBlueprint());
+	const UBlueprint* BP = GetBlueprint();
 	if (BP == nullptr)
 	{
-		MessageLog.Error(TEXT("@@ can only be used in Widget Blueprints."), this);
+		MessageLog.Error(TEXT("@@ cannot find a valid Blueprint."), this);
 	}
 	else if (!ViewModelClass)
 	{
@@ -114,12 +114,19 @@ void UMDVMNode_ViewModelChanged::ValidateNodeDuringCompilation(FCompilerResultsL
 		// Only Native assignments are valid during compile, we need to go through the BP otherwise
 		if (ViewModelAssignments.IsEmpty())
 		{
-			if (const UMDViewModelWidgetBlueprintExtension* Extension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(BP))
+			if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(BP))
 			{
-				if (!Extension->DoesContainViewModelAssignment(ViewModelClass, FGameplayTag::EmptyTag, ViewModelName))
+				if (const UMDViewModelWidgetBlueprintExtension* Extension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
 				{
-					MessageLog.Error(*FString::Printf(TEXT("@@ is bound to a view model named [%s] of class [%s] but the view model is not assigned to this widget."), *ViewModelName.ToString(), *ViewModelClass->GetDisplayNameText().ToString()), this);
+					if (!Extension->DoesContainViewModelAssignment(ViewModelClass, FGameplayTag::EmptyTag, ViewModelName))
+					{
+						MessageLog.Error(*FString::Printf(TEXT("@@ is bound to a view model named [%s] of class [%s] but the view model is not assigned to this widget."), *ViewModelName.ToString(), *ViewModelClass->GetDisplayNameText().ToString()), this);
+					}
 				}
+			}
+			else
+			{
+				// TODO - Actor View Models
 			}
 		}
 	}

@@ -31,7 +31,8 @@ void UMDVMNode_DynamicBindingBase::OnAssignmentChanged()
 
 void UMDVMNode_DynamicBindingBase::BindAssignmentChanges()
 {
-	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(FBlueprintEditorUtils::FindBlueprintForNode(this)))
+	UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNode(this);
+	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(Blueprint))
 	{
 		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
 		{
@@ -40,6 +41,10 @@ void UMDVMNode_DynamicBindingBase::BindAssignmentChanges()
 				VMExtension->OnAssignmentChanged.AddUObject(this, &UMDVMNode_DynamicBindingBase::OnAssignmentChanged);
 			}
 		}
+	}
+	else if (IsValid(Blueprint))
+	{
+		// TODO - Actor View Models
 	}
 }
 
@@ -57,11 +62,16 @@ void UMDVMNode_DynamicBindingBase::OnAssignmentChanged(const FName& OldName, con
 
 void UMDVMNode_DynamicBindingBase::UnbindAssignmentChanges()
 {
-	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(FBlueprintEditorUtils::FindBlueprintForNode(this)))
+	UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNode(this);
+	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(Blueprint))
 	{
 		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
 		{
 			VMExtension->OnAssignmentChanged.RemoveAll(this);
 		}
+	}
+	else if (IsValid(Blueprint))
+	{
+		// TODO - Actor View Models
 	}
 }

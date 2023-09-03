@@ -51,14 +51,14 @@ void UMDVMNode_GetProperty::BeginDestroy()
 
 void UMDVMNode_GetProperty::GetMenuActions(FBlueprintActionDatabaseRegistrar& InActionRegistrar) const
 {
-	const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(InActionRegistrar.GetActionKeyFilter());
-	if (WidgetBP == nullptr || (WidgetBP->GeneratedClass == nullptr && WidgetBP->SkeletonGeneratedClass == nullptr))
+	const UBlueprint* Blueprint = Cast<UBlueprint>(InActionRegistrar.GetActionKeyFilter());
+	if (Blueprint == nullptr || (Blueprint->GeneratedClass == nullptr && Blueprint->SkeletonGeneratedClass == nullptr))
 	{
 		return;
 	}
 
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-	FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(WidgetBP, Assignments);
+	FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(Blueprint, Assignments);
 
 	for (auto It = Assignments.CreateConstIterator(); It; ++It)
 	{
@@ -73,15 +73,15 @@ void UMDVMNode_GetProperty::GetMenuActions(FBlueprintActionDatabaseRegistrar& In
 				
 				if (IsPropertyValidForNode(Prop))
 				{
-					if (InActionRegistrar.IsOpenForRegistration(WidgetBP))
+					if (InActionRegistrar.IsOpenForRegistration(Blueprint))
 					{
 						FMDViewModelAssignmentReference AssignmentReference;
 						AssignmentReference.ViewModelClass = It.Key().ViewModelClass;
 						AssignmentReference.ViewModelName = It.Key().ViewModelName;
 
-						if (UBlueprintNodeSpawner* NodeSpawner = CreateNodeSpawner(AssignmentReference, Prop, WidgetBP))
+						if (UBlueprintNodeSpawner* NodeSpawner = CreateNodeSpawner(AssignmentReference, Prop, Blueprint))
 						{
-							InActionRegistrar.AddBlueprintAction(WidgetBP, NodeSpawner);
+							InActionRegistrar.AddBlueprintAction(Blueprint, NodeSpawner);
 						}
 					}
 				}
@@ -94,14 +94,13 @@ bool UMDVMNode_GetProperty::IsActionFilteredOut(const FBlueprintActionFilter& Fi
 {
 	for (const UBlueprint* Blueprint : Filter.Context.Blueprints)
 	{
-		const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(Blueprint);
-		if (WidgetBP == nullptr || WidgetBP->GeneratedClass == nullptr || ExpectedWidgetBP != Blueprint)
+		if (Blueprint == nullptr || Blueprint->GeneratedClass == nullptr || ExpectedBlueprintPtr != Blueprint)
 		{
 			return true;
 		}
 		
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-		FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(WidgetBP, Assignments);
+		FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(Blueprint, Assignments);
 		
 		bool bWidgetHasAssignment = false;
 		for (const auto& Pair : Assignments)
@@ -241,7 +240,7 @@ void UMDVMNode_GetProperty::ValidateNodeDuringCompilation(FCompilerResultsLog& M
 	Super::ValidateNodeDuringCompilation(MessageLog);
 
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-	FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(Cast<UWidgetBlueprint>(GetBlueprint()), Assignments);
+	FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(GetBlueprint(), Assignments);
 
 	bool bWidgetHasAssignment = false;
 	for (const auto& Pair : Assignments)
@@ -261,21 +260,22 @@ void UMDVMNode_GetProperty::ValidateNodeDuringCompilation(FCompilerResultsLog& M
 	}
 }
 
-void UMDVMNode_GetProperty::InitializeViewModelPropertyParams(const FMDViewModelAssignmentReference& VMAssignment, const FProperty* Property, const UWidgetBlueprint* WidgetBP)
+void UMDVMNode_GetProperty::InitializeViewModelPropertyParams(const FMDViewModelAssignmentReference& VMAssignment, const FProperty* Property, const UBlueprint* Blueprint)
 {
 	SetFromProperty(Property, false, VMAssignment.ViewModelClass.Get());
 	Assignment = VMAssignment;
-	ExpectedWidgetBP = WidgetBP;
+	ExpectedBlueprintPtr = Blueprint;
 }
 
-UBlueprintNodeSpawner* UMDVMNode_GetProperty::CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const FProperty* Property, const UWidgetBlueprint* WidgetBP) const
+UBlueprintNodeSpawner* UMDVMNode_GetProperty::CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const FProperty* Property, const UBlueprint* Blueprint) const
 {
-	return UMDViewModelNodeSpawner::Create(UMDVMNode_GetProperty::StaticClass(), INVTEXT("View Model Properties"), AssignmentReference, Property, WidgetBP);
+	return UMDViewModelNodeSpawner::Create(UMDVMNode_GetProperty::StaticClass(), INVTEXT("View Model Properties"), AssignmentReference, Property, Blueprint);
 }
 
 void UMDVMNode_GetProperty::BindAssignmentChanges()
 {
-	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(FBlueprintEditorUtils::FindBlueprintForNode(this)))
+	UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNode(this);
+	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(Blueprint))
 	{
 		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
 		{
@@ -284,6 +284,10 @@ void UMDVMNode_GetProperty::BindAssignmentChanges()
 				VMExtension->OnAssignmentChanged.AddUObject(this, &UMDVMNode_GetProperty::OnAssignmentChanged);
 			}
 		}
+	}
+	else if (IsValid(Blueprint))
+	{
+		// TODO - Actor View Models
 	}
 }
 
@@ -302,12 +306,17 @@ void UMDVMNode_GetProperty::OnAssignmentChanged(const FName& OldName, const FNam
 
 void UMDVMNode_GetProperty::UnbindAssignmentChanges()
 {
-	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(FBlueprintEditorUtils::FindBlueprintForNode(this)))
+	UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNode(this);
+	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(Blueprint))
 	{
 		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
 		{
 			VMExtension->OnAssignmentChanged.RemoveAll(this);
 		}
+	}
+	else if (IsValid(Blueprint))
+	{
+		// TODO - Actor View Models
 	}
 }
 

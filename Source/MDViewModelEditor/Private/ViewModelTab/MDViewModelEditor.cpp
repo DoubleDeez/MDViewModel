@@ -87,6 +87,10 @@ void SMDViewModelEditor::OnViewModelChanged()
 			{
 				DebugViewModel = UMDViewModelFunctionLibrary::GetViewModel(DebugWidget, SelectedViewModelClass, SelectedViewModelName);
 			}
+			else
+			{
+				// TODO - Actor View Models
+			}
 
 			ViewModelDetailsWidget->UpdateViewModel(SelectedViewModelClass, DebugViewModel, SelectedViewModelName);
 		}

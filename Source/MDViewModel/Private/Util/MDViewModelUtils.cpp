@@ -31,9 +31,9 @@ namespace MDViewModelUtils
 		return nullptr;
 	}
 
-	void GetViewModelAssignmentsForWidgetClass(TSubclassOf<UUserWidget> WidgetClass, bool bIncludeAncestorAssignments, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments)
+	void GetViewModelAssignmentsForWidgetClass(UClass* ObjectClass, bool bIncludeAncestorAssignments, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments)
 	{
-		if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(WidgetClass))
+		if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(ObjectClass))
 		{
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
 			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
@@ -51,11 +51,15 @@ namespace MDViewModelUtils
 				}
 			}
 		}
+		else
+		{
+			// TODO - Actor View Models
+		}
 	}
 
-	void SearchViewModelAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments, TSubclassOf<UUserWidget> WidgetClass, TSubclassOf<UMDViewModelBase> ViewModelClass, const FGameplayTag& ProviderTag, const FName& ViewModelName)
+	void SearchViewModelAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments, UClass* ObjectClass, TSubclassOf<UMDViewModelBase> ViewModelClass, const FGameplayTag& ProviderTag, const FName& ViewModelName)
 	{
-		if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(WidgetClass))
+		if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(ObjectClass))
 		{
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
 			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
@@ -66,11 +70,15 @@ namespace MDViewModelUtils
 				ClassExtension->SearchAssignments(OutViewModelAssignments, ViewModelClass, ProviderTag, ViewModelName);
 			}
 		}
+		else
+		{
+			// TODO - Actor View Models
+		}
 	}
 
-	bool DoesClassOrSuperClassHaveAssignments(TSubclassOf<UUserWidget> WidgetClass)
+	bool DoesClassOrSuperClassHaveAssignments(UClass* ObjectClass)
 	{
-		UClass* Class = WidgetClass;
+		UClass* Class = ObjectClass;
 		while (Class != nullptr)
 		{
 			if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(Class))
@@ -86,6 +94,10 @@ namespace MDViewModelUtils
 						return true;
 					}
 				}
+			}
+			else
+			{
+				// TODO - Actor View Models
 			}
 
 			Class = Class->GetSuperClass();

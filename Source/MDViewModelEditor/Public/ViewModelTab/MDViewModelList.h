@@ -6,7 +6,6 @@
 
 class UMDViewModelWidgetBlueprintExtension;
 class FBlueprintEditor;
-class UWidgetBlueprint;
 class UUserWidget;
 struct FMDViewModelEditorAssignment;
 

@@ -5,7 +5,6 @@
 #include "MDViewModelAssignmentReference.generated.h"
 
 class UMDViewModelBase;
-class UUserWidget;
 
 #if WITH_EDITOR
 DECLARE_DELEGATE_RetVal(UClass*, FMDViewModelReferenceGetWidgetClass);
@@ -29,7 +28,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "View Model")
 	FName ViewModelName = MDViewModelUtils::DefaultViewModelName;
 
-	UMDViewModelBase* ResolveViewModelAssignment(const UUserWidget* Widget) const;
+	UMDViewModelBase* ResolveViewModelAssignment(const UObject* Object) const;
 
 	bool IsAssignmentValid() const;
 

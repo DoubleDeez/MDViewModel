@@ -10,7 +10,6 @@
 #include "MDViewModelBase.generated.h"
 
 struct FMDViewModelAssignment;
-class UUserWidget;
 
 #if WITH_EDITOR
 class UBlueprint;
@@ -67,8 +66,8 @@ public:
 	bool GetFieldValue(UE::FieldNotification::FFieldId FieldId, T& OutValue); 
 
 	// These feel like an anti-pattern but they're here for flexibility
-	virtual void OnSetOnWidget(UUserWidget* Widget) {}
-	virtual void OnUnsetFromWidget(UUserWidget* Widget) {}
+	virtual void OnSetOnObject(UObject* Object) {}
+	virtual void OnUnsetFromObject(UObject* Object) {}
 
 	// Listen for changes to the specified field
 	UFUNCTION(BlueprintCallable, Category = "FieldNotify", meta = (DisplayName = "Add Field Value Changed Delegate", ScriptName = "AddFieldValueChangedDelegate"))

@@ -1,20 +1,20 @@
 #include "Nodes/MDViewModelNodeSpawner.h"
 
 #include "EdGraphSchema_K2.h"
+#include "Engine/Blueprint.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_Variable.h"
 #include "Nodes/MDVMNode_CallFunctionBase.h"
 #include "Nodes/MDVMNode_GetProperty.h"
 #include "ViewModel/MDViewModelBase.h"
-#include "WidgetBlueprint.h"
 
-UMDViewModelNodeSpawner* UMDViewModelNodeSpawner::Create(TSubclassOf<UEdGraphNode> NodeClass, const FText& Category, const FMDViewModelAssignmentReference& Assignment, FFieldVariant Field, const UWidgetBlueprint* WidgetBP)
+UMDViewModelNodeSpawner* UMDViewModelNodeSpawner::Create(TSubclassOf<UEdGraphNode> NodeClass, const FText& Category, const FMDViewModelAssignmentReference& Assignment, FFieldVariant Field, const UBlueprint* Blueprint)
 {
 	UMDViewModelNodeSpawner* Spawner = NewObject<UMDViewModelNodeSpawner>();
 	Spawner->SetField(Field);
 	Spawner->NodeClass = NodeClass;
 	Spawner->Assignment = Assignment;
-	Spawner->WidgetBPPtr = WidgetBP;
+	Spawner->BlueprintPtr = Blueprint;
 
 	const FText VMClassDisplayName = Assignment.ViewModelClass != nullptr ? Assignment.ViewModelClass->GetDisplayNameText() : FText::GetEmpty(); 
 
@@ -58,18 +58,18 @@ FBlueprintNodeSignature UMDViewModelNodeSpawner::GetSpawnerSignature() const
 
 UEdGraphNode* UMDViewModelNodeSpawner::Invoke(UEdGraph* ParentGraph, const FBindingSet& Bindings, const FVector2D Location) const
 {
-	auto InitNode = [](UEdGraphNode* NewNode, bool bIsTemplateNode, FMDViewModelAssignmentReference VMAssignment, FFieldVariant InField, const UWidgetBlueprint* WidgetBP)
+	auto InitNode = [](UEdGraphNode* NewNode, bool bIsTemplateNode, FMDViewModelAssignmentReference VMAssignment, FFieldVariant InField, const UBlueprint* Blueprint)
 	{
 		if (UMDVMNode_CallFunctionBase* CommandNode = Cast<UMDVMNode_CallFunctionBase>(NewNode))
 		{
-			CommandNode->InitializeViewModelFunctionParams(VMAssignment, InField.Get<const UFunction>(), WidgetBP);
+			CommandNode->InitializeViewModelFunctionParams(VMAssignment, InField.Get<const UFunction>(), Blueprint);
 		}
 		else if (UMDVMNode_GetProperty* PropertyNode = Cast<UMDVMNode_GetProperty>(NewNode))
 		{
-			PropertyNode->InitializeViewModelPropertyParams(VMAssignment, InField.Get<const FProperty>(), WidgetBP);
+			PropertyNode->InitializeViewModelPropertyParams(VMAssignment, InField.Get<const FProperty>(), Blueprint);
 		}
 	};
 
-	FCustomizeNodeDelegate InitNodeDelegate = FCustomizeNodeDelegate::CreateStatic(InitNode, Assignment, GetField(), WidgetBPPtr.Get());
+	FCustomizeNodeDelegate InitNodeDelegate = FCustomizeNodeDelegate::CreateStatic(InitNode, Assignment, GetField(), BlueprintPtr.Get());
 	return SpawnNode<UEdGraphNode>(NodeClass, ParentGraph, Bindings, Location, MoveTemp(InitNodeDelegate));
 }

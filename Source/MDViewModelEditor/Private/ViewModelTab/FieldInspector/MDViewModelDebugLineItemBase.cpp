@@ -15,9 +15,9 @@ FMDViewModelDebugLineItemBase::FMDViewModelDebugLineItemBase(const FText& Displa
 	, DisplayName(DisplayName)
 	, Description(Description)
 	, bIsFieldNotify(bIsFieldNotify)
-	, ViewModelClass(ViewModelClass)
 	, BlueprintEditorPtr(BlueprintEditorPtr)
 	, BlueprintPtr(BlueprintEditorPtr.IsValid() ? BlueprintEditorPtr.Pin()->GetBlueprintObj() : nullptr)
+	, ViewModelClass(ViewModelClass)
 	, DebugViewModel(DebugViewModel)
 	, ViewModelName(ViewModelName)
 {

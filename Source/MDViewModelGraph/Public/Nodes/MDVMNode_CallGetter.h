@@ -17,5 +17,5 @@ public:
 protected:
 	virtual bool IsFunctionValidForNode(const UFunction& Func) const override;
 
-	virtual UBlueprintNodeSpawner* CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const UFunction* Function, const UWidgetBlueprint* WidgetBP) const override;
+	virtual UBlueprintNodeSpawner* CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const UFunction* Function, const UBlueprint* Blueprint) const override;
 };

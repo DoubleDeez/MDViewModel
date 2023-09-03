@@ -4,7 +4,7 @@
 #include "Util/MDViewModelAssignmentReference.h"
 #include "MDVMNode_CallFunctionBase.generated.h"
 
-class UWidgetBlueprint;
+class UBlueprint;
 
 // Base class for calling functions on assigned view models
 UCLASS(Abstract)
@@ -35,13 +35,13 @@ public:
 	virtual void ExpandNode(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph) override;
 	virtual void ValidateNodeDuringCompilation(FCompilerResultsLog& MessageLog) const override;
 
-	void InitializeViewModelFunctionParams(const FMDViewModelAssignmentReference& VMAssignment, const UFunction* Function, const UWidgetBlueprint* WidgetBP = nullptr);
+	void InitializeViewModelFunctionParams(const FMDViewModelAssignmentReference& VMAssignment, const UFunction* Function, const UBlueprint* Blueprint = nullptr);
 
 protected:
 	virtual bool IsFunctionValidForNode(const UFunction& Func) const { return false; }
 	virtual bool CanTogglePurity() const;
 
-	virtual UBlueprintNodeSpawner* CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const UFunction* Function, const UWidgetBlueprint* WidgetBP) const { return nullptr;}
+	virtual UBlueprintNodeSpawner* CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const UFunction* Function, const UBlueprint* Blueprint) const { return nullptr;}
 	
 private:
 	void BindAssignmentChanges();
@@ -54,7 +54,7 @@ private:
 	FMDViewModelAssignmentReference Assignment;
 
 	UPROPERTY()
-	TWeakObjectPtr<const UWidgetBlueprint> ExpectedWidgetBP;
+	TWeakObjectPtr<const UBlueprint> ExpectedBlueprintPtr;
 
 	UPROPERTY()
 	bool bIsSetPure = false;

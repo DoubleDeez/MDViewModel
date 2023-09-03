@@ -12,7 +12,7 @@ bool UMDVMNode_CallCommand::IsFunctionValidForNode(const UFunction& Func) const
 	return Func.HasAllFunctionFlags(FUNC_BlueprintCallable) && !Func.HasAnyFunctionFlags(FUNC_BlueprintPure | FUNC_Static);
 }
 
-UBlueprintNodeSpawner* UMDVMNode_CallCommand::CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const UFunction* Function, const UWidgetBlueprint* WidgetBP) const
+UBlueprintNodeSpawner* UMDVMNode_CallCommand::CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const UFunction* Function, const UBlueprint* Blueprint) const
 {
-	return UMDViewModelNodeSpawner::Create(UMDVMNode_CallCommand::StaticClass(), INVTEXT("View Model Commands"), AssignmentReference, Function, WidgetBP);
+	return UMDViewModelNodeSpawner::Create(UMDVMNode_CallCommand::StaticClass(), INVTEXT("View Model Commands"), AssignmentReference, Function, Blueprint);
 }

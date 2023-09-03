@@ -6,7 +6,6 @@
 #include "MDViewModelFieldNotifyBinding.generated.h"
 
 class UMDViewModelBase;
-class UUserWidget;
 
 /** Entry for a field notify to assign after a blueprint has been instanced */
 USTRUCT()
@@ -48,9 +47,9 @@ public:
 	virtual void UnbindDynamicDelegates(UObject* InInstance) const override;
 
 private:
-	void OnViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, int32 EntryIndex, TWeakObjectPtr<UUserWidget> BoundWidget) const;
+	void OnViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, int32 EntryIndex, TWeakObjectPtr<UObject> BoundObject) const;
 
-	void OnFieldValueChanged(UObject* ViewModel, UE::FieldNotification::FFieldId Field, int32 EntryIndex, TWeakObjectPtr<UUserWidget> BoundWidget) const;
+	void OnFieldValueChanged(UObject* ViewModel, UE::FieldNotification::FFieldId Field, int32 EntryIndex, TWeakObjectPtr<UObject> BoundObject) const;
 
-	mutable TMap<TTuple<int32, TWeakObjectPtr<UUserWidget>>, FDelegateHandle> BoundDelegates;
+	mutable TMap<TTuple<int32, TWeakObjectPtr<UObject>>, FDelegateHandle> BoundDelegates;
 };

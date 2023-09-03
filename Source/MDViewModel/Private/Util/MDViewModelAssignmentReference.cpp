@@ -4,9 +4,9 @@
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetExtensions/MDViewModelWidgetExtension.h"
 
-UMDViewModelBase* FMDViewModelAssignmentReference::ResolveViewModelAssignment(const UUserWidget* Widget) const
+UMDViewModelBase* FMDViewModelAssignmentReference::ResolveViewModelAssignment(const UObject* Object) const
 {
-	if (IsValid(Widget))
+	if (const UUserWidget* Widget = Cast<UUserWidget>(Object))
 	{
 		const UMDViewModelWidgetExtension* Extension = Widget->GetExtension<UMDViewModelWidgetExtension>();
 		if (IsValid(Extension))
@@ -14,6 +14,10 @@ UMDViewModelBase* FMDViewModelAssignmentReference::ResolveViewModelAssignment(co
 			// SoftClassPtr doesn't need loading since it will be loaded if the view model exists
 			return Extension->GetViewModel(ViewModelClass.Get(), ViewModelName);
 		}
+	}
+	else
+	{
+		// TODO - Actor View Models
 	}
 
 	return nullptr;

@@ -26,6 +26,10 @@ SMDViewModelList::~SMDViewModelList()
 	{
 		BPExtension->OnAssignmentsChanged.RemoveAll(this);
 	}
+	else
+	{
+		// TODO - Actor View Models
+	}
 }
 
 void SMDViewModelList::Construct(const FArguments& InArgs, const TSharedPtr<FBlueprintEditor>& InBlueprintEditor)
@@ -38,6 +42,10 @@ void SMDViewModelList::Construct(const FArguments& InArgs, const TSharedPtr<FBlu
 	{
 		BPExtension->SetFlags(RF_Transactional);
 		BPExtension->OnAssignmentsChanged.AddSP(this, &SMDViewModelList::OnAssignmentsChanged);
+	}
+	else
+	{
+		// TODO - Actor View Models
 	}
 
 	PopulateAssignments();
@@ -196,6 +204,10 @@ void SMDViewModelList::PopulateAssignments()
 				}
 			}
 		}
+	}
+	else
+	{
+		// TODO - Actor View Models
 	}
 
 	TArray<UClass*> EldestFirstSortedAncestry = ChildFirstSortedAncestry;

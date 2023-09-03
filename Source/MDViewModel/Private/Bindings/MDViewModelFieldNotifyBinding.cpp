@@ -13,15 +13,19 @@ void UMDViewModelFieldNotifyBinding::BindDynamicDelegates(UObject* InInstance) c
 		{
 			if (UMDViewModelWidgetClassExtension* Extension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
 			{
-				TWeakObjectPtr<UUserWidget> WeakWidget = Widget;
+				TWeakObjectPtr<UObject> WeakObject = Widget;
 				for (int32 i = 0; i < ViewModelFieldNotifyBindings.Num(); ++i)
 				{
 					const FMDViewModelFieldNotifyBindingEntry& Entry = ViewModelFieldNotifyBindings[i];
-					auto Delegate = FMDVMOnViewModelSet::FDelegate::CreateUObject(this, &UMDViewModelFieldNotifyBinding::OnViewModelChanged, i, WeakWidget);
+					auto Delegate = FMDVMOnViewModelSet::FDelegate::CreateUObject(this, &UMDViewModelFieldNotifyBinding::OnViewModelChanged, i, WeakObject);
 					Extension->QueueListenForChanges(Widget, MoveTemp(Delegate), Entry.ViewModelClass, Entry.ViewModelName);
 				}
 			}
 		}
+	}
+	else
+	{
+		// TODO - Actor View Models
 	}
 }
 
@@ -35,17 +39,21 @@ void UMDViewModelFieldNotifyBinding::UnbindDynamicDelegates(UObject* InInstance)
 			Extension->StopListeningForAllNativeViewModelsChanged(this);
 		}
 	}
+	else
+	{
+		// TODO - Actor View Models
+	}
 }
 
-void UMDViewModelFieldNotifyBinding::OnViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, int32 EntryIndex, TWeakObjectPtr<UUserWidget> BoundWidget) const
+void UMDViewModelFieldNotifyBinding::OnViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, int32 EntryIndex, TWeakObjectPtr<UObject> BoundObject) const
 {
-	if (!ensure(ViewModelFieldNotifyBindings.IsValidIndex(EntryIndex)) || !BoundWidget.IsValid())
+	if (!ensure(ViewModelFieldNotifyBindings.IsValidIndex(EntryIndex)) || !BoundObject.IsValid())
 	{
 		return;
 	}
 
 	const FMDViewModelFieldNotifyBindingEntry& Entry = ViewModelFieldNotifyBindings[EntryIndex];
-	const TTuple<int32, TWeakObjectPtr<UUserWidget>> DelegateKey = { EntryIndex, BoundWidget };
+	const TTuple<int32, TWeakObjectPtr<UObject>> DelegateKey = { EntryIndex, BoundObject };
 
 	if (IsValid(OldViewModel))
 	{
@@ -61,25 +69,25 @@ void UMDViewModelFieldNotifyBinding::OnViewModelChanged(UMDViewModelBase* OldVie
 	if (IsValid(NewViewModel))
 	{
 		const UE::FieldNotification::FFieldId FieldId = NewViewModel->GetFieldNotificationDescriptor().GetField(Entry.ViewModelClass, Entry.FieldNotifyName);
-		const INotifyFieldValueChanged::FFieldValueChangedDelegate Delegate = INotifyFieldValueChanged::FFieldValueChangedDelegate::CreateUObject(this, &UMDViewModelFieldNotifyBinding::OnFieldValueChanged, EntryIndex, BoundWidget);
+		const INotifyFieldValueChanged::FFieldValueChangedDelegate Delegate = INotifyFieldValueChanged::FFieldValueChangedDelegate::CreateUObject(this, &UMDViewModelFieldNotifyBinding::OnFieldValueChanged, EntryIndex, BoundObject);
 		BoundDelegates.FindOrAdd(DelegateKey) = NewViewModel->AddFieldValueChangedDelegate(FieldId, Delegate);
 
 		// Execute with the currently held value
-		OnFieldValueChanged(NewViewModel, FieldId, EntryIndex, BoundWidget);
+		OnFieldValueChanged(NewViewModel, FieldId, EntryIndex, BoundObject);
 	}
 }
 
-void UMDViewModelFieldNotifyBinding::OnFieldValueChanged(UObject* ViewModel, UE::FieldNotification::FFieldId Field, int32 EntryIndex, TWeakObjectPtr<UUserWidget> BoundWidget) const
+void UMDViewModelFieldNotifyBinding::OnFieldValueChanged(UObject* ViewModel, UE::FieldNotification::FFieldId Field, int32 EntryIndex, TWeakObjectPtr<UObject> BoundObject) const
 {
 	UMDViewModelBase* BoundViewModel = Cast<UMDViewModelBase>(ViewModel);
-	if (!ensure(ViewModelFieldNotifyBindings.IsValidIndex(EntryIndex)) || !BoundWidget.IsValid() || !IsValid(BoundViewModel))
+	if (!ensure(ViewModelFieldNotifyBindings.IsValidIndex(EntryIndex)) || !BoundObject.IsValid() || !IsValid(BoundViewModel))
 	{
 		return;
 	}
 
 	const FMDViewModelFieldNotifyBindingEntry& Entry = ViewModelFieldNotifyBindings[EntryIndex];
 
-	if (UFunction* BoundFunc = BoundWidget->FindFunctionChecked(Entry.FunctionNameToBind))
+	if (UFunction* BoundFunc = BoundObject->FindFunctionChecked(Entry.FunctionNameToBind))
 	{
 		check(IsValid(BoundFunc) && BoundFunc->NumParms == 1);
 
@@ -108,7 +116,7 @@ void UMDViewModelFieldNotifyBinding::OnFieldValueChanged(UObject* ViewModel, UE:
 
 		if (ValuePtr != nullptr)
 		{
-			BoundWidget->ProcessEvent(BoundFunc, ValuePtr);
+			BoundObject->ProcessEvent(BoundFunc, ValuePtr);
 		}
 
 		if (AllocatedParamPtr != nullptr)

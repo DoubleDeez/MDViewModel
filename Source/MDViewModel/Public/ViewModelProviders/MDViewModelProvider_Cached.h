@@ -8,7 +8,7 @@
 #include "UObject/WeakInterfacePtr.h"
 #include "Util/MDViewModelAssignment.h"
 #include "Util/MDViewModelAssignmentReference.h"
-#include "Util/MDVMAssignmentWidgetKey.h"
+#include "Util/MDVMAssignmentObjectKey.h"
 #include "MDViewModelProvider_Cached.generated.h"
 
 struct FMDViewModelInstanceKey;
@@ -262,19 +262,19 @@ protected:
 	bool DoesActorPassFilter(AActor* Candidate, const FMDVMWorldActorFilter& Filter) const;
 
 	// Checks WidgetDelegateHandles to see if the handle at the specified index is bound, if not it adds a new entry and calls BindFunc to populate it 
-	template<typename T, typename TBindingKey, typename = typename TEnableIf<std::is_same_v<typename TDecay<TBindingKey>::Type, FMDVMAssignmentWidgetKey>>::Type>
+	template<typename T, typename TBindingKey, typename = typename TEnableIf<std::is_same_v<typename TDecay<TBindingKey>::Type, FMDVMAssignmentObjectKey>>::Type>
 	void BindDelegateIfUnbound(TBindingKey&& BindingKey, T* Owner, int32 DelegateIndex, TFunctionRef<FDelegateHandle(T&)> BindFunc);
 
 	// Checks WidgetDelegateHandles to see if the specified delegate exists, if so it calls UnbindFunc and resets the stored delegate data
 	template<typename T>
-	void UnbindDelegate(const FMDVMAssignmentWidgetKey& BindingKey, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc);
+	void UnbindDelegate(const FMDVMAssignmentObjectKey& BindingKey, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc);
 
 	// Checks WidgetDelegateHandles to see if the delegate owner is different, if so it calls UnbindFunc and resets the stored delegate data
 	template<typename T>
-	void UnbindDelegateIfNewOwner(const FMDVMAssignmentWidgetKey& BindingKey, const UObject* Owner, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc);
+	void UnbindDelegateIfNewOwner(const FMDVMAssignmentObjectKey& BindingKey, const UObject* Owner, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc);
 
 	// Certain lifetimes may require binding multiple delegates, they can index into the array to store multiple handles
-	TMap<FMDVMAssignmentWidgetKey, TArray<FMDWrappedDelegateHandle, TInlineAllocator<4>>> WidgetDelegateHandles;
+	TMap<FMDVMAssignmentObjectKey, TArray<FMDWrappedDelegateHandle, TInlineAllocator<4>>> WidgetDelegateHandles;
 
 	// Maps assignments to Widgets and their ViewModelCache handles
 	TMap<FMDViewModelAssignment, TMap<TWeakObjectPtr<UUserWidget>, uint64>> BoundAssignments;
@@ -320,7 +320,7 @@ void UMDViewModelProvider_Cached::BindDelegateIfUnbound(TBindingKey&& BindingKey
 	}
 	
 	// Find or Add a Delegate Wrapper at the specified DelegateIndex
-	auto& WrapperArray = WidgetDelegateHandles.FindOrAdd(Forward<FMDVMAssignmentWidgetKey>(BindingKey));
+	auto& WrapperArray = WidgetDelegateHandles.FindOrAdd(Forward<FMDVMAssignmentObjectKey>(BindingKey));
 	if (WrapperArray.IsValidIndex(DelegateIndex))
 	{
 		if (WrapperArray[DelegateIndex].IsBound())
@@ -340,7 +340,7 @@ void UMDViewModelProvider_Cached::BindDelegateIfUnbound(TBindingKey&& BindingKey
 }
 
 template <typename T>
-void UMDViewModelProvider_Cached::UnbindDelegate(const FMDVMAssignmentWidgetKey& BindingKey, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc)
+void UMDViewModelProvider_Cached::UnbindDelegate(const FMDVMAssignmentObjectKey& BindingKey, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc)
 {
 	auto* WrapperArrayPtr = WidgetDelegateHandles.Find(BindingKey);
 	if (WrapperArrayPtr == nullptr || !WrapperArrayPtr->IsValidIndex(DelegateIndex))
@@ -372,7 +372,7 @@ void UMDViewModelProvider_Cached::UnbindDelegate(const FMDVMAssignmentWidgetKey&
 }
 
 template <typename T>
-void UMDViewModelProvider_Cached::UnbindDelegateIfNewOwner(const FMDVMAssignmentWidgetKey& BindingKey, const UObject* Owner, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc)
+void UMDViewModelProvider_Cached::UnbindDelegateIfNewOwner(const FMDVMAssignmentObjectKey& BindingKey, const UObject* Owner, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc)
 {
 	auto* WrapperArrayPtr = WidgetDelegateHandles.Find(BindingKey);
 	if (WrapperArrayPtr == nullptr || !WrapperArrayPtr->IsValidIndex(DelegateIndex))

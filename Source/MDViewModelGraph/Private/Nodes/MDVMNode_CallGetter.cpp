@@ -17,7 +17,7 @@ bool UMDVMNode_CallGetter::IsFunctionValidForNode(const UFunction& Func) const
 	return Func.NumParms == 1 && Func.GetReturnProperty() != nullptr;
 }
 
-UBlueprintNodeSpawner* UMDVMNode_CallGetter::CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const UFunction* Function, const UWidgetBlueprint* WidgetBP) const
+UBlueprintNodeSpawner* UMDVMNode_CallGetter::CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const UFunction* Function, const UBlueprint* Blueprint) const
 {
-	return UMDViewModelNodeSpawner::Create(UMDVMNode_CallGetter::StaticClass(), INVTEXT("View Model Getters"), AssignmentReference, Function, WidgetBP);
+	return UMDViewModelNodeSpawner::Create(UMDVMNode_CallGetter::StaticClass(), INVTEXT("View Model Getters"), AssignmentReference, Function, Blueprint);
 }

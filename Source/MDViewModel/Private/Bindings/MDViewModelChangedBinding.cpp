@@ -12,15 +12,19 @@ void UMDViewModelChangedBinding::BindDynamicDelegates(UObject* InInstance) const
 		{
 			if (UMDViewModelWidgetClassExtension* Extension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
 			{
-				TWeakObjectPtr<UUserWidget> WeakWidget = Widget;
+				TWeakObjectPtr<UObject> WeakObject = Widget;
 				for (int32 i = 0; i < ViewModelChangedBindings.Num(); ++i)
 				{
 					const FMDViewModelChangedBindingEntry& Entry = ViewModelChangedBindings[i];
-					auto Delegate = FMDVMOnViewModelSet::FDelegate::CreateUObject(this, &UMDViewModelChangedBinding::OnViewModelChanged, i, WeakWidget);
+					auto Delegate = FMDVMOnViewModelSet::FDelegate::CreateUObject(this, &UMDViewModelChangedBinding::OnViewModelChanged, i, WeakObject);
 					Extension->QueueListenForChanges(Widget, MoveTemp(Delegate), Entry.ViewModelClass, Entry.ViewModelName);
 				}
 			}
 		}
+	}
+	else
+	{
+		// TODO - Actor View Models
 	}
 }
 
@@ -34,17 +38,21 @@ void UMDViewModelChangedBinding::UnbindDynamicDelegates(UObject* InInstance) con
 			Extension->StopListeningForAllNativeViewModelsChanged(this);
 		}
 	}
+	else
+	{
+		// TODO - Actor View Models
+	}
 }
 
-void UMDViewModelChangedBinding::OnViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, int32 EntryIndex, TWeakObjectPtr<UUserWidget> BoundWidget) const
+void UMDViewModelChangedBinding::OnViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, int32 EntryIndex, TWeakObjectPtr<UObject> BoundObject) const
 {
-	if (!ensure(ViewModelChangedBindings.IsValidIndex(EntryIndex)) || !BoundWidget.IsValid())
+	if (!ensure(ViewModelChangedBindings.IsValidIndex(EntryIndex)) || !BoundObject.IsValid())
 	{
 		return;
 	}
 
 	const FMDViewModelChangedBindingEntry& Entry = ViewModelChangedBindings[EntryIndex];
-	if (UFunction* Func = BoundWidget->FindFunction(Entry.FunctionNameToBind))
+	if (UFunction* Func = BoundObject->FindFunction(Entry.FunctionNameToBind))
 	{
 		struct
 		{
@@ -52,6 +60,6 @@ void UMDViewModelChangedBinding::OnViewModelChanged(UMDViewModelBase* OldViewMod
 			UMDViewModelBase* NewViewModel = nullptr;
 		} Params = {OldViewModel, NewViewModel};
 
-		BoundWidget->ProcessEvent(Func, &Params);
+		BoundObject->ProcessEvent(Func, &Params);
 	}
 }
