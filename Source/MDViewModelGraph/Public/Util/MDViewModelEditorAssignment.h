@@ -21,9 +21,9 @@ public:
 	UPROPERTY()
 	FMDViewModelAssignmentData Data;
 
-	// Is this assignment from a super class
-	UPROPERTY()
-	bool bIsSuper = false;
+	// The class that this assignment is from, if this assignment is from a parent
+	UPROPERTY(Transient)
+	TObjectPtr<UClass> SuperAssignmentOwner;
 
 	bool operator==(const FMDViewModelEditorAssignment& Other) const;
 };

@@ -24,6 +24,7 @@ public:
 	void SetAssignments(const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& InAssignments);
 
 	const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& GetAssignments() const { return Assignments; }
+	void GetThisAndAncestorAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutAssignments) const;
 	void SearchAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FGameplayTag& ProviderTag = FGameplayTag::EmptyTag, const FName& ViewModelName = NAME_None) const;
 
 	void GetViewModelClasses(TSet<TSubclassOf<UMDViewModelBase>>& OutViewModelClasses) const;
@@ -38,10 +39,11 @@ protected:
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
 
 private:
-	void GatherParentAssignments(TSubclassOf<UUserWidget> WidgetClass);
-
 	UPROPERTY(Transient)
-	bool bHasGatheredParentAssignments = false;
+	mutable TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ParentAssignments;
+	
+	UPROPERTY(Transient)
+	mutable bool bHasGatheredParentAssignments = false;
 
 	struct QueuedListenerData
 	{

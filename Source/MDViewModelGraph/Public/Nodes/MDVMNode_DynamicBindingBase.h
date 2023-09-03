@@ -13,6 +13,8 @@ class MDVIEWMODELGRAPH_API UMDVMNode_DynamicBindingBase : public UK2Node_Event
 public:
 	virtual void AllocateDefaultPins() override;
 	virtual void BeginDestroy() override;
+
+	virtual FString GetFindReferenceSearchString() const override;
 	
 	// Class of the view model we're binding to
 	UPROPERTY()

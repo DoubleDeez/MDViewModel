@@ -6,8 +6,8 @@
 class FMDViewModelFieldDebugLineItem : public FMDViewModelDebugLineItemBase
 {
 public:
-	FMDViewModelFieldDebugLineItem(const FProperty* Property, void* InValuePtr, const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, bool bIsFieldNotify = false, UWidgetBlueprint* WidgetBP = nullptr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
-		: FMDViewModelDebugLineItemBase(DisplayName, Description, DebugViewModel, bIsFieldNotify, WidgetBP, ViewModelClass, ViewModelName)
+	FMDViewModelFieldDebugLineItem(const FProperty* Property, void* InValuePtr, const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, bool bIsFieldNotify = false, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
+		: FMDViewModelDebugLineItemBase(DisplayName, Description, DebugViewModel, BlueprintEditorPtr, bIsFieldNotify, ViewModelClass, ViewModelName)
 		, PropertyPtr(Property)
 		, ValuePtr(InValuePtr)
 	{
@@ -41,6 +41,8 @@ protected:
 	virtual FDebugLineItem* Duplicate() const override;
 
 	virtual bool CanCreateNodes() const override;
+
+	virtual FString GenerateSearchString() const override;
 
 private:
 	int32 GetShouldDisplayFieldNotifyIndex() const;

@@ -58,11 +58,4 @@ public:
 	virtual void GetExpectedContextObjectTypes(const FInstancedStruct& ProviderSettings, const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, TArray<TSubclassOf<UObject>>& OutContextObjectClasses) const {}
 #endif
 
-	DECLARE_MULTICAST_DELEGATE_OneParam(FOnViewModelUpdated, TSubclassOf<UMDViewModelBase>);
-	FOnViewModelUpdated OnViewModelUpdated;
-
-protected:
-	// Call this when you need all assigned widgets to know that a view model has updated
-	void BroadcastViewModelUpdated(TSubclassOf<UMDViewModelBase> ViewModelClass) const;
-
 };

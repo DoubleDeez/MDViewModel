@@ -7,12 +7,12 @@
 #include "UObject/WeakFieldPtr.h"
 #include "Util/MDViewModelAssignmentReference.h"
 
+class FBlueprintEditor;
 class FMDViewModelChangedDebugLineItem;
 class FMDViewModelEventDebugLineItem;
 class FMDViewModelFunctionDebugLineItem;
 class FMDViewModelFieldDebugLineItem;
 class UMDVMNode_ViewModelEvent;
-class UWidgetBlueprint;
 class UMDViewModelBase;
 
 /**
@@ -33,7 +33,7 @@ public:
 
 	SLATE_END_ARGS()
 
-	void Construct(const FArguments& InArgs, UWidgetBlueprint* WidgetBP);
+	void Construct(const FArguments& InArgs, const TSharedPtr<FBlueprintEditor>& BlueprintEditor);
 
 	void SetReferences(TSubclassOf<UMDViewModelBase> InViewModelClass, UMDViewModelBase* InDebugViewModel, const FName& InViewModelName);
 
@@ -55,7 +55,7 @@ private:
 	TSubclassOf<UMDViewModelBase> ViewModelClass;
 	TWeakObjectPtr<UMDViewModelBase> DebugViewModel;
 	bool bIsDebugging = false;
-	TWeakObjectPtr<UWidgetBlueprint> WidgetBPPtr;
+	TWeakPtr<FBlueprintEditor> BlueprintEditorPtr;
 	FName ViewModelName = NAME_None;
 
 	bool bIncludeBlueprintVisibleProperties = false;

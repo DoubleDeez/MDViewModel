@@ -77,7 +77,6 @@ UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModel(UMDViewModelBase* Vi
 			("WidgetName", GetUserWidget()->GetPathName()),
 			("CurrentVM", GetPathNameSafe(GetViewModel(ViewModelClass, ViewModelName))));
 		
-		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
 		if (ViewModelName != NAME_None)
 		{
 			const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
@@ -118,7 +117,6 @@ UMDViewModelBase* UMDViewModelWidgetExtension::GetViewModel(TSubclassOf<UMDViewM
 {
 	if (IsValid(ViewModelClass))
 	{
-		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
 		if (ViewModelName != NAME_None)
 		{
 			const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
@@ -138,7 +136,7 @@ void UMDViewModelWidgetExtension::ClearViewModel(TSubclassOf<UMDViewModelBase> V
 			("VMClassName", ViewModelClass->GetPathName()),
 			("WidgetName", GetUserWidget()->GetPathName()),
 			("CurrentVM", GetPathNameSafe(GetViewModel(ViewModelClass, ViewModelName))));
-		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
+
 		if (ViewModelName != NAME_None)
 		{
 			const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
@@ -150,34 +148,10 @@ void UMDViewModelWidgetExtension::ClearViewModel(TSubclassOf<UMDViewModelBase> V
 	}
 }
 
-void UMDViewModelWidgetExtension::OnProviderViewModelUpdated(TSubclassOf<UMDViewModelBase> ViewModelClass, FGameplayTag ProviderTag)
-{
-	UUserWidget* Widget = GetUserWidget();
-	if (!IsValid(Widget))
-	{
-		return;
-	}
-
-	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-	MDViewModelUtils::SearchViewModelAssignments(Assignments, GetUserWidget()->GetClass(), ViewModelClass, ProviderTag);
-
-	UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(ProviderTag);
-	if (!IsValid(Provider))
-	{
-		return;
-	}
-
-	for (const auto& Pair : Assignments)
-	{
-		Provider->SetViewModel(*Widget, Pair.Key, Pair.Value);
-	}
-}
-
 FDelegateHandle UMDViewModelWidgetExtension::ListenForChanges(FMDVMOnViewModelSet::FDelegate&& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
 	if (IsValid(ViewModelClass))
 	{
-		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
 		const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
 		return OnViewModelSetDelegates.FindOrAdd(Key).Add(MoveTemp(Delegate));
 	}
@@ -189,7 +163,6 @@ void UMDViewModelWidgetExtension::StopListeningForChanges(FDelegateHandle& Handl
 {
 	if (IsValid(ViewModelClass))
 	{
-		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
 		const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
 		if (FMDVMOnViewModelSet* Delegate = OnViewModelSetDelegates.Find(Key))
 		{
@@ -213,7 +186,6 @@ void UMDViewModelWidgetExtension::ListenForChanges(FMDVMOnViewModelSetDynamic&& 
 {
 	if (IsValid(ViewModelClass))
 	{
-		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
 		const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
 		OnViewModelSetDynamicDelegates.FindOrAdd(Key).Add(MoveTemp(Delegate));
 	}
@@ -223,7 +195,6 @@ void UMDViewModelWidgetExtension::StopListeningForChanges(const FMDVMOnViewModel
 {
 	if (IsValid(ViewModelClass))
 	{
-		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
 		const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
 		if (TArray<FMDVMOnViewModelSetDynamic>* Delegates = OnViewModelSetDynamicDelegates.Find(Key))
 		{
@@ -250,7 +221,6 @@ bool UMDViewModelWidgetExtension::IsListeningForChanges(const UObject* BoundObje
 {
 	if (IsValid(ViewModelClass))
 	{
-		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
 		const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
 		if (const FMDVMOnViewModelSet* Delegate = OnViewModelSetDelegates.Find(Key))
 		{
@@ -263,7 +233,6 @@ bool UMDViewModelWidgetExtension::IsListeningForChanges(const UObject* BoundObje
 	
 	if (IsValid(ViewModelClass))
 	{
-		ViewModelName = MDViewModelUtils::ResolveViewModelName(ViewModelClass, ViewModelName);
 		const FMDViewModelInstanceKey Key = { ViewModelName, ViewModelClass };
 		if (const TArray<FMDVMOnViewModelSetDynamic>* Delegates = OnViewModelSetDynamicDelegates.Find(Key))
 		{
@@ -324,11 +293,11 @@ void UMDViewModelWidgetExtension::PopulateViewModels()
 	}
 #endif
 
-	UE_LOGFMT(LogMDViewModel, Verbose, "Populating View Models for Widget [{WidgetName}]",
-		("WidgetName", GetUserWidget()->GetPathName()));
-	
+	UE_LOGFMT(LogMDViewModel, Verbose, "Populating View Models for Widget [{WidgetName}]", ("WidgetName", GetUserWidget()->GetPathName()));
+
+	constexpr bool bIncludeAncestorAssignments = true;
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-	MDViewModelUtils::GetViewModelAssignmentsForWidgetClass(Widget->GetClass(), Assignments);
+	MDViewModelUtils::GetViewModelAssignmentsForWidgetClass(Widget->GetClass(), bIncludeAncestorAssignments, Assignments);
 
 	for (const auto& Pair : Assignments)
 	{
@@ -336,7 +305,6 @@ void UMDViewModelWidgetExtension::PopulateViewModels()
 		if (ensureMsgf(IsValid(Provider), TEXT("A View Model Provider with tag [%s] was not found"), *Pair.Key.ProviderTag.ToString()))
 		{
 			Provider->SetViewModel(*Widget, Pair.Key, Pair.Value);
-			Provider->OnViewModelUpdated.AddUObject(this, &UMDViewModelWidgetExtension::OnProviderViewModelUpdated, Pair.Key.ProviderTag);
 		}
 	}
 }

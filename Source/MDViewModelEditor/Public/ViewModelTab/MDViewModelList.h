@@ -4,6 +4,7 @@
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/Views/SListView.h"
 
+class UMDViewModelWidgetBlueprintExtension;
 class FBlueprintEditor;
 class UWidgetBlueprint;
 class UUserWidget;
@@ -24,7 +25,7 @@ public:
 
 	virtual ~SMDViewModelList() override;
 
-	void Construct(const FArguments& InArgs, UWidgetBlueprint* InBlueprint, TSharedPtr<FBlueprintEditor> InBlueprintEditor);
+	void Construct(const FArguments& InArgs, const TSharedPtr<FBlueprintEditor>& InBlueprintEditor);
 
 	void RefreshList();
 
@@ -46,10 +47,12 @@ private:
 	void OnEditItem(TSharedPtr<FMDViewModelEditorAssignment> Item);
 	void OnDeleteItem(TSharedPtr<FMDViewModelEditorAssignment> Item);
 
+	UBlueprint* GetBlueprint() const;
+	UMDViewModelWidgetBlueprintExtension* RequestExtension() const;
+	UClass* GetGeneratedClass() const;
+
 	TSharedPtr<SListView<TSharedPtr<FMDViewModelEditorAssignment>>> AssignmentList;
 	TArray<TSharedPtr<FMDViewModelEditorAssignment>> Assignments;
-	TSubclassOf<UUserWidget> WidgetClass;
-	UWidgetBlueprint* WidgetBP = nullptr;
 	FOnViewModelSelected OnViewModelSelected;
-	TWeakPtr<FBlueprintEditor> BlueprintEditor;
+	TWeakPtr<FBlueprintEditor> BlueprintEditorPtr;
 };

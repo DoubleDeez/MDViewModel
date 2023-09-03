@@ -29,6 +29,7 @@ public:
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 	virtual FText GetFunctionContextString() const override;
 	virtual FText GetFunctionContextFormat() const;
+	virtual FString GetFindReferenceSearchString() const override;
 	
 	virtual FNodeHandlingFunctor* CreateNodeHandler(FKismetCompilerContext& CompilerContext) const override;
 	virtual void ExpandNode(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph) override;

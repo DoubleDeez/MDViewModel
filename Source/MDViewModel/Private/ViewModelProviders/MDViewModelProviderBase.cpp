@@ -21,8 +21,3 @@ void UMDViewModelProviderBase::GetSupportedViewModelClasses(TArray<FMDViewModelS
 	OutViewModelClasses.Add({ UMDViewModelBase::StaticClass() });
 }
 #endif
-
-void UMDViewModelProviderBase::BroadcastViewModelUpdated(TSubclassOf<UMDViewModelBase> ViewModelClass) const
-{
-	OnViewModelUpdated.Broadcast(ViewModelClass);
-}

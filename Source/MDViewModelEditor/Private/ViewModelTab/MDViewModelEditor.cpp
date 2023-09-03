@@ -11,11 +11,11 @@
 #include "Widgets/Layout/SSplitter.h"
 
 
-void SMDViewModelEditor::Construct(const FArguments& InArgs, TSharedPtr<FWidgetBlueprintEditor> BlueprintEditor)
+void SMDViewModelEditor::Construct(const FArguments& InArgs, const TSharedPtr<FBlueprintEditor>& BlueprintEditor)
 {
-	UWidgetBlueprint* WidgetBP = BlueprintEditor->GetWidgetBlueprintObj();
-	WidgetBP->OnSetObjectBeingDebugged().AddSP(this, &SMDViewModelEditor::OnSetObjectBeingDebugged);
-	WidgetBP->OnCompiled().AddSP(this, &SMDViewModelEditor::OnBlueprintCompiled);
+	UBlueprint* Blueprint = BlueprintEditor->GetBlueprintObj();
+	Blueprint->OnSetObjectBeingDebugged().AddSP(this, &SMDViewModelEditor::OnSetObjectBeingDebugged);
+	Blueprint->OnCompiled().AddSP(this, &SMDViewModelEditor::OnBlueprintCompiled);
 
 	ChildSlot
 	[
@@ -25,17 +25,16 @@ void SMDViewModelEditor::Construct(const FArguments& InArgs, TSharedPtr<FWidgetB
 		.MinSize(300.f)
 		.Value(0.15f)
 		[
-			SAssignNew(ViewModelListWidget, SMDViewModelList, WidgetBP, BlueprintEditor)
+			SAssignNew(ViewModelListWidget, SMDViewModelList, BlueprintEditor)
 			.OnViewModelSelected(this, &SMDViewModelEditor::OnViewModelSelected)
 		]
 		+SSplitter::Slot()
 		[
-			SAssignNew(ViewModelDetailsWidget, SMDViewModelDetails)
-			.WidgetBP(WidgetBP)
+			SAssignNew(ViewModelDetailsWidget, SMDViewModelDetails, BlueprintEditor)
 		]
 	];
 
-	OnSetObjectBeingDebugged(WidgetBP->GetObjectBeingDebugged());
+	OnSetObjectBeingDebugged(Blueprint->GetObjectBeingDebugged());
 }
 
 void SMDViewModelEditor::PostUndo(bool bSuccess)
@@ -78,7 +77,7 @@ void SMDViewModelEditor::OnViewModelSelected(FMDViewModelEditorAssignment* Assig
 }
 
 void SMDViewModelEditor::OnViewModelChanged()
-{
+{	
 	if (ViewModelDetailsWidget.IsValid())
 	{
 		if (SelectedViewModelClass != nullptr)
@@ -100,6 +99,11 @@ void SMDViewModelEditor::OnViewModelChanged()
 
 void SMDViewModelEditor::OnBlueprintCompiled(UBlueprint* BP)
 {
+	if (ViewModelListWidget.IsValid())
+	{
+		ViewModelListWidget->RefreshList();
+	}
+	
 	// Force a refresh
 	OnViewModelChanged();
 }

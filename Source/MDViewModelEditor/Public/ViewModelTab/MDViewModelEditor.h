@@ -10,7 +10,7 @@ class SMDViewModelList;
 class UMDViewModelBase;
 struct FMDViewModelEditorAssignment;
 class SMDViewModelDetails;
-class FWidgetBlueprintEditor;
+class FBlueprintEditor;
 
 /**
  *
@@ -24,7 +24,7 @@ public:
 
 	SLATE_END_ARGS()
 
-	void Construct(const FArguments& InArgs, TSharedPtr<FWidgetBlueprintEditor> BlueprintEditor);
+	void Construct(const FArguments& InArgs, const TSharedPtr<FBlueprintEditor>& BlueprintEditor);
 
 	virtual void PostUndo(bool bSuccess) override;
 	virtual void PostRedo(bool bSuccess) override;

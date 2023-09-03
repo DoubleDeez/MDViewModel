@@ -4,14 +4,15 @@
 #include "Templates/SubclassOf.h"
 #include "Util/MDViewModelAssignmentReference.h"
 
+class FBlueprintEditor;
 class FMDVMInspectorDragAndDropActionBase;
 class UMDViewModelBase;
-class UWidgetBlueprint;
+class UBlueprint;
 
 class FMDViewModelDebugLineItemBase : public FDebugLineItem
 {
 public:
-	FMDViewModelDebugLineItemBase(const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, bool bIsFieldNotify = false, UWidgetBlueprint* WidgetBP = nullptr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None);
+	FMDViewModelDebugLineItemBase(const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, bool bIsFieldNotify = false, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None);
 
 	// TODO - Add DebugViewModel
 	void UpdateViewModel(const FName& InViewModelName, TSubclassOf<UMDViewModelBase> InViewModelClass);
@@ -29,6 +30,8 @@ protected:
 	virtual void UpdateCachedChildren() const {};
 
 	virtual bool HasChildren() const override;
+	
+	virtual void ExtendContextMenu(FMenuBuilder& MenuBuilder, bool bInDebuggerTab) override;
 
 	virtual void GatherChildrenBase(TArray<FDebugTreeItemPtr>& OutChildren, const FString& InSearchString, bool bRespectSearch) override;
 
@@ -40,6 +43,10 @@ protected:
 
 	virtual bool CanCreateNodes() const;
 
+	virtual FString GenerateSearchString() const { return {}; }
+	
+	void OnFindReferencesClicked() const;
+
 	mutable TOptional<TArray<FDebugTreeItemPtr>> CachedChildren;
 
 	mutable TMap<FName, FDebugTreeItemPtr> CachedPropertyItems;
@@ -47,7 +54,8 @@ protected:
 	FText DisplayName;
 	FText Description;
 	bool bIsFieldNotify = false;
-	TWeakObjectPtr<UWidgetBlueprint> WidgetBP;
+	TWeakPtr<FBlueprintEditor> BlueprintEditorPtr;
+	TWeakObjectPtr<UBlueprint> BlueprintPtr;
 	TSubclassOf<UMDViewModelBase> ViewModelClass;
 	TWeakObjectPtr<UMDViewModelBase> DebugViewModel;
 	FName ViewModelName = NAME_None;

@@ -13,21 +13,6 @@ namespace MDViewModelUtils
 {
 	const FName DefaultViewModelName = TEXT("Default");
 
-	FName ResolveViewModelName(const UClass* ViewModelClass, const FName& ViewModelName)
-	{
-		if (ViewModelName != DefaultViewModelName && ViewModelName != NAME_None)
-		{
-			return ViewModelName;
-		}
-
-		if (IsValid(ViewModelClass))
-		{
-			return ViewModelClass->GetFName();
-		}
-
-		return NAME_None;
-	}
-
 	UMDViewModelProviderBase* FindViewModelProvider(const FGameplayTag& ProviderTag)
 	{
 		if (GEngine != nullptr)
@@ -46,7 +31,7 @@ namespace MDViewModelUtils
 		return nullptr;
 	}
 
-	void GetViewModelClassesForWidgetClass(TSubclassOf<UUserWidget> WidgetClass, TSet<TSubclassOf<UMDViewModelBase>>& OutViewModelClasses)
+	void GetViewModelAssignmentsForWidgetClass(TSubclassOf<UUserWidget> WidgetClass, bool bIncludeAncestorAssignments, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments)
 	{
 		if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(WidgetClass))
 		{
@@ -56,22 +41,14 @@ namespace MDViewModelUtils
 			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>(false))
 #endif
 			{
-				ClassExtension->GetViewModelClasses(OutViewModelClasses);
-			}
-		}
-	}
-
-	void GetViewModelAssignmentsForWidgetClass(TSubclassOf<UUserWidget> WidgetClass, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments)
-	{
-		if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(WidgetClass))
-		{
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
-			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
-#else
-			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>(false))
-#endif
-			{
-				OutViewModelAssignments.Append(ClassExtension->GetAssignments());
+				if (bIncludeAncestorAssignments)
+				{
+					ClassExtension->GetThisAndAncestorAssignments(OutViewModelAssignments);
+				}
+				else
+				{
+					OutViewModelAssignments.Append(ClassExtension->GetAssignments());
+				}
 			}
 		}
 	}

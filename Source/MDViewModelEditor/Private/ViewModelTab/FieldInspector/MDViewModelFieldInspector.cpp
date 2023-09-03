@@ -1,7 +1,7 @@
 #include "ViewModelTab/FieldInspector/MDViewModelFieldInspector.h"
 
+#include "BlueprintEditor.h"
 #include "EdGraphSchema_K2.h"
-#include "WidgetBlueprint.h"
 #include "UObject/WeakFieldPtr.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/FieldInspector/MDViewModelChangedDebugLineItem.h"
@@ -9,9 +9,9 @@
 #include "ViewModelTab/FieldInspector/MDViewModelFieldDebugLineItem.h"
 #include "Widgets/Input/SButton.h"
 
-void SMDViewModelFieldInspector::Construct(const FArguments& InArgs, UWidgetBlueprint* WidgetBP)
+void SMDViewModelFieldInspector::Construct(const FArguments& InArgs, const TSharedPtr<FBlueprintEditor>& BlueprintEditor)
 {
-	WidgetBPPtr = WidgetBP;
+	BlueprintEditorPtr = BlueprintEditor;
 
 	bIncludeBlueprintVisibleProperties = InArgs._bIncludeBlueprintVisibleProperties;
 	bIncludeBlueprintAssignableProperties = InArgs._bIncludeBlueprintAssignableProperties;
@@ -50,7 +50,7 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 	{
 		if (!VMChangedItem.IsValid())
 		{
-			VMChangedItem = MakeShared<FMDViewModelChangedDebugLineItem>(WidgetBPPtr.Get(), ViewModelClass, ViewModelName);
+			VMChangedItem = MakeShared<FMDViewModelChangedDebugLineItem>(BlueprintEditorPtr, ViewModelClass, ViewModelName);
 		}
 		else
 		{
@@ -87,7 +87,7 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 				TSharedPtr<FMDViewModelFieldDebugLineItem>& Item = PropertyTreeItems.FindOrAdd(Prop);
 				if (!Item.IsValid())
 				{
-					Item = MakeShared<FMDViewModelFieldDebugLineItem>(Prop, ValuePtr, Prop->GetDisplayNameText(), Prop->GetToolTipText(), DebugViewModel, bIsFieldNotify, WidgetBPPtr.Get(), ViewModelClass, ViewModelName);
+					Item = MakeShared<FMDViewModelFieldDebugLineItem>(Prop, ValuePtr, Prop->GetDisplayNameText(), Prop->GetToolTipText(), DebugViewModel, BlueprintEditorPtr, bIsFieldNotify, ViewModelClass, ViewModelName);
 				}
 				else
 				{
@@ -104,7 +104,7 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 					TSharedPtr<FMDViewModelEventDebugLineItem>& Item = EventTreeItems.FindOrAdd(DelegateProp);
 					if (!Item.IsValid())
 					{
-						Item = MakeShared<FMDViewModelEventDebugLineItem>(DelegateProp, DebugViewModel, false, WidgetBPPtr.Get(), ViewModelClass, ViewModelName);
+						Item = MakeShared<FMDViewModelEventDebugLineItem>(DelegateProp, DebugViewModel, BlueprintEditorPtr, false, ViewModelClass, ViewModelName);
 					}
 					else
 					{
@@ -158,7 +158,7 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 				TSharedPtr<FMDViewModelFunctionDebugLineItem>& Item = FunctionTreeItems.FindOrAdd(Func);
 				if (!Item.IsValid())
 				{
-					Item = MakeShared<FMDViewModelFunctionDebugLineItem>(Func, Func->GetDisplayNameText(), Func->GetToolTipText(), DebugViewModel, bIsCommand, bIsGetter, bIsFieldNotify, WidgetBPPtr.Get(), ViewModelClass, ViewModelName);
+					Item = MakeShared<FMDViewModelFunctionDebugLineItem>(Func, Func->GetDisplayNameText(), Func->GetToolTipText(), DebugViewModel, BlueprintEditorPtr, bIsCommand, bIsGetter, bIsFieldNotify, ViewModelClass, ViewModelName);
 				}
 				else
 				{

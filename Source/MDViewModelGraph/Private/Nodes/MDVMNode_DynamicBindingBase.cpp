@@ -19,6 +19,11 @@ void UMDVMNode_DynamicBindingBase::BeginDestroy()
 	Super::BeginDestroy();
 }
 
+FString UMDVMNode_DynamicBindingBase::GetFindReferenceSearchString() const
+{
+	return FString::Printf(TEXT("\"%s\""), *GetNodeTitle(ENodeTitleType::FullTitle).ToString());
+}
+
 void UMDVMNode_DynamicBindingBase::OnAssignmentChanged()
 {
 	CachedNodeTitle.MarkDirty();

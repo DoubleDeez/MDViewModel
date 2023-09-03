@@ -184,6 +184,28 @@ FText UMDVMNode_CallFunctionBase::GetFunctionContextFormat() const
 	return INVTEXT("Function on {ViewModelClass} ({ViewModelName})");
 }
 
+FString UMDVMNode_CallFunctionBase::GetFindReferenceSearchString() const
+{
+	const FString TitleString = GetNodeTitle(ENodeTitleType::FullTitle).ToString();
+	TArray<FString> Lines;
+	TitleString.ParseIntoArray(Lines, TEXT("\n"));
+
+	FString Result = TEXT("(");
+
+	for (int32 i = 0; i < Lines.Num(); ++i)
+	{
+		if (i != 0)
+		{
+			Result += TEXT(" && ");
+		}
+		
+		const FString& Line = Lines[i];
+		Result += TEXT("\"") + Line + TEXT("\"");
+	}
+
+	return Result + TEXT(")");
+}
+
 FNodeHandlingFunctor* UMDVMNode_CallFunctionBase::CreateNodeHandler(FKismetCompilerContext& CompilerContext) const
 {
 	return new FNodeHandlingFunctor(CompilerContext);

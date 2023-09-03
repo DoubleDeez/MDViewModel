@@ -12,8 +12,6 @@ void UMDViewModelWidgetClassExtension::Initialize(UUserWidget* UserWidget)
 {
 	Super::Initialize(UserWidget);
 
-	GatherParentAssignments(UserWidget->GetClass());
-
 	UE_LOGFMT(LogMDViewModel, Verbose, "Initializing View Model Extension for Widget [{WidgetName}]", UserWidget->GetPathName());
 
 	// ensure that we add the extension to the widget
@@ -51,26 +49,60 @@ void UMDViewModelWidgetClassExtension::SetAssignments(const TMap<FMDViewModelAss
 	Assignments = InAssignments;
 }
 
+void UMDViewModelWidgetClassExtension::GetThisAndAncestorAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutAssignments) const
+{
+	OutAssignments = Assignments;
+
+#if !WITH_EDITOR // Caching parent assignments is only allowed outside of editor
+	if (!bHasGatheredParentAssignments)
+#endif
+	{
+		ParentAssignments.Reset();
+		
+		UClass* SuperClass = CastChecked<UClass>(GetOuter())->GetSuperClass();
+		if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(SuperClass))
+		{
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
+			if (UMDViewModelWidgetClassExtension* Extension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
+#else
+			if (UMDViewModelWidgetClassExtension* Extension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>(false))
+#endif
+			{
+				// Any collisions will be overridden by the eldest BP
+				Extension->GetThisAndAncestorAssignments(ParentAssignments);
+			}
+		}
+
+		bHasGatheredParentAssignments = true;
+	}
+
+	OutAssignments.Append(ParentAssignments);
+}
+
 void UMDViewModelWidgetClassExtension::SearchAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments, TSubclassOf<UMDViewModelBase> ViewModelClass, const FGameplayTag& ProviderTag, const FName& ViewModelName) const
 {
-	for (const auto& Pair : Assignments)
+	GetThisAndAncestorAssignments(OutViewModelAssignments);
+
+	// Remove assignments that don't match the filter
+	for (auto It = OutViewModelAssignments.CreateIterator(); It; ++It)
 	{
-		if (ProviderTag.IsValid() && !ProviderTag.MatchesTagExact(Pair.Key.ProviderTag))
+		if (ProviderTag.IsValid() && !ProviderTag.MatchesTagExact(It.Key().ProviderTag))
 		{
+			It.RemoveCurrent();
 			continue;
 		}
 
-		if (ViewModelName != NAME_None && ViewModelName != Pair.Key.ViewModelName)
+		if (ViewModelName != NAME_None && ViewModelName != It.Key().ViewModelName)
 		{
+			It.RemoveCurrent();
 			continue;
 		}
 
-		if (ViewModelClass != nullptr && ViewModelClass != Pair.Key.ViewModelClass)
+		if (ViewModelClass != nullptr && ViewModelClass != It.Key().ViewModelClass)
 		{
+			It.RemoveCurrent();
 			continue;
 		}
-
-		OutViewModelAssignments.Add(Pair.Key, Pair.Value);
 	}
 }
 
@@ -95,28 +127,4 @@ void UMDViewModelWidgetClassExtension::QueueListenForChanges(UUserWidget* Widget
 			QueuedDelegates.FindOrAdd(Widget).Emplace(QueuedListenerData{ MoveTemp(Delegate), ViewModelClass, ViewModelName });
 		}
 	}
-}
-
-void UMDViewModelWidgetClassExtension::GatherParentAssignments(TSubclassOf<UUserWidget> WidgetClass)
-{
-	if (bHasGatheredParentAssignments || WidgetClass == nullptr)
-	{
-		return;
-	}
-
-	UClass* SuperClass = WidgetClass->GetSuperClass();
-	if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(SuperClass))
-	{
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
-		if (UMDViewModelWidgetClassExtension* Extension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
-#else
-		if (UMDViewModelWidgetClassExtension* Extension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>(false))
-#endif
-		{
-			Extension->GatherParentAssignments(SuperClass);
-			Assignments.Append(Extension->Assignments);
-		}
-	}
-
-	bHasGatheredParentAssignments = true;
 }

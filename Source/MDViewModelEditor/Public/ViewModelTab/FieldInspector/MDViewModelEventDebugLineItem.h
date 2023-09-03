@@ -6,8 +6,8 @@
 class FMDViewModelEventDebugLineItem : public FMDViewModelFunctionDebugLineItem
 {
 public:
-	FMDViewModelEventDebugLineItem(const FMulticastDelegateProperty* Prop, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, bool bIsFieldNotify = false, UWidgetBlueprint* WidgetBP = nullptr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
-		: FMDViewModelFunctionDebugLineItem(Prop->SignatureFunction, Prop->GetDisplayNameText(), Prop->GetToolTipText(), DebugViewModel, false, false, bIsFieldNotify, WidgetBP, ViewModelClass, ViewModelName)
+	FMDViewModelEventDebugLineItem(const FMulticastDelegateProperty* Prop, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, bool bIsFieldNotify = false, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
+		: FMDViewModelFunctionDebugLineItem(Prop->SignatureFunction, Prop->GetDisplayNameText(), Prop->GetToolTipText(), DebugViewModel, BlueprintEditorPtr, false, false, bIsFieldNotify, ViewModelClass, ViewModelName)
 		, WeakDelegateProp(Prop)
 	{
 	}
@@ -18,6 +18,8 @@ protected:
 	virtual FDebugLineItem* Duplicate() const override;
 
 	virtual bool CanCreateNodes() const override;
+
+	virtual FString GenerateSearchString() const override;
 
 private:
 	FReply OnAddOrViewBoundFunctionClicked() const;

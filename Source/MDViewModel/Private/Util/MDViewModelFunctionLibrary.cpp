@@ -107,33 +107,6 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::FindCachedViewModel(const UObject
 	return UMDViewModelProvider_Cached::FindCachedViewModel(WorldContextObject, CacheContextObject, ViewModelClass, CachedViewModelKey);
 }
 
-bool UMDViewModelFunctionLibrary::DoesWidgetHaveViewModelClassAssigned(const UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, TSubclassOf<UMDViewModelBase>& OutAssignedViewModelClass, bool bIncludeChildClasses)
-{
-	if (IsValid(Widget))
-	{
-		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-		MDViewModelUtils::GetViewModelAssignmentsForWidgetClass(Widget->GetClass(), Assignments);
-
-		for (const auto& Pair : Assignments)
-		{
-			TSubclassOf<UMDViewModelBase> AssignedClass = Pair.Key.ViewModelClass;
-			if (AssignedClass == ViewModelClass)
-			{
-				OutAssignedViewModelClass = ViewModelClass;
-				return true;
-			}
-			else if (bIncludeChildClasses && ViewModelClass->IsChildOf(AssignedClass))
-			{
-				OutAssignedViewModelClass = AssignedClass;
-				return true;
-			}
-		}
-	}
-
-	OutAssignedViewModelClass = nullptr;
-	return false;
-}
-
 void UMDViewModelFunctionLibrary::BindViewModelChangedEvent(UUserWidget* Widget, FMDVMOnViewModelSetDynamic Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
 	FMDViewModelAssignmentReference AssignmentReference;

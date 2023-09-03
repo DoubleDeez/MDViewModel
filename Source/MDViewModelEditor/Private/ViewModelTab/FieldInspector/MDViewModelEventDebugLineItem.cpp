@@ -1,7 +1,7 @@
 #include "ViewModelTab/FieldInspector/MDViewModelEventDebugLineItem.h"
 
+#include "Nodes/MDVMNode_ViewModelEvent.h"
 #include "Util/MDViewModelGraphStatics.h"
-#include "WidgetBlueprint.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
@@ -34,7 +34,7 @@ TSharedRef<SWidget> FMDViewModelEventDebugLineItem::GenerateValueWidget(TSharedP
 
 FDebugLineItem* FMDViewModelEventDebugLineItem::Duplicate() const
 {
-	return new FMDViewModelEventDebugLineItem(WeakDelegateProp.Get(), DebugViewModel, bIsFieldNotify, WidgetBP.Get(), ViewModelClass, ViewModelName);
+	return new FMDViewModelEventDebugLineItem(WeakDelegateProp.Get(), DebugViewModel, BlueprintEditorPtr, bIsFieldNotify, ViewModelClass, ViewModelName);
 }
 
 bool FMDViewModelEventDebugLineItem::CanCreateNodes() const
@@ -42,11 +42,27 @@ bool FMDViewModelEventDebugLineItem::CanCreateNodes() const
 	return FMDViewModelDebugLineItemBase::CanCreateNodes() || GetAddOrViewBoundFunctionIndex() == 0;
 }
 
+FString FMDViewModelEventDebugLineItem::GenerateSearchString() const
+{
+	FString Result;
+
+	if (WeakDelegateProp.IsValid())
+	{
+		const UMDVMNode_ViewModelEvent* Node = FMDViewModelGraphStatics::FindExistingViewModelEventNode(BlueprintPtr.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName);
+		if (IsValid(Node))
+		{
+			Result += Node->GetFindReferenceSearchString();
+		}
+	}
+	
+	return Result;
+}
+
 FReply FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 {
 	if (WeakDelegateProp.IsValid())
 	{
-		FMDViewModelGraphStatics::OnViewModelEventRequestedForBlueprint(WidgetBP.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName);
+		FMDViewModelGraphStatics::OnViewModelEventRequestedForBlueprint(BlueprintPtr.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName);
 	}
 
 	return FReply::Handled();
@@ -54,6 +70,6 @@ FReply FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 
 int32 FMDViewModelEventDebugLineItem::GetAddOrViewBoundFunctionIndex() const
 {
-	return (!WeakDelegateProp.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelEvent(WidgetBP.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName))
+	return (!WeakDelegateProp.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelEvent(BlueprintPtr.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName))
 		? 0 : 1;
 }

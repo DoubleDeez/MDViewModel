@@ -2,7 +2,6 @@
 
 #include "Util/MDViewModelGraphStatics.h"
 #include "ViewModel/MDViewModelBase.h"
-#include "WidgetBlueprint.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
@@ -48,7 +47,7 @@ TSharedRef<SWidget> FMDViewModelChangedDebugLineItem::GenerateValueWidget(TShare
 
 FDebugLineItem* FMDViewModelChangedDebugLineItem::Duplicate() const
 {
-	return new FMDViewModelChangedDebugLineItem(WidgetBP.Get(), ViewModelClass, ViewModelName);
+	return new FMDViewModelChangedDebugLineItem(BlueprintEditorPtr, ViewModelClass, ViewModelName);
 }
 
 bool FMDViewModelChangedDebugLineItem::CanCreateNodes() const
@@ -58,12 +57,12 @@ bool FMDViewModelChangedDebugLineItem::CanCreateNodes() const
 
 FReply FMDViewModelChangedDebugLineItem::OnAddOrViewBoundVMChangedFunctionClicked() const
 {
-	FMDViewModelGraphStatics::OnViewModelChangedRequestedForBlueprint(WidgetBP.Get(), ViewModelClass, ViewModelName);
+	FMDViewModelGraphStatics::OnViewModelChangedRequestedForBlueprint(BlueprintPtr.Get(), ViewModelClass, ViewModelName);
 	return FReply::Handled();
 }
 
 int32 FMDViewModelChangedDebugLineItem::GetAddOrViewBoundVMChangedFunctionIndex() const
 {
-	return FMDViewModelGraphStatics::DoesBlueprintBindToViewModelChanged(WidgetBP.Get(), ViewModelClass, ViewModelName)
+	return FMDViewModelGraphStatics::DoesBlueprintBindToViewModelChanged(BlueprintPtr.Get(), ViewModelClass, ViewModelName)
 		? 0 : 1;
 }

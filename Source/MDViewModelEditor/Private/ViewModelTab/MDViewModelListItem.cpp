@@ -95,6 +95,9 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<
 		return INVTEXT("This view model is invalid, the class may have been renamed or deleted");
 	}();
 
+	const FText SuperDisplayName = (Assignment->SuperAssignmentOwner != nullptr) ? Assignment->SuperAssignmentOwner->GetDisplayNameText() : INVTEXT("NULL");
+	const FText SuperToolTip = FText::Format(INVTEXT("This viewmodel is assigned in a parent blueprint [{0}] therefore it cannot be edited."), SuperDisplayName);
+
 	STableRow<TSharedPtr<FMDViewModelEditorAssignment>>::Construct(
 		STableRow<TSharedPtr<FMDViewModelEditorAssignment>>::FArguments()
 		.Padding(0.0f)
@@ -124,7 +127,7 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<
 						SNew(STextBlock)
 						.Visibility(this, &SMDViewModelListItem::GetSourceTextVisibility)
 						.Text(INVTEXT("Super"))
-						.ToolTipText(INVTEXT("This viewmodel is assigned in a parent blueprint therefore it cannot be edited."))
+						.ToolTipText(SuperToolTip)
 					]
 					+SHorizontalBox::Slot()
 					.AutoWidth()
@@ -268,7 +271,7 @@ void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder
 
 EVisibility SMDViewModelListItem::GetSourceTextVisibility() const
 {
-	if (Assignment.IsValid() && Assignment->bIsSuper)
+	if (Assignment.IsValid() && IsValid(Assignment->SuperAssignmentOwner))
 	{
 		return EVisibility::Visible;
 	}
@@ -321,7 +324,7 @@ void SMDViewModelListItem::OnEditClicked() const
 
 bool SMDViewModelListItem::CanEdit() const
 {
-	return Assignment.IsValid() && !Assignment->bIsSuper && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
+	return Assignment.IsValid() && Assignment->SuperAssignmentOwner == nullptr && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
 }
 
 void SMDViewModelListItem::OnDuplicateClicked() const
@@ -345,7 +348,7 @@ void SMDViewModelListItem::OnDeleteClicked() const
 
 bool SMDViewModelListItem::CanDelete() const
 {
-	return Assignment.IsValid() && !Assignment->bIsSuper && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
+	return Assignment.IsValid() && Assignment->SuperAssignmentOwner == nullptr && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
 }
 
 FString SMDViewModelListItem::GenerateSearchString() const

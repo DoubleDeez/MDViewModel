@@ -1,19 +1,23 @@
 #include "ViewModelTab/FieldInspector/MDViewModelDebugLineItemBase.h"
 
+#include "BlueprintEditor.h"
+#include "BlueprintModes/WidgetBlueprintApplicationModes.h"
 #include "Editor.h"
 #include "Editor/EditorEngine.h"
+#include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "PropertyInfoViewStyle.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropActionBase.h"
 #include "WidgetBlueprint.h"
 
-FMDViewModelDebugLineItemBase::FMDViewModelDebugLineItemBase(const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, bool bIsFieldNotify, UWidgetBlueprint* WidgetBP, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+FMDViewModelDebugLineItemBase::FMDViewModelDebugLineItemBase(const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, bool bIsFieldNotify, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
 	: FDebugLineItem(DLT_Watch)
 	, DisplayName(DisplayName)
 	, Description(Description)
 	, bIsFieldNotify(bIsFieldNotify)
-	, WidgetBP(WidgetBP)
 	, ViewModelClass(ViewModelClass)
+	, BlueprintEditorPtr(BlueprintEditorPtr)
+	, BlueprintPtr(BlueprintEditorPtr.IsValid() ? BlueprintEditorPtr.Pin()->GetBlueprintObj() : nullptr)
 	, DebugViewModel(DebugViewModel)
 	, ViewModelName(ViewModelName)
 {
@@ -46,6 +50,21 @@ bool FMDViewModelDebugLineItemBase::HasChildren() const
 	}
 
 	return CachedChildren.GetValue().Num() > 0;
+}
+
+void FMDViewModelDebugLineItemBase::ExtendContextMenu(FMenuBuilder& MenuBuilder, bool bInDebuggerTab)
+{
+	if (!GenerateSearchString().IsEmpty())
+	{
+		MenuBuilder.AddMenuEntry(
+			INVTEXT("Find References"),
+			INVTEXT("Search for references to this field in this blueprint."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Find")),
+			FUIAction(
+				FExecuteAction::CreateSP(this, &FMDViewModelDebugLineItemBase::OnFindReferencesClicked)
+			)
+		);
+	}
 }
 
 void FMDViewModelDebugLineItemBase::GatherChildrenBase(TArray<FDebugTreeItemPtr>& OutChildren, const FString& InSearchString, bool bRespectSearch)
@@ -86,4 +105,18 @@ FText FMDViewModelDebugLineItemBase::GetDescription() const
 bool FMDViewModelDebugLineItemBase::CanCreateNodes() const
 {
 	return !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
+}
+
+void FMDViewModelDebugLineItemBase::OnFindReferencesClicked() const
+{
+	if (const TSharedPtr<FBlueprintEditor> BPEditor = BlueprintEditorPtr.Pin())
+	{
+		// Widget BP's have the find window in graph mode
+		if (IsValid(Cast<UWidgetBlueprint>(BPEditor->GetBlueprintObj())))
+		{
+			BPEditor->SetCurrentMode(FWidgetBlueprintApplicationModes::GraphMode);
+		}
+
+		BPEditor->SummonSearchUI(true, GenerateSearchString());
+	}
 }

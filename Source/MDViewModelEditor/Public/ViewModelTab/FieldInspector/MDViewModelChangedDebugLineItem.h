@@ -5,8 +5,8 @@
 class FMDViewModelChangedDebugLineItem : public FMDViewModelDebugLineItemBase
 {
 public:
-	FMDViewModelChangedDebugLineItem(UWidgetBlueprint* WidgetBP = nullptr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
-		: FMDViewModelDebugLineItemBase(INVTEXT("On View Model Changed"), INVTEXT("Bind to when this view model is changed"), nullptr, false, WidgetBP, ViewModelClass, ViewModelName)
+	FMDViewModelChangedDebugLineItem(const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
+		: FMDViewModelDebugLineItemBase(INVTEXT("On View Model Changed"), INVTEXT("Bind to when this view model is changed"), nullptr, BlueprintEditorPtr, false, ViewModelClass, ViewModelName)
 	{
 	}
 

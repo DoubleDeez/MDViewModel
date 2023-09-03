@@ -2,7 +2,7 @@
 
 #include "ViewModelTab/FieldInspector/MDViewModelFieldInspector.h"
 
-void SMDViewModelDetails::Construct(const FArguments& InArgs)
+void SMDViewModelDetails::Construct(const FArguments& InArgs, const TSharedPtr<FBlueprintEditor>& BlueprintEditor)
 {
 	const FSlateBrush* HeaderBrushPtr = &FAppStyle::Get().GetWidgetStyle<FTableViewStyle>("ListView").BackgroundBrush;
 	ChildSlot
@@ -33,7 +33,7 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs)
 			.FillHeight(1.f)
 			.Padding(4.f, 0)
 			[
-				SAssignNew(PropertyInspector, SMDViewModelFieldInspector, InArgs._WidgetBP)
+				SAssignNew(PropertyInspector, SMDViewModelFieldInspector, BlueprintEditor)
 				.bIncludeBlueprintVisibleProperties(true)
 				.bIncludeBlueprintAssignableProperties(false)
 				.bIncludeBlueprintCallable(false)
@@ -64,7 +64,7 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs)
 			.FillHeight(1.f)
 			.Padding(4.f, 0)
 			[
-				SAssignNew(EventInspector, SMDViewModelFieldInspector, InArgs._WidgetBP)
+				SAssignNew(EventInspector, SMDViewModelFieldInspector, BlueprintEditor)
 				.bIncludeBlueprintVisibleProperties(false)
 				.bIncludeBlueprintAssignableProperties(true)
 				.bIncludeBlueprintCallable(false)
@@ -95,7 +95,7 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs)
 			.FillHeight(1.f)
 			.Padding(4.f, 0)
 			[
-				SAssignNew(CommandInspector, SMDViewModelFieldInspector, InArgs._WidgetBP)
+				SAssignNew(CommandInspector, SMDViewModelFieldInspector, BlueprintEditor)
 				.bIncludeBlueprintVisibleProperties(false)
 				.bIncludeBlueprintAssignableProperties(false)
 				.bIncludeBlueprintCallable(true)

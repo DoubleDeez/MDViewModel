@@ -1,12 +1,13 @@
 #include "ViewModelTab/FieldInspector/MDViewModelFunctionDebugLineItem.h"
 
 #include "EdGraphSchema_K2.h"
+#include "Nodes/MDVMNode_ViewModelFieldNotify.h"
 #include "Util/MDViewModelGraphStatics.h"
+#include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMDragAndDropWrapperButton.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropCommand.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropGetter.h"
 #include "ViewModelTab/FieldInspector/MDViewModelFieldDebugLineItem.h"
-#include "WidgetBlueprint.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 
 TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GetNameIcon()
@@ -128,7 +129,7 @@ void FMDViewModelFunctionDebugLineItem::UpdateCachedChildren() const
 				if (!CachedPropertyItems.Contains(ParamProp->GetFName()))
 				{
 					CachedPropertyItems.Add(ParamProp->GetFName(),
-						MakeShared<FMDViewModelFieldDebugLineItem>(ParamProp, nullptr, ParamProp->GetDisplayNameText(), ParamProp->GetToolTipText(), DebugViewModel));
+						MakeShared<FMDViewModelFieldDebugLineItem>(ParamProp, nullptr, ParamProp->GetDisplayNameText(), ParamProp->GetToolTipText(), DebugViewModel, BlueprintEditorPtr));
 				}
 			}
 		}
@@ -139,12 +140,46 @@ void FMDViewModelFunctionDebugLineItem::UpdateCachedChildren() const
 
 FDebugLineItem* FMDViewModelFunctionDebugLineItem::Duplicate() const
 {
-	return new FMDViewModelFunctionDebugLineItem(FunctionPtr.Get(), DisplayName, Description, DebugViewModel, bIsCommand, bIsGetter, bIsFieldNotify, WidgetBP.Get(), ViewModelClass, ViewModelName);
+	return new FMDViewModelFunctionDebugLineItem(FunctionPtr.Get(), DisplayName, Description, DebugViewModel, BlueprintEditorPtr, bIsCommand, bIsGetter, bIsFieldNotify, ViewModelClass, ViewModelName);
 }
 
 bool FMDViewModelFunctionDebugLineItem::CanCreateNodes() const
 {
 	return FMDViewModelDebugLineItemBase::CanCreateNodes() || GetAddOrViewBoundFieldNotifyFunctionIndex() == 0;
+}
+
+FString FMDViewModelFunctionDebugLineItem::GenerateSearchString() const
+{
+	FString Result;
+
+	if (bIsFieldNotify && FunctionPtr.IsValid())
+	{
+		const UMDVMNode_ViewModelFieldNotify* Node = FMDViewModelGraphStatics::FindExistingViewModelFieldNotifyNode(BlueprintPtr.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName);
+		if (IsValid(Node))
+		{
+			Result += Node->GetFindReferenceSearchString();
+		}
+	}
+
+	if (FunctionPtr.IsValid() && IsValid(ViewModelClass))
+	{
+		const FString FunctionName = FunctionPtr->GetDisplayNameText().ToString();
+		const FString ViewModelClassName = ViewModelClass->GetDisplayNameText().ToString();
+		FString FunctionString = TEXT("(\"") + FunctionName + TEXT("\" && (")
+		+ FString::Printf(TEXT("\"%s - %s\""), *ViewModelClassName, *ViewModelName.ToString()) += TEXT(" || ")
+		+ FString::Printf(TEXT("\"%s (%s)\""), *ViewModelClassName, *ViewModelName.ToString()) += TEXT("))");
+		
+		if (Result.IsEmpty())
+		{
+			Result = FunctionString;
+		}
+		else
+		{
+			Result += TEXT(" || ") + FunctionString;
+		}
+	}
+	
+	return Result;
 }
 
 int32 FMDViewModelFunctionDebugLineItem::GetShouldDisplayFieldNotifyIndex() const
@@ -158,7 +193,7 @@ FReply FMDViewModelFunctionDebugLineItem::OnAddOrViewBoundFieldNotifyFunctionCli
 
 	if (FunctionPtr.IsValid())
 	{
-		FMDViewModelGraphStatics::OnViewModelFieldNotifyRequestedForBlueprint(WidgetBP.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName);
+		FMDViewModelGraphStatics::OnViewModelFieldNotifyRequestedForBlueprint(BlueprintPtr.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName);
 	}
 
 	return FReply::Handled();
@@ -168,6 +203,6 @@ int32 FMDViewModelFunctionDebugLineItem::GetAddOrViewBoundFieldNotifyFunctionInd
 {
 	check(bIsFieldNotify);
 
-	return (!FunctionPtr.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelFieldNotify(WidgetBP.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName))
+	return (!FunctionPtr.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelFieldNotify(BlueprintPtr.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName))
 		? 0 : 1;
 }

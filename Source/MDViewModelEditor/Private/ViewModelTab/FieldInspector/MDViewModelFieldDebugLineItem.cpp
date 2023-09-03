@@ -3,10 +3,11 @@
 #include "BlueprintEditor.h"
 #include "EdGraphSchema_K2.h"
 #include "Kismet2/KismetDebugUtilities.h"
+#include "Nodes/MDVMNode_ViewModelFieldNotify.h"
 #include "Util/MDViewModelGraphStatics.h"
+#include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMDragAndDropWrapperButton.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropProperty.h"
-#include "WidgetBlueprint.h"
 #include "Widgets/Images/SLayeredImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
@@ -193,7 +194,7 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 					if (!CachedPropertyItems.Contains(ChildProp->GetFName()))
 					{
 						CachedPropertyItems.Add(ChildProp->GetFName(),
-							MakeShared<FMDViewModelFieldDebugLineItem>(ChildProp, ChildValuePtr, ChildProp->GetDisplayNameText(), ChildProp->GetToolTipText(), DebugViewModel));
+							MakeShared<FMDViewModelFieldDebugLineItem>(ChildProp, ChildValuePtr, ChildProp->GetDisplayNameText(), ChildProp->GetToolTipText(), DebugViewModel, BlueprintEditorPtr));
 					}
 					else
 					{
@@ -222,7 +223,7 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 					if (!CacheCopy.Contains(PropertyName))
 					{
 						CachedPropertyItems.Add(PropertyName,
-							MakeShared<FMDViewModelFieldDebugLineItem>(ArrayProp->Inner, ChildValuePtr, ElementDisplayName, Prop->GetToolTipText(), DebugViewModel));
+							MakeShared<FMDViewModelFieldDebugLineItem>(ArrayProp->Inner, ChildValuePtr, ElementDisplayName, Prop->GetToolTipText(), DebugViewModel, BlueprintEditorPtr));
 					}
 					else
 					{
@@ -257,7 +258,7 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 					if (!CacheCopy.Contains(PropertyName))
 					{
 						CachedPropertyItems.Add(PropertyName,
-							MakeShared<FMDViewModelFieldDebugLineItem>(SetProp->ElementProp, ChildValuePtr, ElementDisplayName, Prop->GetToolTipText(), DebugViewModel));
+							MakeShared<FMDViewModelFieldDebugLineItem>(SetProp->ElementProp, ChildValuePtr, ElementDisplayName, Prop->GetToolTipText(), DebugViewModel, BlueprintEditorPtr));
 					}
 					else
 					{
@@ -293,7 +294,7 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 					if (!CacheCopy.Contains(KeyPropertyName))
 					{
 						CachedPropertyItems.Add(KeyPropertyName,
-							MakeShared<FMDViewModelFieldDebugLineItem>(MapProp->KeyProp, ChildKeyPtr, KeyDisplayName, Prop->GetToolTipText(), DebugViewModel));
+							MakeShared<FMDViewModelFieldDebugLineItem>(MapProp->KeyProp, ChildKeyPtr, KeyDisplayName, Prop->GetToolTipText(), DebugViewModel, BlueprintEditorPtr));
 					}
 					else
 					{
@@ -313,7 +314,7 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 					if (!CacheCopy.Contains(ValuePropertyName))
 					{
 						CachedPropertyItems.Add(ValuePropertyName,
-							MakeShared<FMDViewModelFieldDebugLineItem>(MapProp->ValueProp, ChildValuePtr, ValueDisplayName, Prop->GetToolTipText(), DebugViewModel));
+							MakeShared<FMDViewModelFieldDebugLineItem>(MapProp->ValueProp, ChildValuePtr, ValueDisplayName, Prop->GetToolTipText(), DebugViewModel, BlueprintEditorPtr));
 					}
 					else
 					{
@@ -339,12 +340,42 @@ void FMDViewModelFieldDebugLineItem::UpdateCachedChildren() const
 
 FDebugLineItem* FMDViewModelFieldDebugLineItem::Duplicate() const
 {
-	return new FMDViewModelFieldDebugLineItem(PropertyPtr.Get(), ValuePtr, DisplayName, Description, DebugViewModel, bIsFieldNotify, WidgetBP.Get(), ViewModelClass, ViewModelName);
+	return new FMDViewModelFieldDebugLineItem(PropertyPtr.Get(), ValuePtr, DisplayName, Description, DebugViewModel, BlueprintEditorPtr, bIsFieldNotify, ViewModelClass, ViewModelName);
 }
 
 bool FMDViewModelFieldDebugLineItem::CanCreateNodes() const
 {
 	return FMDViewModelDebugLineItemBase::CanCreateNodes() || GetAddOrViewBoundFunctionIndex() == 0;
+}
+
+FString FMDViewModelFieldDebugLineItem::GenerateSearchString() const
+{
+	FString Result;
+
+	if (bIsFieldNotify && PropertyPtr.IsValid())
+	{
+		const UMDVMNode_ViewModelFieldNotify* Node = FMDViewModelGraphStatics::FindExistingViewModelFieldNotifyNode(BlueprintPtr.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName);
+		if (IsValid(Node))
+		{
+			Result += Node->GetFindReferenceSearchString();
+		}
+	}
+
+	{
+		FMemberReference VariableReference;
+		VariableReference.SetFromField<FProperty>(PropertyPtr.Get(), false, ViewModelClass);
+		const FString VariableString = VariableReference.GetReferenceSearchString(VariableReference.IsLocalScope() ? nullptr : ViewModelClass);
+		if (Result.IsEmpty())
+		{
+			Result = VariableString;
+		}
+		else
+		{
+			Result += TEXT(" || ") + VariableString;
+		}
+	}
+	
+	return Result;
 }
 
 int32 FMDViewModelFieldDebugLineItem::GetShouldDisplayFieldNotifyIndex() const
@@ -359,7 +390,7 @@ FReply FMDViewModelFieldDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 
 	if (PropertyPtr.IsValid())
 	{
-		FMDViewModelGraphStatics::OnViewModelFieldNotifyRequestedForBlueprint(WidgetBP.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName);
+		FMDViewModelGraphStatics::OnViewModelFieldNotifyRequestedForBlueprint(BlueprintPtr.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName);
 	}
 
 	return FReply::Handled();
@@ -369,7 +400,7 @@ int32 FMDViewModelFieldDebugLineItem::GetAddOrViewBoundFunctionIndex() const
 {
 	check(bIsFieldNotify);
 
-	return (!PropertyPtr.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelFieldNotify(WidgetBP.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName))
+	return (!PropertyPtr.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelFieldNotify(BlueprintPtr.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName))
 		? 0 : 1;
 }
 
