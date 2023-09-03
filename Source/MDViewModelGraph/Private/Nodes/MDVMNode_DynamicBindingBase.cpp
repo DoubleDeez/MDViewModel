@@ -35,34 +35,20 @@ void UMDVMNode_DynamicBindingBase::BindAssignmentChanges()
 	{
 		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
 		{
-			if (!VMExtension->OnAssignmentNameChanged.IsBoundToObject(this))
+			if (!VMExtension->OnAssignmentChanged.IsBoundToObject(this))
 			{
-				VMExtension->OnAssignmentNameChanged.AddUObject(this, &UMDVMNode_DynamicBindingBase::OnAssignmentNameChanged);
-			}
-			
-			if (!VMExtension->OnAssignmentClassChanged.IsBoundToObject(this))
-			{
-				VMExtension->OnAssignmentClassChanged.AddUObject(this, &UMDVMNode_DynamicBindingBase::OnAssignmentClassChanged);
+				VMExtension->OnAssignmentChanged.AddUObject(this, &UMDVMNode_DynamicBindingBase::OnAssignmentChanged);
 			}
 		}
 	}
 }
 
-void UMDVMNode_DynamicBindingBase::OnAssignmentNameChanged(TSubclassOf<UMDViewModelBase> VMClass, const FName& OldName, const FName& NewName)
+void UMDVMNode_DynamicBindingBase::OnAssignmentChanged(const FName& OldName, const FName& NewName, TSubclassOf<UMDViewModelBase> OldClass, TSubclassOf<UMDViewModelBase> NewClass)
 {
-	if (ViewModelClass == VMClass && ViewModelName == OldName)
+	if (ViewModelClass == OldClass && ViewModelName == OldName)
 	{
 		Modify();
 		ViewModelName = NewName;
-		OnAssignmentChanged();
-	}
-}
-
-void UMDVMNode_DynamicBindingBase::OnAssignmentClassChanged(const FName& VMName, TSubclassOf<UMDViewModelBase> OldClass, TSubclassOf<UMDViewModelBase> NewClass)
-{
-	if (ViewModelClass == OldClass && ViewModelName == VMName)
-	{
-		Modify();
 		ViewModelClass = NewClass;
 		OnAssignmentChanged();
 		ReconstructNode();
@@ -75,12 +61,7 @@ void UMDVMNode_DynamicBindingBase::UnbindAssignmentChanges()
 	{
 		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
 		{
-			VMExtension->OnAssignmentNameChanged.RemoveAll(this);
-		}
-		
-		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
-		{
-			VMExtension->OnAssignmentClassChanged.RemoveAll(this);
+			VMExtension->OnAssignmentChanged.RemoveAll(this);
 		}
 	}
 }

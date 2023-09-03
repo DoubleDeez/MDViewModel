@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/DeveloperSettings.h"
+#include "GameplayTagContainer.h"
 #include "MDViewModelEditorConfig.generated.h"
 
 enum class EClassViewerNameTypeToDisplay: uint8;
@@ -19,7 +20,7 @@ enum class EMDVMClassViewerNameTypeToDisplay : uint8
 /**
  * Settings 
  */
-UCLASS(Config = MDViewModelEditor, meta = (DisplayName = "View Model Editor"))
+UCLASS(DefaultConfig, Config = MDViewModelEditor, meta = (DisplayName = "View Model Editor"))
 class MDVIEWMODELEDITOR_API UMDViewModelEditorConfig : public UDeveloperSettings
 {
 	GENERATED_BODY()
@@ -28,10 +29,20 @@ public:
 	UMDViewModelEditorConfig();
 	
 	virtual FName GetContainerName() const override { return TEXT("Editor"); }
+
+	virtual void PostInitProperties() override;
 	
 	// How the view model classes are displayed in the class selection list
 	UPROPERTY(EditDefaultsOnly, Config, Category = "View Model Dialog")
 	EMDVMClassViewerNameTypeToDisplay NameTypeToDisplay = EMDVMClassViewerNameTypeToDisplay::DisplayName;
+
+	// If true, a gameplay tag selector will be used instead of a text field to enter view model instance names
+	UPROPERTY(EditDefaultsOnly, Config, Category = "View Model Dialog")
+	bool bUseGameplayTagsForViewModelNaming = true;
+
+	// If set, view model name tag selection is limited to children of this tag.
+	UPROPERTY(EditDefaultsOnly, Config, Category = "View Model Dialog", meta = (EditCondition = "bUseGameplayTagsForViewModelNaming", EditConditionHides))
+	FGameplayTag ViewModelNameRootTag;
 
 	EClassViewerNameTypeToDisplay GetNameTypeToDisplay() const;
 };

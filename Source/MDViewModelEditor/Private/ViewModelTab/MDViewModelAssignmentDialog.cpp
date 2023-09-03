@@ -175,6 +175,16 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 		.AutoHeight()
 		.Padding(8)
 		[
+			SNew(STextBlock)
+			.Text(this, &SMDViewModelAssignmentDialog::GetAssignmentError)
+			.Visibility(this, &SMDViewModelAssignmentDialog::GetAssignmentErrorVisibility)
+		]
+		+SVerticalBox::Slot()
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Bottom)
+		.AutoHeight()
+		.Padding(8)
+		[
 			SNew(SUniformGridPanel)
 			.SlotPadding(FAppStyle::GetMargin("StandardDialog.SlotPadding"))
 			+SUniformGridPanel::Slot(0,0)
@@ -191,13 +201,6 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 				.Text(INVTEXT("Save Changes"))
 				.Visibility(this, &SMDViewModelAssignmentDialog::GetSaveVisibility)
 				.OnClicked(this, &SMDViewModelAssignmentDialog::OnSaveClicked)
-			]
-			+SUniformGridPanel::Slot(0,0)
-			[
-				SNew(STextBlock)
-				.Text(INVTEXT("The assignment's Name and Class pairing is not unique."))
-				.ToolTipText(INVTEXT("Enter a different View Model Instance Name to continue."))
-				.Visibility(this, &SMDViewModelAssignmentDialog::GetNotUniqueVisibility)
 			]
 			+SUniformGridPanel::Slot(1,0)
 			[
@@ -304,7 +307,7 @@ EVisibility SMDViewModelAssignmentDialog::GetAddVisibility() const
 		return EVisibility::Collapsed;
 	}
 
-	if (!IsAssignmentUnique() || !EditorObject->ViewModelProvider.IsValid())
+	if (DoesAssignmentHaveError() || !EditorObject->ViewModelProvider.IsValid())
 	{
 		return EVisibility::Collapsed;
 	}
@@ -331,7 +334,7 @@ EVisibility SMDViewModelAssignmentDialog::GetSaveVisibility() const
 		return EVisibility::Collapsed;
 	}
 
-	if (!IsAssignmentUnique() || !EditorObject->ViewModelProvider.IsValid())
+	if (DoesAssignmentHaveError() || !EditorObject->ViewModelProvider.IsValid())
 	{
 		return EVisibility::Collapsed;
 	}
@@ -346,9 +349,9 @@ EVisibility SMDViewModelAssignmentDialog::GetSaveVisibility() const
 	return EVisibility::Visible;
 }
 
-EVisibility SMDViewModelAssignmentDialog::GetNotUniqueVisibility() const
+EVisibility SMDViewModelAssignmentDialog::GetAssignmentErrorVisibility() const
 {
-	return IsAssignmentUnique() ? EVisibility::Collapsed : EVisibility::Visible;
+	return DoesAssignmentHaveError() ? EVisibility::Visible : EVisibility::Collapsed;
 }
 
 FReply SMDViewModelAssignmentDialog::OnAddClicked() const
@@ -388,24 +391,43 @@ FReply SMDViewModelAssignmentDialog::OnSaveClicked() const
 	return FReply::Handled();
 }
 
-bool SMDViewModelAssignmentDialog::IsAssignmentUnique() const
+bool SMDViewModelAssignmentDialog::DoesAssignmentHaveError() const
 {
-	if (EditorObject.IsValid())
-	{
-		if (Mode == EMDVMDialogMode::Edit && OriginalAssignmentName.IsSet() && EditorObject->ViewModelInstanceName == OriginalAssignmentName.GetValue())
-		{
-			// We haven't changed the name we came in with, so assume we're still unique
-			return true;
-		}
+	return !GetAssignmentError().IsEmptyOrWhitespace();
+}
 
+FText SMDViewModelAssignmentDialog::GetAssignmentError() const
+{
+	if (!EditorObject.IsValid())
+	{
+		return INVTEXT("Internal error, close and try again.");
+	}
+	
+	if (!EditorObject->ViewModelProvider.IsValid())
+	{
+		return INVTEXT("Select a View Model Provider.");
+	}
+
+	if (EditorObject->ViewModelClass == nullptr)
+	{
+		return INVTEXT("Select a View Model Class.");
+	}
+
+	if (EditorObject->ViewModelInstanceName.IsNone())
+	{
+		return INVTEXT("Enter a valid View Model Name.");
+	}
+
+	if (Mode != EMDVMDialogMode::Edit || !OriginalAssignmentName.IsSet() || EditorObject->ViewModelInstanceName != OriginalAssignmentName.GetValue())
+	{
 		if (const UMDViewModelWidgetBlueprintExtension* Extension = BPExtensionPtr.Get())
 		{
-			if (!Extension->DoesContainViewModelAssignment(EditorObject->ViewModelClass, FGameplayTag::EmptyTag, EditorObject->ViewModelInstanceName))
+			if (Extension->DoesContainViewModelAssignment(EditorObject->ViewModelClass, FGameplayTag::EmptyTag, EditorObject->ViewModelInstanceName))
 			{
-				return true;
+				return INVTEXT("The assignment's Name and Class pairing is not unique.");;
 			}
 		}
 	}
 
-	return false;
+	return FText::GetEmpty();
 }

@@ -3,6 +3,7 @@
 #include "GameplayTagContainer.h"
 #include "IDetailCustomization.h"
 #include "Input/Reply.h"
+#include "Layout/Visibility.h"
 
 
 class UMDViewModelAssignmentEditorObject;
@@ -55,6 +56,9 @@ private:
 	void OnViewModelPropertyChanged() const;
 
 	void OnAssignmentUpdated() const;
+
+	EVisibility GetViewModelNameVisibility() const;
+	EVisibility GetViewModelTagVisibility() const;
 
 	TWeakPtr<IDetailLayoutBuilder> CachedDetailBuilder;
 	TWeakObjectPtr<UMDViewModelAssignmentEditorObject> EditorObjectPtr;

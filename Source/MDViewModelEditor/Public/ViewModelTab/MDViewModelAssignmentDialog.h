@@ -49,12 +49,13 @@ private:
 	
 	EVisibility GetAddVisibility() const;
 	EVisibility GetSaveVisibility() const;
-	EVisibility GetNotUniqueVisibility() const;
+	EVisibility GetAssignmentErrorVisibility() const;
 
 	FReply OnAddClicked() const;
 	FReply OnSaveClicked() const;
 
-	bool IsAssignmentUnique() const;
+	bool DoesAssignmentHaveError() const;
+	FText GetAssignmentError() const;
 
 	EMDVMDialogMode Mode = EMDVMDialogMode::Add;
 

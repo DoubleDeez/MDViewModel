@@ -35,8 +35,7 @@ protected:
 	
 private:
 	void BindAssignmentChanges();
-	void OnAssignmentNameChanged(TSubclassOf<UMDViewModelBase> VMClass, const FName& OldName, const FName& NewName);
-	void OnAssignmentClassChanged(const FName& VMName, TSubclassOf<UMDViewModelBase> OldClass, TSubclassOf<UMDViewModelBase> NewClass);
+	void OnAssignmentChanged(const FName& OldName, const FName& NewName, TSubclassOf<UMDViewModelBase> OldClass, TSubclassOf<UMDViewModelBase> NewClass);
 	void UnbindAssignmentChanges();
 
 	bool IsPropertyValidForNode(const FProperty* Property) const;

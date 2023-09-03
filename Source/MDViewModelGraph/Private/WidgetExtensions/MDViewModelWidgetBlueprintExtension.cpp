@@ -49,16 +49,11 @@ void UMDViewModelWidgetBlueprintExtension::UpdateAssignment(const FMDViewModelEd
 		const FMDViewModelEditorAssignment OldAssignment = Assignments[AssignmentIndex];
 		Assignments[AssignmentIndex] = UpdatedAssignment;
 
-		if (OldAssignment.Assignment.ViewModelName != UpdatedAssignment.Assignment.ViewModelName)
+		if ((OldAssignment.Assignment.ViewModelName != UpdatedAssignment.Assignment.ViewModelName)
+			|| (OldAssignment.Assignment.ViewModelClass != UpdatedAssignment.Assignment.ViewModelClass))
 		{
-			// Use old class here, since anything listening won't know it changed yet (if it did)
-			OnAssignmentNameChanged.Broadcast(OldAssignment.Assignment.ViewModelClass, OldAssignment.Assignment.ViewModelName, UpdatedAssignment.Assignment.ViewModelName);
-		}
-
-		if (OldAssignment.Assignment.ViewModelClass != UpdatedAssignment.Assignment.ViewModelClass)
-		{
-			// Use new name here since if it changed, any listeners were notified above
-			OnAssignmentClassChanged.Broadcast(UpdatedAssignment.Assignment.ViewModelName, OldAssignment.Assignment.ViewModelClass, UpdatedAssignment.Assignment.ViewModelClass);
+			OnAssignmentChanged.Broadcast(OldAssignment.Assignment.ViewModelName, UpdatedAssignment.Assignment.ViewModelName,
+				OldAssignment.Assignment.ViewModelClass, UpdatedAssignment.Assignment.ViewModelClass);
 		}
 		
 		OnAssignmentsChanged.Broadcast();

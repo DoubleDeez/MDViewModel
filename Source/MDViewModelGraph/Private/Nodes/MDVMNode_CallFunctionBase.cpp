@@ -359,33 +359,20 @@ void UMDVMNode_CallFunctionBase::BindAssignmentChanges()
 	{
 		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
 		{
-			if (!VMExtension->OnAssignmentNameChanged.IsBoundToObject(this))
+			if (!VMExtension->OnAssignmentChanged.IsBoundToObject(this))
 			{
-				VMExtension->OnAssignmentNameChanged.AddUObject(this, &UMDVMNode_CallFunctionBase::OnAssignmentNameChanged);
-			}
-			
-			if (!VMExtension->OnAssignmentClassChanged.IsBoundToObject(this))
-			{
-				VMExtension->OnAssignmentClassChanged.AddUObject(this, &UMDVMNode_CallFunctionBase::OnAssignmentClassChanged);
+				VMExtension->OnAssignmentChanged.AddUObject(this, &UMDVMNode_CallFunctionBase::OnAssignmentChanged);
 			}
 		}
 	}
 }
 
-void UMDVMNode_CallFunctionBase::OnAssignmentNameChanged(TSubclassOf<UMDViewModelBase> VMClass, const FName& OldName, const FName& NewName)
+void UMDVMNode_CallFunctionBase::OnAssignmentChanged(const FName& OldName, const FName& NewName, TSubclassOf<UMDViewModelBase> OldClass, TSubclassOf<UMDViewModelBase> NewClass)
 {
-	if (Assignment.ViewModelClass.Get() == VMClass && Assignment.ViewModelName == OldName)
+	if (Assignment.ViewModelClass.Get() == OldClass && Assignment.ViewModelName == OldName)
 	{
 		Modify();
 		Assignment.ViewModelName = NewName;
-	}
-}
-
-void UMDVMNode_CallFunctionBase::OnAssignmentClassChanged(const FName& VMName, TSubclassOf<UMDViewModelBase> OldClass, TSubclassOf<UMDViewModelBase> NewClass)
-{
-	if (Assignment.ViewModelClass.Get() == OldClass && Assignment.ViewModelName == VMName)
-	{
-		Modify();
 		Assignment.ViewModelClass = NewClass;
 		const UFunction* NewFunc = NewClass->FindFunctionByName(FunctionReference.GetMemberName());
 		if (IsValid(NewFunc))
@@ -405,12 +392,7 @@ void UMDVMNode_CallFunctionBase::UnbindAssignmentChanges()
 	{
 		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
 		{
-			VMExtension->OnAssignmentNameChanged.RemoveAll(this);
-		}
-		
-		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
-		{
-			VMExtension->OnAssignmentClassChanged.RemoveAll(this);
+			VMExtension->OnAssignmentChanged.RemoveAll(this);
 		}
 	}
 }

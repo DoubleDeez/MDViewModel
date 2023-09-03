@@ -2,6 +2,7 @@
 
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
+#include "MDViewModelEditorConfig.h"
 #include "UObject/UObjectIterator.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
@@ -10,9 +11,22 @@
 
 void UMDViewModelAssignmentEditorObject::PopulateFromAssignment(const FMDViewModelEditorAssignment& Assignment, UBlueprint* Blueprint)
 {
+	static FName NAME_Categories = TEXT("Categories");
+	static FProperty* ViewModelInstanceTagProperty = GetClass()->FindPropertyByName(GET_MEMBER_NAME_CHECKED(ThisClass, ViewModelInstanceTag));
+	FString VMNameTagRoot = GetDefault<UMDViewModelEditorConfig>()->ViewModelNameRootTag.ToString();
+	if (!VMNameTagRoot.IsEmpty())
+	{
+		ViewModelInstanceTagProperty->SetMetaData(NAME_Categories, MoveTemp(VMNameTagRoot));
+	}
+	else
+	{
+		ViewModelInstanceTagProperty->RemoveMetaData(NAME_Categories);
+	}
+	
 	ViewModelClass = Assignment.Assignment.ViewModelClass;
 	ViewModelProvider = Assignment.Assignment.ProviderTag;
 	ViewModelInstanceName = Assignment.Assignment.ViewModelName;
+	ViewModelInstanceTag = FGameplayTag::RequestGameplayTag(ViewModelInstanceName, false);
 
 	bOverrideName = (ViewModelInstanceName != MDViewModelUtils::DefaultViewModelName);
 
@@ -40,6 +54,24 @@ void UMDViewModelAssignmentEditorObject::PopulateFromAssignment(const FMDViewMod
 	else
 	{
 		ViewModelSettings.InitializeAs(ViewModelCDO->GetViewModelSettingsStruct());
+	}
+}
+
+void UMDViewModelAssignmentEditorObject::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	if (bOverrideName)
+	{
+		if (GetDefault<UMDViewModelEditorConfig>()->bUseGameplayTagsForViewModelNaming)
+		{
+			ViewModelInstanceName = ViewModelInstanceTag.GetTagName();
+		}
+	}
+	else
+	{
+		ViewModelInstanceName = MDViewModelUtils::DefaultViewModelName;
+		ViewModelInstanceTag = {};
 	}
 }
 

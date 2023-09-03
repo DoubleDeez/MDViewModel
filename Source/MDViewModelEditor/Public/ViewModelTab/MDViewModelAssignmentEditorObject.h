@@ -21,6 +21,8 @@ class MDVIEWMODELEDITOR_API UMDViewModelAssignmentEditorObject : public UObject
 public:
 	void PopulateFromAssignment(const FMDViewModelEditorAssignment& Assignment, UBlueprint* Blueprint);
 
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+
 	FMDViewModelEditorAssignment CreateAssignment() const;
 
 	// How will the viewmodel be provided to this widget?
@@ -37,6 +39,10 @@ public:
 	// A name to give the selected viewmodel. Must be unique for the selected viewmodel class for this widget.
 	UPROPERTY(EditAnywhere, Category = "View Model", meta = (EditCondition = "bOverrideName"))
 	FName ViewModelInstanceName = MDViewModelUtils::DefaultViewModelName;
+
+	// A name to give the selected viewmodel. Must be unique for the selected viewmodel class for this widget.
+	UPROPERTY(EditAnywhere, Category = "View Model", DisplayName = "View Model Instance Name", meta = (EditCondition = "bOverrideName"))
+	FGameplayTag ViewModelInstanceTag;
 
 	UPROPERTY(EditAnywhere, Category = "View Model")
 	TSubclassOf<UMDViewModelBase> ViewModelClass;
