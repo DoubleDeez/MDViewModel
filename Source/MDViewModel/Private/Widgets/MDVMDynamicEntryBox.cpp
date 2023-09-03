@@ -38,37 +38,50 @@ void UMDVMDynamicEntryBox::PopulateItems(const TArray<UMDViewModelBase*>& ViewMo
 	const int32 NumVMs = ViewModels.Num();
 	const int32 StartNumItems = GetNumEntries();
 
-	// Add entries we need
-	for (int32 i = StartNumItems; i < NumVMs; ++i)
-	{
-		CreateEntry();
-	}
-
 	// Remove entries we don't need
 	for (int32 i = StartNumItems - 1; i >= NumVMs; --i)
 	{
 		UUserWidget* Widget = GetAllEntries()[i];
-        if (IsValid(Widget))
-        {
-        	UMDViewModelFunctionLibrary::ClearViewModel(Widget, ViewModelAssignment.ViewModelClass.Get(), ViewModelAssignment.ViewModelName);
-        	RemoveEntry(Widget);
-        }
-	}
-
-	check(GetNumEntries() == NumVMs);
-
-	// Set all entry VMs
-	for (int32 i = 0; i < NumVMs; ++i)
-	{
-		if (UMDViewModelBase* ViewModel = ViewModels[i])
+		if (IsValid(Widget))
 		{
-			UUserWidget* Widget = GetAllEntries()[i];
-			if (IsValid(Widget))
+			// Notify of the entry widget being removed
+			if (OnEntryRemoved.IsBound())
 			{
-				UMDViewModelFunctionLibrary::SetViewModel(Widget, ViewModel, ViewModelAssignment.ViewModelClass.Get(), ViewModelAssignment.ViewModelName);
+				bool bIsValid = false;
+				OnEntryRemoved.Broadcast(Widget, UMDViewModelFunctionLibrary::BP_GetViewModel(Widget, ViewModelAssignment, bIsValid));
 			}
+			
+			UMDViewModelFunctionLibrary::ClearViewModel(Widget, ViewModelAssignment.ViewModelClass.Get(), ViewModelAssignment.ViewModelName);
+			RemoveEntry(Widget);
 		}
 	}
+
+	// Populate the entries, creating new ones as needed
+	for (int32 i = 0; i < NumVMs; ++i)
+	{
+		// CurrentViewModel is only valid during this loop iteration
+		TGuardValue<TWeakObjectPtr<UMDViewModelBase>> CurrentVMGuard(CurrentViewModel, ViewModels[i]);
+
+		// Reuse an existing widget or create a new one.
+		if (i < StartNumItems)
+		{
+			PopulateEntryWidget(GetAllEntries()[i]);
+		}
+		else
+		{
+			// New entry widgets are populated in AddEntryChild before they are Constructed
+			CreateEntry();
+		}
+	}
+
+	ensureMsgf(GetNumEntries() == NumVMs, TEXT("Failed to populate the list to the exact number of view models."));
+}
+
+void UMDVMDynamicEntryBox::AddEntryChild(UUserWidget& ChildWidget)
+{
+	PopulateEntryWidget(&ChildWidget);
+	
+	Super::AddEntryChild(ChildWidget);
 }
 
 #if WITH_EDITOR
@@ -77,3 +90,29 @@ UClass* UMDVMDynamicEntryBox::GetEditorTimeEntryWidgetClass() const
 	return GetEntryWidgetClass();
 }
 #endif
+
+void UMDVMDynamicEntryBox::PopulateEntryWidget(UUserWidget* EntryWidget) const
+{
+	if (!ensureMsgf(IsValid(EntryWidget), TEXT("Cannot populate an invalid entry widget")))
+	{
+		return;
+	}
+
+	// Null view model entries are supported, but we make sure we clear it on the entry widget
+	UMDViewModelBase* ViewModel = CurrentViewModel.Get();
+	if (IsValid(ViewModel))
+	{
+		UMDViewModelFunctionLibrary::BP_SetViewModel(EntryWidget, ViewModel, ViewModelAssignment);
+	}
+	else
+	{
+		UMDViewModelFunctionLibrary::BP_ClearViewModel(EntryWidget, ViewModelAssignment);
+	}
+
+	// Notify of the entry widget being generated
+	if (OnEntryGenerated.IsBound())
+	{
+		bool bIsValid = false;
+		OnEntryGenerated.Broadcast(EntryWidget, UMDViewModelFunctionLibrary::BP_GetViewModel(EntryWidget, ViewModelAssignment, bIsValid));
+	}
+}
