@@ -38,7 +38,7 @@ public:
 
 	// If true, a gameplay tag selector will be used instead of a text field to enter view model instance names
 	UPROPERTY(EditDefaultsOnly, Config, Category = "View Model Dialog")
-	bool bUseGameplayTagsForViewModelNaming = true;
+	bool bUseGameplayTagsForViewModelNaming = false;
 
 	// If set, view model name tag selection is limited to children of this tag.
 	UPROPERTY(EditDefaultsOnly, Config, Category = "View Model Dialog", meta = (EditCondition = "bUseGameplayTagsForViewModelNaming", EditConditionHides))
