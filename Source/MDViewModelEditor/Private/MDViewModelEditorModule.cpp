@@ -1,16 +1,18 @@
 ﻿#include "MDViewModelEditorModule.h"
 
 #include "BlueprintCompilationManager.h"
+#include "BlueprintEditorModule.h"
 #include "BlueprintEditorTabs.h"
 #include "PropertyEditorModule.h"
 #include "UMGEditorModule.h"
 #include "WidgetBlueprint.h"
-#include "WidgetDrawerConfig.h"
 #include "BlueprintModes/WidgetBlueprintApplicationMode.h"
 #include "BlueprintModes/WidgetBlueprintApplicationModes.h"
 #include "Customizations/MDViewModelAssignmentReferenceCustomization.h"
 #include "EdGraphUtilities.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Kismet2/BlueprintEditorUtils.h"
+#include "MDViewModelEditorConfig.h"
 #include "Util/MDViewModelAssignmentReference.h"
 #include "ViewModelTab/MDViewModelTab.h"
 #include "WidgetExtensions/MDViewModelBlueprintCompilerExtension.h"
@@ -34,6 +36,10 @@ void FMDViewModelEditorModule::StartupModule()
 {
 	IUMGEditorModule& UMGEditorModule = FModuleManager::LoadModuleChecked<IUMGEditorModule>("UMGEditor");
 	UMGEditorModule.OnRegisterTabsForEditor().AddRaw(this, &FMDViewModelEditorModule::HandleRegisterBlueprintEditorTab);
+	
+	FBlueprintEditorModule& BlueprintEditorModule = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet");
+	BlueprintEditorModule.OnRegisterTabsForEditor().AddRaw(this, &FMDViewModelEditorModule::RegisterBlueprintEditorTab);
+	BlueprintEditorModule.OnRegisterLayoutExtensions().AddRaw(this, &FMDViewModelEditorModule::RegisterBlueprintEditorLayout);
 
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditorModule.RegisterCustomPropertyTypeLayout(FMDViewModelAssignmentReference::StaticStruct()->GetFName(), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FMDViewModelAssignmentReferenceCustomization::MakeInstance));
@@ -41,6 +47,8 @@ void FMDViewModelEditorModule::StartupModule()
 	CompilerExtensionPtr->AddToRoot();
 
 	FBlueprintCompilationManager::RegisterCompilerExtension(UWidgetBlueprint::StaticClass(), CompilerExtensionPtr.Get());
+
+	GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OnAssetEditorOpened().AddRaw(this, &FMDViewModelEditorModule::RegisterBlueprintEditorDrawer);
 	
 	ViewModelGraphPanelPinFactory = MakeShareable(new FMDViewModelGraphPanelPinFactory());
 	FEdGraphUtilities::RegisterVisualPinFactory(ViewModelGraphPanelPinFactory);
@@ -48,6 +56,20 @@ void FMDViewModelEditorModule::StartupModule()
 
 void FMDViewModelEditorModule::ShutdownModule()
 {
+	if (FBlueprintEditorModule* BlueprintEditorModule = FModuleManager::GetModulePtr<FBlueprintEditorModule>("Kismet"))
+	{
+		BlueprintEditorModule->OnRegisterTabsForEditor().RemoveAll(this);
+		BlueprintEditorModule->OnRegisterLayoutExtensions().RemoveAll(this);
+	}
+
+	if (GEditor)
+	{
+		if (UAssetEditorSubsystem* AssetEditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>())
+		{
+			AssetEditorSubsystem->OnAssetEditorOpened().RemoveAll(this);
+		}
+	}
+	
 	if (ViewModelGraphPanelPinFactory.IsValid())
 	{
 		FEdGraphUtilities::UnregisterVisualPinFactory(ViewModelGraphPanelPinFactory);
@@ -70,77 +92,113 @@ void FMDViewModelEditorModule::ShutdownModule()
 	}
 }
 
-void FMDViewModelEditorModule::HandleRegisterBlueprintEditorTab(const FWidgetBlueprintApplicationMode& ApplicationMode, FWorkflowAllowedTabSet& TabFactories)
+void FMDViewModelEditorModule::HandleRegisterBlueprintEditorTab(const FWidgetBlueprintApplicationMode& InApplicationMode, FWorkflowAllowedTabSet& TabFactories)
 {
-	if (ApplicationMode.LayoutExtender)
+	// Don't allow View Model Editor in Debug/Preview mode
+	if (InApplicationMode.GetModeName() == FWidgetBlueprintApplicationModes::DesignerMode
+		|| InApplicationMode.GetModeName() == FWidgetBlueprintApplicationModes::GraphMode)
 	{
-		TabFactories.RegisterFactory(MakeShared<FMDViewModelSummoner>(ApplicationMode.GetBlueprintEditor()));
-
-		const FName RelativeTab = ApplicationMode.GetModeName() == FWidgetBlueprintApplicationModes::DesignerMode
-			? TEXT("Animations")
-			: FBlueprintEditorTabs::FindResultsID;
-		const FTabManager::FTab NewTab(FTabId(FMDViewModelSummoner::TabID, ETabIdFlags::SaveLayout), ETabState::ClosedTab);
-		ApplicationMode.LayoutExtender->ExtendLayout(RelativeTab, ELayoutExtensionPosition::After, NewTab);
-
-		ApplicationMode.OnPostActivateMode.AddRaw(this, &FMDViewModelEditorModule::HandleActivateMode);
-		ApplicationMode.OnPreDeactivateMode.AddRaw(this, &FMDViewModelEditorModule::HandleDeactivateMode);
-	}
-}
-
-void FMDViewModelEditorModule::HandleActivateMode(FWidgetBlueprintApplicationMode& InDesignerMode)
-{
-	if (TSharedPtr<FWidgetBlueprintEditor> BP = InDesignerMode.GetBlueprintEditor())
-	{
-		if (!BP->GetExternalEditorWidget(FMDViewModelSummoner::DrawerID))
+		constexpr bool bIsDrawer = false;
+		TabFactories.RegisterFactory(MakeShared<FMDViewModelSummoner>(InApplicationMode.GetBlueprintEditor(), bIsDrawer));
+		
+		if (InApplicationMode.LayoutExtender)
 		{
-			const FMDViewModelSummoner MDVMDrawerSummoner(BP);
-			const FWorkflowTabSpawnInfo SpawnInfo;
-			BP->AddExternalEditorWidget(FMDViewModelSummoner::DrawerID, MDVMDrawerSummoner.CreateTabBody(SpawnInfo));
+			const FName RelativeTab = InApplicationMode.GetModeName() == FWidgetBlueprintApplicationModes::DesignerMode
+				? TEXT("Animations")
+				: FBlueprintEditorTabs::FindResultsID;
+			const FTabManager::FTab NewTab(FTabId(FMDViewModelSummoner::TabID, ETabIdFlags::SaveLayout), ETabState::ClosedTab);
+			InApplicationMode.LayoutExtender->ExtendLayout(RelativeTab, ELayoutExtensionPosition::After, NewTab);
+
+			InApplicationMode.OnPostActivateMode.AddRaw(this, &FMDViewModelEditorModule::HandleActivateMode);
+			InApplicationMode.OnPreDeactivateMode.AddRaw(this, &FMDViewModelEditorModule::HandleDeactivateMode);
 		}
-
-		FWidgetDrawerConfig MDVMDrawer(FMDViewModelSummoner::DrawerID);
-		TWeakPtr<FWidgetBlueprintEditor> WeakBP = BP;
-		MDVMDrawer.GetDrawerContentDelegate.BindLambda([WeakBP]()
-		{
-			if (TSharedPtr<FWidgetBlueprintEditor> BP = WeakBP.Pin())
-			{
-				if (const TSharedPtr<SWidget> DrawerWidgetContent = BP->GetExternalEditorWidget(FMDViewModelSummoner::DrawerID))
-				{
-					return DrawerWidgetContent.ToSharedRef();
-				}
-			}
-
-			return SNullWidget::NullWidget;
-		});
-		MDVMDrawer.OnDrawerOpenedDelegate.BindLambda([WeakBP](FName StatusBarWithDrawerName)
-		{
-			if (TSharedPtr<FWidgetBlueprintEditor> BP = WeakBP.Pin())
-			{
-				FSlateApplication::Get().SetUserFocus(FSlateApplication::Get().GetUserIndexForKeyboard(), BP->GetExternalEditorWidget(FMDViewModelSummoner::DrawerID));
-			}
-		});
-		MDVMDrawer.OnDrawerDismissedDelegate.BindLambda([WeakBP](const TSharedPtr<SWidget>& NewlyFocusedWidget)
-		{
-			if (TSharedPtr<FWidgetBlueprintEditor> BP = WeakBP.Pin())
-			{
-				BP->SetKeyboardFocus();
-			}
-		});
-		MDVMDrawer.ButtonText = LOCTEXT("ViewsModels", "View Models");
-		MDVMDrawer.ToolTipText = LOCTEXT("ViewsModelsToolTip", "Modify which view models are assigned to this widget");
-		MDVMDrawer.Icon = FAppStyle::GetBrush(TEXT("FontEditor.Tabs.PageProperties"));
-		BP->RegisterDrawer(MoveTemp(MDVMDrawer), INDEX_NONE);
 	}
 }
 
-void FMDViewModelEditorModule::HandleDeactivateMode(FWidgetBlueprintApplicationMode& InDesignerMode)
+void FMDViewModelEditorModule::HandleActivateMode(FWidgetBlueprintApplicationMode& InApplicationMode)
 {
-	TSharedPtr<FWidgetBlueprintEditor> BP = InDesignerMode.GetBlueprintEditor();
+	if (const TSharedPtr<FWidgetBlueprintEditor> BlueprintEditor = InApplicationMode.GetBlueprintEditor())
+	{
+		// Don't allow View Model Editor in Debug/Preview mode
+		if (InApplicationMode.GetModeName() == FWidgetBlueprintApplicationModes::DesignerMode
+			|| InApplicationMode.GetModeName() == FWidgetBlueprintApplicationModes::GraphMode)
+		{
+			BlueprintEditor->RegisterDrawer(FMDViewModelSummoner::CreateDrawerConfig(BlueprintEditor.ToSharedRef()), INDEX_NONE);
+		}
+	}
+}
+
+void FMDViewModelEditorModule::HandleDeactivateMode(FWidgetBlueprintApplicationMode& InApplicationMode)
+{
+	TSharedPtr<FWidgetBlueprintEditor> BP = InApplicationMode.GetBlueprintEditor();
 	if (BP && BP->IsEditorClosing())
 	{
-		InDesignerMode.OnPostActivateMode.RemoveAll(this);
-		InDesignerMode.OnPreDeactivateMode.RemoveAll(this);
+		InApplicationMode.OnPostActivateMode.RemoveAll(this);
+		InApplicationMode.OnPreDeactivateMode.RemoveAll(this);
 	}
+}
+
+void FMDViewModelEditorModule::RegisterBlueprintEditorLayout(FLayoutExtender& Extender)
+{
+	if (!GetDefault<UMDViewModelEditorConfig>()->bEnableViewModelsInActorBlueprints)
+	{
+		return;
+	}
+	
+	Extender.ExtendLayout(FBlueprintEditorTabs::GraphEditorID, ELayoutExtensionPosition::Before, FTabManager::FTab(FMDViewModelSummoner::TabID, ETabState::ClosedTab));
+}
+
+void FMDViewModelEditorModule::RegisterBlueprintEditorTab(FWorkflowAllowedTabSet& TabFactories, FName InModeName, TSharedPtr<FBlueprintEditor> BlueprintEditor)
+{
+	if (!GetDefault<UMDViewModelEditorConfig>()->bEnableViewModelsInActorBlueprints || !BlueprintEditor.IsValid())
+	{
+		return;
+	}
+
+	const UBlueprint* Blueprint = BlueprintEditor->GetBlueprintObj();
+	if (!IsValid(Blueprint) || FBlueprintEditorUtils::ShouldOpenWithDataOnlyEditor(Blueprint))
+	{
+		return;
+	}
+	
+	if (!IsValid(Blueprint->GeneratedClass) || !Blueprint->GeneratedClass->IsChildOf<AActor>())
+	{
+		return;
+	}
+
+	constexpr bool bIsDrawer = false;
+	TabFactories.RegisterFactory(MakeShared<FMDViewModelSummoner>(BlueprintEditor, bIsDrawer));
+}
+
+void FMDViewModelEditorModule::RegisterBlueprintEditorDrawer(UObject* Asset)
+{
+	if (!GetDefault<UMDViewModelEditorConfig>()->bEnableViewModelsInActorBlueprints)
+	{
+		return;
+	}
+	
+	const UBlueprint* Blueprint = Cast<UBlueprint>(Asset);
+	UAssetEditorSubsystem* AssetEditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+	if (!IsValid(AssetEditorSubsystem) || !IsValid(Blueprint) || FBlueprintEditorUtils::ShouldOpenWithDataOnlyEditor(Blueprint))
+	{
+		return;
+	}
+	
+	if (!IsValid(Blueprint->GeneratedClass) || !Blueprint->GeneratedClass->IsChildOf<AActor>())
+	{
+		return;
+	}
+
+	static const FName BlueprintEditorName = TEXT("BlueprintEditor");
+	constexpr bool bFocus = false;
+	IAssetEditorInstance* Editor = AssetEditorSubsystem->FindEditorForAsset(Asset, bFocus);
+	if (Editor == nullptr || Editor->GetEditorName() != BlueprintEditorName)
+	{
+		return;
+	}
+
+	const TSharedRef<FBlueprintEditor> BlueprintEditor = StaticCastSharedRef<FBlueprintEditor>(static_cast<FBlueprintEditor*>(Editor)->AsShared());
+	BlueprintEditor->RegisterDrawer(FMDViewModelSummoner::CreateDrawerConfig(BlueprintEditor));
 }
 
 #undef LOCTEXT_NAMESPACE

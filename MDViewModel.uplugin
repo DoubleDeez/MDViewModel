@@ -22,7 +22,7 @@
 		{
 			"Name": "MDViewModelEditor",
 			"Type": "Editor",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "PostEngineInit"
 		},
 		{
 			"Name": "MDViewModelGraph",
