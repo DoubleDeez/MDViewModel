@@ -11,7 +11,7 @@
 #include "Util/MDViewModelGraphStatics.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetBlueprintExtension.h"
-#include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
+#include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 
 void UMDVMNode_GetProperty::AllocateDefaultPins()
 {

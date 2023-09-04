@@ -15,7 +15,7 @@
 #include "MDViewModelEditorConfig.h"
 #include "Util/MDViewModelAssignmentReference.h"
 #include "ViewModelTab/MDViewModelTab.h"
-#include "WidgetExtensions/MDViewModelBlueprintCompilerExtension.h"
+#include "BlueprintExtensions/MDViewModelBlueprintCompilerExtension.h"
 
 #define LOCTEXT_NAMESPACE "FMDViewModelEditorModule"
 

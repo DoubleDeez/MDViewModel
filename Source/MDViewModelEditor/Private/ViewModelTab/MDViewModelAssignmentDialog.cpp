@@ -15,7 +15,7 @@
 #include "ViewModelProviders/MDViewModelProviderBase.h"
 #include "ViewModelProviders/MDViewModelProvider_Cached.h"
 #include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
-#include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
+#include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 
 TWeakPtr<SWindow> SMDViewModelAssignmentDialog::ActiveDialogWindowPtr;

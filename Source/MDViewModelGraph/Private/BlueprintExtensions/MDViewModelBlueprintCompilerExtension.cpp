@@ -1,8 +1,8 @@
-#include "WidgetExtensions/MDViewModelBlueprintCompilerExtension.h"
+#include "BlueprintExtensions/MDViewModelBlueprintCompilerExtension.h"
 
 #include "Util/MDViewModelUtils.h"
 #include "WidgetBlueprint.h"
-#include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
+#include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 #include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
 
 void UMDViewModelBlueprintCompilerExtension::ProcessBlueprintCompiled(const FKismetCompilerContext& CompilationContext, const FBlueprintCompiledData& Data)

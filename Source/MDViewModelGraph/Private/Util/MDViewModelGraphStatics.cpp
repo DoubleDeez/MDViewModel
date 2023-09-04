@@ -7,7 +7,7 @@
 #include "Nodes/MDVMNode_ViewModelEvent.h"
 #include "Nodes/MDVMNode_ViewModelFieldNotify.h"
 #include "ViewModel/MDViewModelBase.h"
-#include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
+#include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 
 void FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(const UBlueprint* Blueprint, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments)
 {

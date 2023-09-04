@@ -3,7 +3,7 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetBlueprint.h"
-#include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
+#include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 
 void UMDVMNode_DynamicBindingBase::AllocateDefaultPins()
 {

@@ -17,7 +17,7 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Views/SListView.h"
 #include "WidgetBlueprint.h"
-#include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
+#include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 #include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
 
 SMDViewModelList::~SMDViewModelList()
@@ -280,6 +280,10 @@ FReply SMDViewModelList::OnAddViewModel()
 	if (UMDViewModelWidgetBlueprintExtension* BPExtension = RequestExtension())
 	{
 		SMDViewModelAssignmentDialog::OpenAssignmentDialog(BPExtension);
+	}
+	else
+	{
+		// TODO - Actor View Models
 	}
 
 	return FReply::Handled();

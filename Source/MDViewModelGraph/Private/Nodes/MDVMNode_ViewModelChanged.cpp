@@ -7,7 +7,7 @@
 #include "Util/MDViewModelUtils.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetBlueprint.h"
-#include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
+#include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 
 namespace MDVMNode_ViewModelChanged_Private
 {

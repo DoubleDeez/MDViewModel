@@ -1,4 +1,4 @@
-#include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
+#include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 
 #include "BlueprintActionDatabase.h"
 #include "Kismet2/BlueprintEditorUtils.h"

@@ -7,7 +7,7 @@
 #include "Util/MDViewModelGraphStatics.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "WidgetBlueprint.h"
-#include "WidgetExtensions/MDViewModelWidgetBlueprintExtension.h"
+#include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 
 bool UMDVMNode_ViewModelFieldNotify::Modify(bool bAlwaysMarkDirty)
 {
