@@ -1,8 +1,10 @@
 #pragma once
 
 #include "UObject/StrongObjectPtr.h"
+#include "UObject/WeakInterfacePtr.h"
 #include "Widgets/SCompoundWidget.h"
 
+class IMDViewModelAssignableInterface;
 class UBlueprint;
 struct FMDViewModelEditorAssignment;
 class UMDViewModelWidgetBlueprintExtension;
@@ -28,7 +30,7 @@ public:
 		}
 
 		SLATE_ARGUMENT(EMDVMDialogMode, Mode)
-		SLATE_ARGUMENT(TWeakObjectPtr<UMDViewModelWidgetBlueprintExtension>, BPExtensionPtr)
+		SLATE_ARGUMENT(TWeakInterfacePtr<IMDViewModelAssignableInterface>, ExtensionPtr)
 		SLATE_ARGUMENT(TSharedPtr<FMDViewModelEditorAssignment>, EditorItem)
 
 	SLATE_END_ARGS()
@@ -38,12 +40,12 @@ public:
 
 	UBlueprint* GetBlueprint() const;
 
-	static void OpenAssignmentDialog(UMDViewModelWidgetBlueprintExtension* BPExtension);
-	static void OpenEditDialog(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem);
-	static void OpenDuplicateDialog(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem);
+	static void OpenAssignmentDialog(IMDViewModelAssignableInterface* Extension);
+	static void OpenEditDialog(IMDViewModelAssignableInterface* Extension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem);
+	static void OpenDuplicateDialog(IMDViewModelAssignableInterface* Extension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem);
 
 private:
-	static void OpenDialog_Internal(UMDViewModelWidgetBlueprintExtension* BPExtension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem = nullptr, bool bDuplicateItem = false);
+	static void OpenDialog_Internal(IMDViewModelAssignableInterface* Extension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem = nullptr, bool bDuplicateItem = false);
 	static void OnDialogClosed(const TSharedRef<SWindow>& Window);
 	static TWeakPtr<SWindow> ActiveDialogWindowPtr;
 	
@@ -63,6 +65,6 @@ private:
 
 	TSharedPtr<SWindow> ParentWindow;
 	TStrongObjectPtr<UMDViewModelAssignmentEditorObject> EditorObject;
-	TWeakObjectPtr<UMDViewModelWidgetBlueprintExtension> BPExtensionPtr;
+	TWeakInterfacePtr<IMDViewModelAssignableInterface> ExtensionPtr;
 	TOptional<FName> OriginalAssignmentName;
 };

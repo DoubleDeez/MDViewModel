@@ -225,7 +225,7 @@ void UMDViewModelProvider_Cached::OnProviderSettingsInitializedInEditor(FInstanc
 			FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 		}
 		
-		SettingsPtr->RelativeViewModel.OnGetWidgetClass.BindWeakLambda(Blueprint, [Blueprint]()
+		SettingsPtr->RelativeViewModel.OnGetBoundObjectClass.BindWeakLambda(Blueprint, [Blueprint]()
 		{
 			return IsValid(Blueprint) ? Cast<UClass>(Blueprint->GeneratedClass) : nullptr;
 		});

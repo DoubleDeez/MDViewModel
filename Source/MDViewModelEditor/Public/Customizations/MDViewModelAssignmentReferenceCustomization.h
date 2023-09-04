@@ -21,7 +21,7 @@ public:
 
 protected:
 	FMDViewModelAssignmentReference* GetAssignmentReference() const;
-	UClass* GetWidgetOwnerClass() const;
+	UClass* GetBoundObjectClass() const;
 
 	TSharedRef<SWidget> MakeAssignmentMenu();
 	void SetSelectedAssignment(FMDViewModelAssignment Assignment) const;
@@ -48,7 +48,7 @@ private:
 	const UEdGraphPin* GetWidgetPin() const;
 	const UEdGraphPin* GetViewModelPin() const;
 
-	TSubclassOf<UUserWidget> GetConnectedWidgetClass() const;
+	UClass* GetConnectedObjectClass() const;
 	TSubclassOf<UMDViewModelBase> GetConnectedViewModelClass() const;
 
 	TSharedRef<SWidget> MakeAssignmentMenu();

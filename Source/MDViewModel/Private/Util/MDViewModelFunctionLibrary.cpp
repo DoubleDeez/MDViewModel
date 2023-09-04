@@ -18,12 +18,16 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModel(UUserWidget* Widget,
 	return BP_SetViewModel(Widget, ViewModel, AssignmentReference);
 }
 
-UMDViewModelBase* UMDViewModelFunctionLibrary::BP_SetViewModel(UUserWidget* Widget, UMDViewModelBase* ViewModel, const FMDViewModelAssignmentReference& Assignment)
+UMDViewModelBase* UMDViewModelFunctionLibrary::BP_SetViewModel(UObject* Object, UMDViewModelBase* ViewModel, const FMDViewModelAssignmentReference& Assignment)
 {
-	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
+	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Cast<UUserWidget>(Object));
 	if (IsValid(Extension))
 	{
 		return Extension->SetViewModel(ViewModel, Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
+	}
+	else
+	{
+		// TODO - Actor View Models
 	}
 
 	return nullptr;
@@ -59,12 +63,16 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModelOfClass(const UObject
 	return BP_SetViewModelOfClass(WorldContextObject, Widget, ContextObject, AssignmentReference, ViewModelSettings);
 }
 
-UMDViewModelBase* UMDViewModelFunctionLibrary::BP_SetViewModelOfClass(const UObject* WorldContextObject, UUserWidget* Widget, UObject* ContextObject, const FMDViewModelAssignmentReference& Assignment, const FInstancedStruct& ViewModelSettings)
+UMDViewModelBase* UMDViewModelFunctionLibrary::BP_SetViewModelOfClass(const UObject* WorldContextObject, UObject* Object, UObject* ContextObject, const FMDViewModelAssignmentReference& Assignment, const FInstancedStruct& ViewModelSettings)
 {
-	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
+	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Cast<UUserWidget>(Object));
 	if (IsValid(Extension))
 	{
 		return Extension->SetViewModelOfClass(WorldContextObject, ContextObject, Assignment.ViewModelClass.Get(), ViewModelSettings, Assignment.ViewModelName);
+	}
+	else
+	{
+		// TODO - Actor View Models
 	}
 
 	return nullptr;
@@ -80,8 +88,9 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::GetViewModel(UUserWidget* Widget,
 	return BP_GetViewModel(Widget, AssignmentReference, IsValid);
 }
 
-UMDViewModelBase* UMDViewModelFunctionLibrary::BP_GetViewModel(UUserWidget* Widget, const FMDViewModelAssignmentReference& Assignment, bool& bIsValid)
+UMDViewModelBase* UMDViewModelFunctionLibrary::BP_GetViewModel(UObject* Object, const FMDViewModelAssignmentReference& Assignment, bool& bIsValid)
 {
+	const UUserWidget* Widget = Cast<UUserWidget>(Object);
 	if (IsValid(Widget))
 	{
 		const UMDViewModelWidgetExtension* Extension = Widget->GetExtension<UMDViewModelWidgetExtension>();
@@ -91,6 +100,10 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::BP_GetViewModel(UUserWidget* Widg
 			bIsValid = IsValid(ViewModel);
 			return ViewModel;
 		}
+	}
+	else
+	{
+		// TODO - Actor View Models
 	}
 
 	bIsValid = false;

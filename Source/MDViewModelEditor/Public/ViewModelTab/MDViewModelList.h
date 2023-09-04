@@ -47,7 +47,6 @@ private:
 	void OnDeleteItem(TSharedPtr<FMDViewModelEditorAssignment> Item);
 
 	UBlueprint* GetBlueprint() const;
-	UMDViewModelWidgetBlueprintExtension* RequestExtension() const;
 	UClass* GetGeneratedClass() const;
 
 	TSharedPtr<SListView<TSharedPtr<FMDViewModelEditorAssignment>>> AssignmentList;

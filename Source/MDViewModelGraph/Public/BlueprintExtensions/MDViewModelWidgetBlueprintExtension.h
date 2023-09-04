@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MDViewModelAssignableInterface.h"
 #include "WidgetBlueprintExtension.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "MDViewModelWidgetBlueprintExtension.generated.h"
@@ -8,28 +9,16 @@ class UMDViewModelBase;
 struct FMDViewModelEditorAssignment;
 
 /**
- * Editor-only class that holds design-time assigned view models
+ * Editor-only class that holds design-time assigned view models for widgets
  */
 UCLASS()
-class MDVIEWMODELGRAPH_API UMDViewModelWidgetBlueprintExtension : public UWidgetBlueprintExtension
+class MDVIEWMODELGRAPH_API UMDViewModelWidgetBlueprintExtension : public UWidgetBlueprintExtension, public IMDViewModelAssignableInterface
 {
 	GENERATED_BODY()
 
 public:
-	const TArray<FMDViewModelEditorAssignment>& GetAssignments() const { return Assignments; }
-	void GetBPAndParentClassAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments) const;
-
-	void AddAssignment(FMDViewModelEditorAssignment&& Assignment);
-	void UpdateAssignment(const FMDViewModelEditorAssignment& Assignment, FMDViewModelEditorAssignment&& UpdatedAssignment);
-	void RemoveAssignment(const FMDViewModelEditorAssignment& Assignment);
-
-	bool DoesContainViewModelAssignment(TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FGameplayTag& ProviderTag = FGameplayTag::EmptyTag, const FName& ViewModelName = NAME_None) const;
-	bool HasAssignments() const { return !Assignments.IsEmpty(); }
-
-	FSimpleMulticastDelegate OnAssignmentsChanged;
-
-	DECLARE_MULTICAST_DELEGATE_FourParams(FOnViewModelAssignmentChanged, const FName& /*OldName*/, const FName& /*NewName*/, TSubclassOf<UMDViewModelBase> /*OldClass*/, TSubclassOf<UMDViewModelBase> /*NewClass*/);
-	FOnViewModelAssignmentChanged OnAssignmentChanged;
+	virtual const TArray<FMDViewModelEditorAssignment>& GetAssignments() const override { return Assignments; }
+	virtual TArray<FMDViewModelEditorAssignment>& GetAssignments() override { return Assignments; }
 
 protected:
 	virtual void HandleBeginCompilation(FWidgetBlueprintCompilerContext& InCreationContext) override;
@@ -40,5 +29,7 @@ protected:
 	TArray<FMDViewModelEditorAssignment> Assignments;
 
 private:
+	virtual void SearchParentAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FGameplayTag& ProviderTag = FGameplayTag::EmptyTag, const FName& ViewModelName = NAME_None) const override;
+	
 	FWidgetBlueprintCompilerContext* CompilerContext = nullptr;
 };

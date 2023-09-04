@@ -62,7 +62,7 @@ void UMDViewModelComboBox::PostInitProperties()
 	Super::PostInitProperties();
 
 #if WITH_EDITOR
-	ViewModelAssignment.OnGetWidgetClass.BindUObject(this, &UMDViewModelComboBox::GetEntryWidgetClass);
+	ViewModelAssignment.OnGetBoundObjectClass.BindUObject(this, &UMDViewModelComboBox::GetEntryWidgetClass);
 #endif
 }
 

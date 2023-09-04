@@ -46,7 +46,7 @@ void FMDViewModelEditorModule::StartupModule()
 	CompilerExtensionPtr = NewObject<UMDViewModelBlueprintCompilerExtension>();
 	CompilerExtensionPtr->AddToRoot();
 
-	FBlueprintCompilationManager::RegisterCompilerExtension(UWidgetBlueprint::StaticClass(), CompilerExtensionPtr.Get());
+	FBlueprintCompilationManager::RegisterCompilerExtension(UBlueprint::StaticClass(), CompilerExtensionPtr.Get());
 
 	GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OnAssetEditorOpened().AddRaw(this, &FMDViewModelEditorModule::RegisterBlueprintEditorDrawer);
 	

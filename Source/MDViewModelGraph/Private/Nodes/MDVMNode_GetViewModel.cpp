@@ -164,13 +164,17 @@ UEdGraphPin* UMDVMNode_GetViewModel::GetIsValidPin() const
 
 UK2Node::ERedirectType UMDVMNode_GetViewModel::DoPinsMatchForReconstruction(const UEdGraphPin* NewPin, int32 NewPinIndex, const UEdGraphPin* OldPin, int32 OldPinIndex) const
 {	
-	ERedirectType Result = Super::DoPinsMatchForReconstruction(NewPin, NewPinIndex, OldPin, OldPinIndex);
+	const ERedirectType Result = Super::DoPinsMatchForReconstruction(NewPin, NewPinIndex, OldPin, OldPinIndex);
 
 	if (Result == ERedirectType_None)
 	{
 		if (OldPin != nullptr && OldPin->GetFName() == UEdGraphSchema_K2::PN_Then && NewPin->GetFName() == TEXT("True"))
 		{
 			bDoesNeedOutputRemapping = true;
+			return ERedirectType_Name;
+		}
+		else if (OldPin != nullptr && OldPin->GetFName() == TEXT("Widget") && NewPin != nullptr && NewPin->GetFName() == TEXT("Object"))
+		{
 			return ERedirectType_Name;
 		}
 	}

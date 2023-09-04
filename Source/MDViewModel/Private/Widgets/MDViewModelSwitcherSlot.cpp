@@ -7,7 +7,7 @@ void UMDViewModelSwitcherSlot::PostInitProperties()
 	Super::PostInitProperties();
 
 #if WITH_EDITOR
-	ViewModelAssignment.OnGetWidgetClass.BindUObject(this, &UMDViewModelSwitcherSlot::GetContentWidgetClass);
+	ViewModelAssignment.OnGetBoundObjectClass.BindUObject(this, &UMDViewModelSwitcherSlot::GetContentWidgetClass);
 #endif
 }
 

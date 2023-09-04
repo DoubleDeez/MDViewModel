@@ -6,9 +6,6 @@
 
 class UMDViewModelBase;
 
-#if WITH_EDITOR
-DECLARE_DELEGATE_RetVal(UClass*, FMDViewModelReferenceGetWidgetClass);
-#endif
 
 /**
  * Helper struct to store a reference to a widget's view model assignment.
@@ -34,7 +31,27 @@ public:
 
 #if WITH_EDITOR
 	// Only used for editor customization
-	FMDViewModelReferenceGetWidgetClass OnGetWidgetClass;
+	DECLARE_DELEGATE_RetVal(UClass*, FMDViewModelReferenceGetObjectClass);
+	UE_DEPRECATED(All, "OnGetWidgetClass is deprecated, bind it OnGetBoundObjectClass instead.")
+	FMDViewModelReferenceGetObjectClass OnGetWidgetClass;
+	FMDViewModelReferenceGetObjectClass OnGetBoundObjectClass;
+
+	UClass* GetBoundObjectClass() const
+	{
+		if (OnGetBoundObjectClass.IsBound())
+		{
+			return OnGetBoundObjectClass.Execute();
+		}
+
+		PRAGMA_DISABLE_DEPRECATION_WARNINGS
+		if (OnGetWidgetClass.IsBound())
+		{
+			return OnGetWidgetClass.Execute();
+		}
+		PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+		return nullptr;
+	}
 #endif
 
 	FMDViewModelAssignmentReference& operator=(const FMDViewModelAssignmentReference& Other);

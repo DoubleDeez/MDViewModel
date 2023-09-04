@@ -1,5 +1,8 @@
 #include "Util/MDViewModelGraphStatics.h"
 
+#include "BlueprintExtensions/MDViewModelActorBlueprintExtension.h"
+#include "BlueprintExtensions/MDViewModelAssignableInterface.h"
+#include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 #include "EdGraphSchema_K2_Actions.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
@@ -7,7 +10,6 @@
 #include "Nodes/MDVMNode_ViewModelEvent.h"
 #include "Nodes/MDVMNode_ViewModelFieldNotify.h"
 #include "ViewModel/MDViewModelBase.h"
-#include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 
 void FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(const UBlueprint* Blueprint, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments)
 {
@@ -15,14 +17,14 @@ void FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(const UBluepr
 	{
 		const TObjectPtr<UBlueprintExtension>* ExtensionPtr = Blueprint->GetExtensions().FindByPredicate([](const TObjectPtr<UBlueprintExtension> BPExtension)
 		{
-			return BPExtension != nullptr && BPExtension->IsA<UMDViewModelWidgetBlueprintExtension>();
+			return BPExtension != nullptr && BPExtension->Implements<UMDViewModelAssignableInterface>();
 		});
 
 		if (ExtensionPtr != nullptr)
 		{
-			if (const UMDViewModelWidgetBlueprintExtension* Extension = Cast<UMDViewModelWidgetBlueprintExtension>(ExtensionPtr->Get()))
+			if (const IMDViewModelAssignableInterface* Extension = Cast<IMDViewModelAssignableInterface>(ExtensionPtr->Get()))
 			{
-				Extension->GetBPAndParentClassAssignments(OutViewModelAssignments);
+				Extension->GetAllAssignments(OutViewModelAssignments);
 			}
 		}
 	}
@@ -215,6 +217,51 @@ UMDVMNode_ViewModelChanged* FMDViewModelGraphStatics::FindExistingViewModelChang
 		{
 			return BoundEvent;
 		}
+	}
+
+	return nullptr;
+}
+
+IMDViewModelAssignableInterface* FMDViewModelGraphStatics::GetOrCreateAssignableInterface(UBlueprint* BP)
+{
+	if (UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(BP))
+	{
+		return UWidgetBlueprintExtension::RequestExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP);
+	}
+	else if (IsValid(BP) && IsValid(BP->GeneratedClass) && BP->GeneratedClass->IsChildOf<AActor>())
+	{
+		const TObjectPtr<UBlueprintExtension>* Extension = BP->GetExtensions().FindByPredicate([](const TObjectPtr<UBlueprintExtension>& Extension)
+		{
+			return IsValid(Extension) && Extension->IsA<UMDViewModelActorBlueprintExtension>();
+		});
+
+		if (Extension != nullptr && IsValid(*Extension))
+		{
+			return Cast<IMDViewModelAssignableInterface>(*Extension);
+		}
+
+		UMDViewModelActorBlueprintExtension* NewExtension = NewObject<UMDViewModelActorBlueprintExtension>(BP);
+		BP->AddExtension(NewExtension);
+		return NewExtension;
+	}
+
+	return nullptr;
+}
+
+IMDViewModelAssignableInterface* FMDViewModelGraphStatics::GetAssignableInterface(const UBlueprint* BP)
+{
+	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(BP))
+	{
+		return UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP);
+	}
+	else if (IsValid(BP) && IsValid(BP->GeneratedClass) && BP->GeneratedClass->IsChildOf<AActor>())
+	{
+		const TObjectPtr<UBlueprintExtension>* Extension = BP->GetExtensions().FindByPredicate([](const TObjectPtr<UBlueprintExtension>& Extension)
+		{
+			return IsValid(Extension) && Extension->IsA<UMDViewModelActorBlueprintExtension>();
+		});
+
+		return (Extension != nullptr) ? Cast<IMDViewModelAssignableInterface>(*Extension) : nullptr;
 	}
 
 	return nullptr;

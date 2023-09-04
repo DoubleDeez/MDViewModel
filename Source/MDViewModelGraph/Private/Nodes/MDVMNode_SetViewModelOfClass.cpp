@@ -65,6 +65,18 @@ void UMDVMNode_SetViewModelOfClass::ValidateNodeDuringCompilation(FCompilerResul
 	}
 }
 
+UK2Node::ERedirectType UMDVMNode_SetViewModelOfClass::DoPinsMatchForReconstruction(const UEdGraphPin* NewPin, int32 NewPinIndex, const UEdGraphPin* OldPin, int32 OldPinIndex) const
+{
+	const ERedirectType Result = Super::DoPinsMatchForReconstruction(NewPin, NewPinIndex, OldPin, OldPinIndex);
+
+	if (Result == ERedirectType_None && OldPin != nullptr && OldPin->GetFName() == TEXT("Widget") && NewPin != nullptr && NewPin->GetFName() == TEXT("Object"))
+	{
+		return ERedirectType_Name;
+	}
+
+	return Result;
+}
+
 void UMDVMNode_SetViewModelOfClass::UpdateAssignmentBasedData()
 {
 	FMDViewModelAssignmentReference Assignment;

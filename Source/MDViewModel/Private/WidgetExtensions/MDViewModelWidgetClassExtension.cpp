@@ -51,6 +51,7 @@ void UMDViewModelWidgetClassExtension::SetAssignments(const TMap<FMDViewModelAss
 
 void UMDViewModelWidgetClassExtension::GetThisAndAncestorAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutAssignments) const
 {
+	// TODO - Consider whether the parent assignments should be copied into this extension at compile time
 	OutAssignments = Assignments;
 
 #if !WITH_EDITOR // Caching parent assignments is only allowed outside of editor
@@ -83,25 +84,28 @@ void UMDViewModelWidgetClassExtension::SearchAssignments(TMap<FMDViewModelAssign
 {
 	GetThisAndAncestorAssignments(OutViewModelAssignments);
 
-	// Remove assignments that don't match the filter
-	for (auto It = OutViewModelAssignments.CreateIterator(); It; ++It)
+	if (ProviderTag.IsValid() || ViewModelName != NAME_None || ViewModelClass != nullptr)
 	{
-		if (ProviderTag.IsValid() && !ProviderTag.MatchesTagExact(It.Key().ProviderTag))
+		// Remove assignments that don't match the filter
+		for (auto It = OutViewModelAssignments.CreateIterator(); It; ++It)
 		{
-			It.RemoveCurrent();
-			continue;
-		}
+			if (ProviderTag.IsValid() && !ProviderTag.MatchesTagExact(It.Key().ProviderTag))
+			{
+				It.RemoveCurrent();
+				continue;
+			}
 
-		if (ViewModelName != NAME_None && ViewModelName != It.Key().ViewModelName)
-		{
-			It.RemoveCurrent();
-			continue;
-		}
+			if (ViewModelName != NAME_None && ViewModelName != It.Key().ViewModelName)
+			{
+				It.RemoveCurrent();
+				continue;
+			}
 
-		if (ViewModelClass != nullptr && ViewModelClass != It.Key().ViewModelClass)
-		{
-			It.RemoveCurrent();
-			continue;
+			if (ViewModelClass != nullptr && ViewModelClass != It.Key().ViewModelClass)
+			{
+				It.RemoveCurrent();
+				continue;
+			}
 		}
 	}
 }

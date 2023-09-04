@@ -23,8 +23,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "View Model", meta = (DefaultToSelf = "Widget", DeprecatedFunction, DeprecationMessage = "This function is deprecated, replace it with the new Set View Model node."))
 	static UMDViewModelBase* SetViewModel(UUserWidget* Widget, UMDViewModelBase* ViewModel, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = TEXT("Default"));
 	// Set a view model on a widget
-	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Set View Model", meta = (DefaultToSelf = "Widget", AutoCreateRefTerm = "Assignment", DeterminesOutputType = "ViewModel"))
-	static UMDViewModelBase* BP_SetViewModel(UPARAM(meta = (VMAssignment = "Assignment")) UUserWidget* Widget, UPARAM(meta = (VMAssignment = "Assignment")) UMDViewModelBase* ViewModel, const FMDViewModelAssignmentReference& Assignment);
+	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Set View Model", meta = (DefaultToSelf = "Object", AutoCreateRefTerm = "Assignment", DeterminesOutputType = "ViewModel"))
+	static UMDViewModelBase* BP_SetViewModel(UPARAM(meta = (VMAssignment = "Assignment", DisplayName = "Object")) UObject* Widget, UPARAM(meta = (VMAssignment = "Assignment")) UMDViewModelBase* ViewModel, const FMDViewModelAssignmentReference& Assignment);
 
 	UFUNCTION(BlueprintCallable, Category = "View Model", meta = (DefaultToSelf = "Widget", DeprecatedFunction, DeprecationMessage = "This function is deprecated, replace it with the new Clear View Model node."))
 	static void ClearViewModel(UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = TEXT("Default"));
@@ -35,16 +35,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "View Model", meta = (DefaultToSelf = "Widget", DeterminesOutputType="ViewModelClass", WorldContext="WorldContextObject", DeprecatedFunction, DeprecationMessage = "This function is deprecated, replace it with the new Set View Model of Class node."))
 	static UMDViewModelBase* SetViewModelOfClass(const UObject* WorldContextObject, UUserWidget* Widget, UObject* ContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings, FName ViewModelName = TEXT("Default"));
 	// Create a view model and immediately set it on a widget
-	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Set View Model of Class", meta = (DefaultToSelf = "Widget", WorldContext="WorldContextObject", AutoCreateRefTerm = "Assignment,ViewModelSettings", BlueprintInternalUseOnly = "true"))
-	static UMDViewModelBase* BP_SetViewModelOfClass(const UObject* WorldContextObject, UPARAM(meta = (VMAssignment = "Assignment")) UUserWidget* Widget, UObject* ContextObject, const FMDViewModelAssignmentReference& Assignment, const FInstancedStruct& ViewModelSettings);
+	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Set View Model of Class", meta = (DefaultToSelf = "Object", WorldContext="WorldContextObject", AutoCreateRefTerm = "Assignment,ViewModelSettings", BlueprintInternalUseOnly = "true"))
+	static UMDViewModelBase* BP_SetViewModelOfClass(const UObject* WorldContextObject, UPARAM(meta = (VMAssignment = "Assignment")) UObject* Object, UObject* ContextObject, const FMDViewModelAssignmentReference& Assignment, const FInstancedStruct& ViewModelSettings);
 	template<typename T>
 	static T* SetViewModelOfClass(const UObject* WorldContextObject, UUserWidget* Widget, UObject* ContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), FName ViewModelName = MDViewModelUtils::DefaultViewModelName, const FInstancedStruct& ViewModelSettings = {});
 
 	UFUNCTION(BlueprintCallable, Category = "View Model", meta = (DefaultToSelf = "Widget", DeterminesOutputType="ViewModelClass", DeprecatedFunction, DeprecationMessage = "This function is deprecated, replace it with the new Get View Model node."))
 	static UMDViewModelBase* GetViewModel(UUserWidget* Widget, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = TEXT("Default"));
 	// Get a view model instance that's been assigned to a widget
-	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Get View Model", meta = (DefaultToSelf = "Widget", ExpandBoolAsExecs = "IsValid", AutoCreateRefTerm = "Assignment", BlueprintInternalUseOnly = "true"))
-	static UMDViewModelBase* BP_GetViewModel(UPARAM(meta = (VMAssignment = "Assignment")) UUserWidget* Widget, const FMDViewModelAssignmentReference& Assignment, bool& IsValid);
+	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Get View Model", meta = (DefaultToSelf = "Object", ExpandBoolAsExecs = "IsValid", AutoCreateRefTerm = "Assignment", BlueprintInternalUseOnly = "true"))
+	static UMDViewModelBase* BP_GetViewModel(UPARAM(meta = (VMAssignment = "Assignment")) UObject* Object, const FMDViewModelAssignmentReference& Assignment, bool& IsValid);
 
 	UFUNCTION(BlueprintCallable, Category = "View Model", meta = (AutoCreateRefTerm = "ViewModelSettings", DeterminesOutputType="ViewModelClass", WorldContext="WorldContextObject"))
 	static UMDViewModelBase* FindOrCreateCachedViewModel(const UObject* WorldContextObject, UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, FName CachedViewModelKey = TEXT("Default"), const FInstancedStruct& ViewModelSettings = FInstancedStruct());

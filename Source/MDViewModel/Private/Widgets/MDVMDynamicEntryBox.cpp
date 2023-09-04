@@ -12,7 +12,7 @@ void UMDVMDynamicEntryBox::PostInitProperties()
 	Super::PostInitProperties();
 
 #if WITH_EDITOR
-	ViewModelAssignment.OnGetWidgetClass.BindUObject(this, &UMDVMDynamicEntryBox::GetEditorTimeEntryWidgetClass);
+	ViewModelAssignment.OnGetBoundObjectClass.BindUObject(this, &UMDVMDynamicEntryBox::GetEditorTimeEntryWidgetClass);
 #endif
 }
 

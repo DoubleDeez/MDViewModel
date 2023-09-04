@@ -34,7 +34,10 @@ FMDViewModelAssignmentReference& FMDViewModelAssignmentReference::operator=(cons
 	ViewModelName = Other.ViewModelName;
 
 #if WITH_EDITOR
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	OnGetWidgetClass = Other.OnGetWidgetClass;
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
+	OnGetBoundObjectClass = Other.OnGetBoundObjectClass;
 #endif
 
 	return *this;

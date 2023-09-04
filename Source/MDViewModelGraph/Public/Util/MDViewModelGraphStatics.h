@@ -5,6 +5,7 @@
 
 struct FMDViewModelAssignmentData;
 struct FMDViewModelAssignment;
+class IMDViewModelAssignableInterface;
 class UMDVMNode_ViewModelChanged;
 class UMDVMNode_ViewModelEvent;
 class UMDVMNode_ViewModelFieldNotify;
@@ -29,4 +30,7 @@ public:
 	static bool DoesBlueprintBindToViewModelChanged(const UBlueprint* BP, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);
 	static void OnViewModelChangedRequestedForBlueprint(const UBlueprint* BP, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);
 	static UMDVMNode_ViewModelChanged* FindExistingViewModelChangedNode(const UBlueprint* BP, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);
+
+	static IMDViewModelAssignableInterface* GetOrCreateAssignableInterface(UBlueprint* BP);
+	static IMDViewModelAssignableInterface* GetAssignableInterface(const UBlueprint* BP);
 };
