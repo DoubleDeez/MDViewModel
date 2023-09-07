@@ -61,7 +61,7 @@ UMDViewModelBase* UMDViewModelWidgetExtension::SetViewModel(UMDViewModelBase* Vi
 		}
 		
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-		MDViewModelUtils::SearchViewModelAssignments(Assignments, GetUserWidget()->GetClass(), ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
+		MDViewModelUtils::SearchViewModelAssignments(GetUserWidget()->GetClass(), Assignments, ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
 		if (Assignments.IsEmpty())
 		{
 			UE_LOGFMT(LogMDViewModel, Error, "Attempting to set View Model of type [{VMType}] with name [{VMName}] but Widget [{Widget}] does not have a matching assignment.",
@@ -295,11 +295,10 @@ void UMDViewModelWidgetExtension::PopulateViewModels()
 
 	UE_LOGFMT(LogMDViewModel, Verbose, "Populating View Models for Widget [{WidgetName}]", ("WidgetName", GetUserWidget()->GetPathName()));
 
-	constexpr bool bIncludeAncestorAssignments = true;
-	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
-	MDViewModelUtils::GetViewModelAssignmentsForWidgetClass(Widget->GetClass(), bIncludeAncestorAssignments, Assignments);
+	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
+	MDViewModelUtils::GetViewModelAssignments(Widget->GetClass(), ViewModelAssignments);
 
-	for (const auto& Pair : Assignments)
+	for (const auto& Pair : ViewModelAssignments)
 	{
 		UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(Pair.Key.ProviderTag);
 		if (ensureMsgf(IsValid(Provider), TEXT("A View Model Provider with tag [%s] was not found"), *Pair.Key.ProviderTag.ToString()))
@@ -314,7 +313,7 @@ void UMDViewModelWidgetExtension::CleanUpViewModels()
 	UE_LOGFMT(LogMDViewModel, Verbose, "Cleaning up View Models for Widget [{WidgetName}]",
 		("WidgetName", GetUserWidget()->GetPathName()));
 	
-	// Broadcast out that we're null-ing out viewmodels
+	// Broadcast out that we're null-ing out view models
 	{
 		for (auto It = OnViewModelSetDelegates.CreateConstIterator(); It; ++It)
 		{
@@ -338,7 +337,7 @@ void UMDViewModelWidgetExtension::CleanUpViewModels()
 		}
 	}
 
-	// Viewmodels themselves
+	// View models themselves
 	{
 		UUserWidget* OwnerWidget = GetUserWidget();
 		for (auto It = ViewModels.CreateConstIterator(); It; ++It)

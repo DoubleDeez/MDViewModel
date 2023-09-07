@@ -1,11 +1,9 @@
 ﻿#include "MDViewModelEditorModule.h"
 
-#include "BlueprintCompilationManager.h"
 #include "BlueprintEditorModule.h"
 #include "BlueprintEditorTabs.h"
 #include "PropertyEditorModule.h"
 #include "UMGEditorModule.h"
-#include "WidgetBlueprint.h"
 #include "BlueprintModes/WidgetBlueprintApplicationMode.h"
 #include "BlueprintModes/WidgetBlueprintApplicationModes.h"
 #include "Customizations/MDViewModelAssignmentReferenceCustomization.h"
@@ -15,7 +13,6 @@
 #include "MDViewModelEditorConfig.h"
 #include "Util/MDViewModelAssignmentReference.h"
 #include "ViewModelTab/MDViewModelTab.h"
-#include "BlueprintExtensions/MDViewModelBlueprintCompilerExtension.h"
 
 #define LOCTEXT_NAMESPACE "FMDViewModelEditorModule"
 
@@ -43,10 +40,6 @@ void FMDViewModelEditorModule::StartupModule()
 
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditorModule.RegisterCustomPropertyTypeLayout(FMDViewModelAssignmentReference::StaticStruct()->GetFName(), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FMDViewModelAssignmentReferenceCustomization::MakeInstance));
-	CompilerExtensionPtr = NewObject<UMDViewModelBlueprintCompilerExtension>();
-	CompilerExtensionPtr->AddToRoot();
-
-	FBlueprintCompilationManager::RegisterCompilerExtension(UBlueprint::StaticClass(), CompilerExtensionPtr.Get());
 
 	GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OnAssetEditorOpened().AddRaw(this, &FMDViewModelEditorModule::RegisterBlueprintEditorDrawer);
 	
@@ -73,12 +66,6 @@ void FMDViewModelEditorModule::ShutdownModule()
 	if (ViewModelGraphPanelPinFactory.IsValid())
 	{
 		FEdGraphUtilities::UnregisterVisualPinFactory(ViewModelGraphPanelPinFactory);
-	}
-	
-	if (UMDViewModelBlueprintCompilerExtension* CompilerExtension = CompilerExtensionPtr.Get())
-	{
-		CompilerExtension->RemoveFromRoot();
-		CompilerExtension = nullptr;
 	}
 
 	if (IUMGEditorModule* UMGEditorModule = FModuleManager::GetModulePtr<IUMGEditorModule>("UMGEditor"))

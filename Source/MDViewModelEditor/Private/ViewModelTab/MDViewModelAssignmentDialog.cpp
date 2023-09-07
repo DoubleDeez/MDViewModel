@@ -360,7 +360,6 @@ FReply SMDViewModelAssignmentDialog::OnAddClicked() const
 	if (IMDViewModelAssignableInterface* Extension = ExtensionPtr.Get())
 	{
 		FScopedTransaction Transaction = FScopedTransaction(INVTEXT("Added View Model Assignment"));
-		Extension->ModifyObject();
 		Extension->AddAssignment(EditorObject->CreateAssignment());
 	}
 
@@ -379,7 +378,6 @@ FReply SMDViewModelAssignmentDialog::OnSaveClicked() const
 		if (IMDViewModelAssignableInterface* Extension = ExtensionPtr.Get())
 		{
 			FScopedTransaction Transaction = FScopedTransaction(INVTEXT("Updated View Model Assignment"));
-			Extension->ModifyObject();
 			Extension->UpdateAssignment(*EditorItem.Get(), EditorObject->CreateAssignment());
 		}
 	}

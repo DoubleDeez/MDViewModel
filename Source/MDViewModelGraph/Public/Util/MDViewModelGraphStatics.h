@@ -5,7 +5,9 @@
 
 struct FMDViewModelAssignmentData;
 struct FMDViewModelAssignment;
+class UBlueprintGeneratedClass;
 class IMDViewModelAssignableInterface;
+class UMDViewModelAssignmentComponent;
 class UMDVMNode_ViewModelChanged;
 class UMDVMNode_ViewModelEvent;
 class UMDVMNode_ViewModelFieldNotify;
@@ -33,4 +35,6 @@ public:
 
 	static IMDViewModelAssignableInterface* GetOrCreateAssignableInterface(UBlueprint* BP);
 	static IMDViewModelAssignableInterface* GetAssignableInterface(const UBlueprint* BP);
+
+	static UMDViewModelAssignmentComponent* GetOrCreateAssignmentComponentTemplate(UBlueprintGeneratedClass* BPClass);
 };

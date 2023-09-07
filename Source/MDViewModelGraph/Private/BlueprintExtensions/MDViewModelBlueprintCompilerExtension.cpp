@@ -3,41 +3,97 @@
 #include "Util/MDViewModelUtils.h"
 #include "WidgetBlueprint.h"
 #include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
+#include "Components/MDViewModelAssignmentComponent.h"
+#include "Engine/SCS_Node.h"
+#include "Util/MDViewModelGraphStatics.h"
 #include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
+
 
 void UMDViewModelBlueprintCompilerExtension::ProcessBlueprintCompiled(const FKismetCompilerContext& CompilationContext, const FBlueprintCompiledData& Data)
 {
 	Super::ProcessBlueprintCompiled(CompilationContext, Data);
 
 	UBlueprint* Blueprint = CompilationContext.Blueprint;
-	const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(Blueprint);
-	if (IsValid(WidgetBP))
+	if (IsValid(Blueprint))
 	{
-		HandleWidgetBlueprintCompiled(*WidgetBP, CompilationContext);
-	}
-	else if (IsValid(Blueprint) && IsValid(Blueprint->GeneratedClass) && Blueprint->GeneratedClass->IsChildOf<AActor>())
-	{
-		HandleActorBlueprintCompiled(*Blueprint, CompilationContext);
+		const TObjectPtr<UBlueprintExtension>* ExtensionPtr = Blueprint->GetExtensions().FindByPredicate([](TObjectPtr<UBlueprintExtension> Extension)
+		{
+			return IsValid(Extension) && Extension->Implements<UMDViewModelAssignableInterface>();
+		});
+
+		IMDViewModelAssignableInterface* Extension = (ExtensionPtr != nullptr) ? Cast<IMDViewModelAssignableInterface>(*ExtensionPtr) : nullptr;
+		UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(Blueprint);
+		if (IsValid(WidgetBP))
+		{
+			HandleWidgetBlueprintCompiled(Extension, *WidgetBP, CompilationContext);
+		}
+		else if (IsValid(CompilationContext.NewClass) && CompilationContext.NewClass->IsChildOf<AActor>())
+		{
+			HandleActorBlueprintCompiled(Extension, *Blueprint, CompilationContext);
+		}
 	}
 }
 
-void UMDViewModelBlueprintCompilerExtension::HandleWidgetBlueprintCompiled(const UWidgetBlueprint& WidgetBP, const FKismetCompilerContext& CompilationContext) const
+void UMDViewModelBlueprintCompilerExtension::HandleActorBlueprintPreCompile(IMDViewModelAssignableInterface* Extension, UBlueprintGeneratedClass* BPClass) const
 {
-	const bool bAlreadyHasExtension = WidgetBP.GetExtensions().ContainsByPredicate([](TObjectPtr<UBlueprintExtension> Extension)
+	UBlueprint* Blueprint = UBlueprint::GetBlueprintFromClass(BPClass);
+	if (!IsValid(Blueprint))
 	{
-		if (const auto* VMExtension = Cast<IMDViewModelAssignableInterface>(Extension))
+		return;
+	}
+	
+	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> CompiledAssignments;
+	FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(Blueprint, CompiledAssignments);
+	if (!CompiledAssignments.IsEmpty())
+	{
+		if (UMDViewModelAssignmentComponent* Component = FMDViewModelGraphStatics::GetOrCreateAssignmentComponentTemplate(BPClass))
 		{
-			return !VMExtension->GetAssignments().IsEmpty();
+			Component->SetAssignments(CompiledAssignments);
+		}
+		else if (Extension != nullptr && !Extension->GetAssignments().IsEmpty())
+		{
+			Blueprint->Message_Warn(TEXT("[MDVM] Blueprint @@ could not compile its view model assignments, it may need to be resaved in the editor. This can happen when introducing assignments in a parent blueprint."), Blueprint);
+		}
+	}
+	else
+	{
+		if (Extension != nullptr)
+		{
+			// No assignments, remove the extension
+			Blueprint->RemoveExtension(Cast<UBlueprintExtension>(Extension));
 		}
 
-		return false;
-	});
-
-	if (!bAlreadyHasExtension)
-	{
-		if (UWidgetBlueprintGeneratedClass* WidgetClass = Cast<UWidgetBlueprintGeneratedClass>(CompilationContext.NewClass))
+		if (IsValid(BPClass->SimpleConstructionScript))
 		{
-			if (MDViewModelUtils::DoesClassOrSuperClassHaveAssignments(WidgetClass->GetSuperClass()))
+			// No assignments, so remove the component
+			const TArray<USCS_Node*> AllNodes = BPClass->SimpleConstructionScript->GetAllNodes();
+			for (USCS_Node* Node : AllNodes)
+			{
+				if (Node->ComponentTemplate->IsA<UMDViewModelAssignmentComponent>())
+				{
+					BPClass->SimpleConstructionScript->RemoveNode(Node);
+				}
+			}
+		}
+	}
+}
+
+void UMDViewModelBlueprintCompilerExtension::HandleWidgetBlueprintCompiled(IMDViewModelAssignableInterface* Extension, UWidgetBlueprint& WidgetBP, const FKismetCompilerContext& CompilationContext) const
+{
+	const bool bHasPopulatedExtension = Extension != nullptr && Extension->HasAssignments();
+	
+	if (!bHasPopulatedExtension)
+	{
+		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ParentViewModelAssignments;
+		MDViewModelUtils::GetViewModelAssignments(WidgetBP.ParentClass, ParentViewModelAssignments);
+		if (ParentViewModelAssignments.IsEmpty())
+		{
+			// No assignments, remove the extension
+			WidgetBP.RemoveExtension(Cast<UBlueprintExtension>(Extension));
+		}
+		else
+		{
+			if (UWidgetBlueprintGeneratedClass* WidgetClass = Cast<UWidgetBlueprintGeneratedClass>(CompilationContext.NewClass))
 			{
 				// We can't add a blueprint extension since we're mid-compile here
 				// So instead we want to add a Class extension, but we need a non-const FWidgetBlueprintCompilerContext to do that
@@ -53,20 +109,7 @@ void UMDViewModelBlueprintCompilerExtension::HandleWidgetBlueprintCompiled(const
 	}
 }
 
-void UMDViewModelBlueprintCompilerExtension::HandleActorBlueprintCompiled(UBlueprint& Blueprint, const FKismetCompilerContext& CompilationContext) const
+void UMDViewModelBlueprintCompilerExtension::HandleActorBlueprintCompiled(IMDViewModelAssignableInterface* Extension, UBlueprint& Blueprint, const FKismetCompilerContext& CompilationContext) const
 {
-	const bool bAlreadyHasExtension = Blueprint.GetExtensions().ContainsByPredicate([](TObjectPtr<UBlueprintExtension> Extension)
-	{
-		if (const auto* VMExtension = Cast<IMDViewModelAssignableInterface>(Extension))
-		{
-			return VMExtension->HasAssignments();
-		}
-
-		return false;
-	});
-
-	if (!bAlreadyHasExtension)
-	{
-		// TODO - Check parent for assignments and inject a component/remove component
-	}
+	HandleActorBlueprintPreCompile(Extension, CompilationContext.NewClass);
 }

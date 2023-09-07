@@ -1,8 +1,11 @@
 #include "Util/MDViewModelUtils.h"
 
-#include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
+#include "Components/MDViewModelAssignmentComponent.h"
 #include "Engine/Engine.h"
+#include "Engine/InheritableComponentHandler.h"
+#include "Engine/SCS_Node.h"
+#include "Engine/SimpleConstructionScript.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "UObject/Class.h"
 #include "UObject/Object.h"
@@ -31,78 +34,77 @@ namespace MDViewModelUtils
 		return nullptr;
 	}
 
-	void GetViewModelAssignmentsForWidgetClass(UClass* ObjectClass, bool bIncludeAncestorAssignments, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments)
+	void GetViewModelAssignments(UClass* ObjectClass, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments)
 	{
-		if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(ObjectClass))
+		// Searching without a filter is equivalent to just getting the assignments
+		SearchViewModelAssignments(ObjectClass, OutViewModelAssignments);
+	}
+
+	void SearchViewModelAssignments(UClass* ObjectClass, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments, TSubclassOf<UMDViewModelBase> ViewModelClass, const FGameplayTag& ProviderTag, const FName& ViewModelName)
+	{
+		if (const IMDVMCompiledAssignmentsInterface* CompiledAssignments = GetCompiledAssignmentsInterface(ObjectClass))
 		{
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
-			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
-#else
-			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>(false))
-#endif
-			{
-				if (bIncludeAncestorAssignments)
-				{
-					ClassExtension->GetThisAndAncestorAssignments(OutViewModelAssignments);
-				}
-				else
-				{
-					OutViewModelAssignments.Append(ClassExtension->GetAssignments());
-				}
-			}
-		}
-		else
-		{
-			// TODO - Actor View Models
+			CompiledAssignments->SearchAssignments(OutViewModelAssignments, ViewModelClass, ProviderTag, ViewModelName);
 		}
 	}
 
-	void SearchViewModelAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments, UClass* ObjectClass, TSubclassOf<UMDViewModelBase> ViewModelClass, const FGameplayTag& ProviderTag, const FName& ViewModelName)
+	bool HasViewModelAssignments(UClass* ObjectClass)
 	{
-		if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(ObjectClass))
+		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
+		GetViewModelAssignments(ObjectClass, ViewModelAssignments);
+		return !ViewModelAssignments.IsEmpty();
+	}
+
+	IMDVMCompiledAssignmentsInterface* GetCompiledAssignmentsInterface(UClass* ObjectClass)
+	{
+		if (UWidgetBlueprintGeneratedClass* WBPGC = Cast<UWidgetBlueprintGeneratedClass>(ObjectClass))
 		{
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
-			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
+			return WBPGC->GetExtension<UMDViewModelWidgetClassExtension>();
 #else
-			if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>(false))
+			return WBPGC->GetExtension<UMDViewModelWidgetClassExtension>(false);
 #endif
-			{
-				ClassExtension->SearchAssignments(OutViewModelAssignments, ViewModelClass, ProviderTag, ViewModelName);
-			}
 		}
 		else
 		{
-			// TODO - Actor View Models
-		}
-	}
-
-	bool DoesClassOrSuperClassHaveAssignments(UClass* ObjectClass)
-	{
-		UClass* Class = ObjectClass;
-		while (Class != nullptr)
-		{
-			if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(Class))
+			auto FindPred = [](const UActorComponent* ComponentTemplate)
 			{
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
-				if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
-#else
-				if (const UMDViewModelWidgetClassExtension* ClassExtension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>(false))
-#endif
+				return IsValid(ComponentTemplate) && ComponentTemplate->Implements<UMDVMCompiledAssignmentsInterface>();
+			};
+			
+			// Actors can have assignments inherited from their parent without having their own UMDVMCompiledAssignmentsInterface so we have to climb the hierarchy
+			while (UBlueprintGeneratedClass* BPGC = Cast<UBlueprintGeneratedClass>(ObjectClass))
+			{
+				if (const TObjectPtr<UActorComponent>* ComponentPtr = BPGC->ComponentTemplates.FindByPredicate(FindPred))
 				{
-					if (ClassExtension->HasAssignments())
+					return Cast<IMDVMCompiledAssignmentsInterface>(*ComponentPtr);
+				}
+
+				const USCS_Node* const* NodePtr = BPGC->SimpleConstructionScript->GetAllNodes().FindByPredicate([&FindPred](const USCS_Node* Node)
+				{
+					return IsValid(Node) && FindPred(Node->ComponentTemplate);
+				});
+
+				if (NodePtr != nullptr)
+				{
+					return Cast<IMDVMCompiledAssignmentsInterface>((*NodePtr)->ComponentTemplate);
+				}
+
+				const UInheritableComponentHandler* IHC = BPGC->GetInheritableComponentHandler();
+				if (IsValid(IHC))
+				{
+					TArray<UActorComponent*> ComponentTemplates;
+					IHC->GetAllTemplates(ComponentTemplates);
+					if (UActorComponent* const* ComponentPtr = ComponentTemplates.FindByPredicate(FindPred))
 					{
-						return true;
+						return Cast<IMDVMCompiledAssignmentsInterface>(*ComponentPtr);
 					}
 				}
+				
+				ObjectClass = BPGC->GetSuperClass();
 			}
-			else
-			{
-				// TODO - Actor View Models
-			}
-
-			Class = Class->GetSuperClass();
 		}
 
-		return false;
+		return nullptr;
 	}
 }

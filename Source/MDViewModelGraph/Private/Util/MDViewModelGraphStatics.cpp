@@ -3,7 +3,12 @@
 #include "BlueprintExtensions/MDViewModelActorBlueprintExtension.h"
 #include "BlueprintExtensions/MDViewModelAssignableInterface.h"
 #include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
+#include "Components/MDViewModelAssignmentComponent.h"
 #include "EdGraphSchema_K2_Actions.h"
+#include "Engine/InheritableComponentHandler.h"
+#include "Engine/SCS_Node.h"
+#include "Engine/SimpleConstructionScript.h"
+#include "GameFramework/Actor.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Nodes/MDVMNode_ViewModelChanged.h"
@@ -26,6 +31,11 @@ void FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(const UBluepr
 			{
 				Extension->GetAllAssignments(OutViewModelAssignments);
 			}
+		}
+		else
+		{
+			// If this BP doesn't have assignments, get the parent assignments
+			MDViewModelUtils::GetViewModelAssignments(Blueprint->ParentClass, OutViewModelAssignments);
 		}
 	}
 }
@@ -265,4 +275,62 @@ IMDViewModelAssignableInterface* FMDViewModelGraphStatics::GetAssignableInterfac
 	}
 
 	return nullptr;
+}
+
+UMDViewModelAssignmentComponent* FMDViewModelGraphStatics::GetOrCreateAssignmentComponentTemplate(UBlueprintGeneratedClass* BPClass)
+{
+	check(IsValid(BPClass) && BPClass->IsChildOf<AActor>());
+	
+	TArray<UBlueprintGeneratedClass*> Hierarchy;
+	UBlueprint::GetBlueprintHierarchyFromClass(BPClass, Hierarchy);
+		
+	// Find the most authoritative assignment component (our nearest parent)
+	USCS_Node* ComponentNode = nullptr;
+	for (UBlueprintGeneratedClass* Class : Hierarchy)
+	{
+		USCS_Node* const* CurrentComponentNodePtr = Class->SimpleConstructionScript->GetAllNodes().FindByPredicate([](const USCS_Node* Node)
+		{
+			return IsValid(Node) && IsValid(Node->ComponentTemplate) && Node->ComponentTemplate->IsA<UMDViewModelAssignmentComponent>();
+		});
+		USCS_Node* CurrentComponentNode = (CurrentComponentNodePtr != nullptr) ? *CurrentComponentNodePtr : nullptr;
+		
+		if (Class != BPClass && CurrentComponentNode != nullptr)
+		{
+			constexpr bool bCreateIfNecessary = true;
+			UInheritableComponentHandler* ICH = BPClass->GetInheritableComponentHandler(bCreateIfNecessary);
+
+			const FComponentKey Key(CurrentComponentNode);
+
+			const bool bCanCreateOverriddenComponent = IsValid(BPClass->ClassDefaultObject);
+			UActorComponent* Component = bCanCreateOverriddenComponent
+				? ICH->CreateOverridenComponentTemplate(Key)
+				: ICH->GetOverridenComponentTemplate(Key);
+
+			// Clean up any pre-existing components, which can happen if we had assignments before our parents did
+			const TArray<USCS_Node*> AllNodes = BPClass->SimpleConstructionScript->GetAllNodes();
+			for (USCS_Node* Node : AllNodes)
+			{
+				if (Node->ComponentTemplate->IsA<UMDViewModelAssignmentComponent>())
+				{
+					BPClass->SimpleConstructionScript->RemoveNode(Node);
+				}
+			}
+				
+			return Cast<UMDViewModelAssignmentComponent>(Component);
+		}
+		else if (Class == BPClass)
+		{
+			ComponentNode = CurrentComponentNode;
+		}
+	}
+
+	// We don't have any parent assignments, use our existing component or create one if needed
+	if (!IsValid(ComponentNode))
+	{
+		ComponentNode = BPClass->SimpleConstructionScript->CreateNode(UMDViewModelAssignmentComponent::StaticClass(), TEXT("MDViewModelAssignments"));
+		ComponentNode->ComponentTemplate->CreationMethod = EComponentCreationMethod::Native;
+		BPClass->SimpleConstructionScript->AddNode(ComponentNode);
+	}
+
+	return Cast<UMDViewModelAssignmentComponent>(ComponentNode->ComponentTemplate);
 }

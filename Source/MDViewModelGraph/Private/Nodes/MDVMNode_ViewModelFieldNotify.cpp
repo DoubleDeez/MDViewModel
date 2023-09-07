@@ -181,23 +181,9 @@ void UMDVMNode_ViewModelFieldNotify::ValidateNodeDuringCompilation(FCompilerResu
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
 		FMDViewModelGraphStatics::SearchViewModelAssignmentsForBlueprint(BP, ViewModelAssignments, ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
 
-		// Only Native assignments are valid during compile, we need to go through the BP otherwise
 		if (ViewModelAssignments.IsEmpty())
 		{
-			if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(BP))
-			{
-				if (const UMDViewModelWidgetBlueprintExtension* Extension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
-				{
-					if (!Extension->DoesContainViewModelAssignment(ViewModelClass, FGameplayTag::EmptyTag, ViewModelName))
-					{
-						MessageLog.Error(*FString::Printf(TEXT("@@ is bound to a view model named [%s] of class [%s] but the view model is not assigned to this widget."), *ViewModelName.ToString(), *ViewModelClass->GetDisplayNameText().ToString()), this);
-					}
-				}
-			}
-			else
-			{
-				// TODO - Actor View Models
-			}
+			MessageLog.Error(*FString::Printf(TEXT("@@ is bound to a view model named [%s] of class [%s] but the view model is not assigned to this widget."), *ViewModelName.ToString(), *ViewModelClass->GetDisplayNameText().ToString()), this);
 		}
 
 		if (!GetTargetFieldNotify().IsValid())

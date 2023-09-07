@@ -21,8 +21,4 @@ protected:
 	UPROPERTY()
 	TArray<FMDViewModelEditorAssignment> Assignments;
 	
-private:
-	virtual void HandleGenerateFunctionGraphs(FKismetCompilerContext* CompilerContext) override;
-	
-	virtual void SearchParentAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FGameplayTag& ProviderTag = FGameplayTag::EmptyTag, const FName& ViewModelName = NAME_None) const override;
 };

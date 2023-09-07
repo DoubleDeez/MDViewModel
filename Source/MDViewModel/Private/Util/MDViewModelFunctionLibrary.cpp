@@ -129,12 +129,16 @@ void UMDViewModelFunctionLibrary::BindViewModelChangedEvent(UUserWidget* Widget,
 	BP_BindViewModelChangedEvent(Widget, Delegate, AssignmentReference);
 }
 
-void UMDViewModelFunctionLibrary::BP_BindViewModelChangedEvent(UUserWidget* Widget, FMDVMOnViewModelSetDynamic Delegate, const FMDViewModelAssignmentReference& Assignment)
+void UMDViewModelFunctionLibrary::BP_BindViewModelChangedEvent(UObject* Object, FMDVMOnViewModelSetDynamic Delegate, const FMDViewModelAssignmentReference& Assignment)
 {
-	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
+	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Cast<UUserWidget>(Object));
 	if (IsValid(Extension))
 	{
 		Extension->ListenForChanges(MoveTemp(Delegate), Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
+	}
+	else
+	{
+		// TODO - Actor View Models
 	}
 }
 
@@ -147,20 +151,28 @@ void UMDViewModelFunctionLibrary::UnbindViewModelChangedEvent(UUserWidget* Widge
 	BP_UnbindViewModelChangedEvent(Widget, Delegate, AssignmentReference);
 }
 
-void UMDViewModelFunctionLibrary::BP_UnbindViewModelChangedEvent(UUserWidget* Widget, FMDVMOnViewModelSetDynamic Delegate, const FMDViewModelAssignmentReference& Assignment)
+void UMDViewModelFunctionLibrary::BP_UnbindViewModelChangedEvent(UObject* Object, FMDVMOnViewModelSetDynamic Delegate, const FMDViewModelAssignmentReference& Assignment)
 {
-	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
+	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Cast<UUserWidget>(Object));
 	if (IsValid(Extension))
 	{
 		Extension->StopListeningForChanges(Delegate, Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
 	}
+	else
+	{
+		// TODO - Actor View Models
+	}
 }
 
-void UMDViewModelFunctionLibrary::UnbindAllViewModelChangedEvent(UUserWidget* Widget)
+void UMDViewModelFunctionLibrary::UnbindAllViewModelChangedEvent(UObject* Object)
 {
-	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Widget);
+	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Cast<UUserWidget>(Object));
 	if (IsValid(Extension))
 	{
-		Extension->StopListeningForAllDynamicViewModelsChanged(Widget);
+		Extension->StopListeningForAllDynamicViewModelsChanged(Object);
+	}
+	else
+	{
+		// TODO - Actor View Models
 	}
 }

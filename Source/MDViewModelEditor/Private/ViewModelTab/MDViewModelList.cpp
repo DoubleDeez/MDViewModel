@@ -1,6 +1,5 @@
 #include "ViewModelTab/MDViewModelList.h"
 
-#include "Blueprint/WidgetBlueprintGeneratedClass.h"
 #include "BlueprintEditor.h"
 #include "Editor.h"
 #include "Editor/EditorEngine.h"
@@ -16,7 +15,6 @@
 #include "ViewModelTab/MDViewModelListItem.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Views/SListView.h"
-#include "WidgetBlueprint.h"
 #include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 #include "Util/MDViewModelGraphStatics.h"
 #include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
@@ -35,6 +33,7 @@ void SMDViewModelList::Construct(const FArguments& InArgs, const TSharedPtr<FBlu
 	OnViewModelSelected = InArgs._OnViewModelSelected;
 	BlueprintEditorPtr = InBlueprintEditor;
 
+	// TODO - We should delay BP extension creation until we're adding the first VM assignment
 	if (IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetOrCreateAssignableInterface(GetBlueprint()))
 	{
 		Extension->OnAssignmentsChanged.AddSP(this, &SMDViewModelList::OnAssignmentsChanged);
@@ -168,41 +167,40 @@ void SMDViewModelList::PopulateAssignments()
 	{
 		return;
 	}
-
-	IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetOrCreateAssignableInterface(GetBlueprint());
+	
+	IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetAssignableInterface(ThisBP);
 	if (Extension == nullptr)
 	{
 		return;
 	}
 	
+	TArray<UBlueprintGeneratedClass*> Hierarchy;
+	UBlueprint::GetBlueprintHierarchyFromClass(GeneratedClass, Hierarchy);
+
 	TArray<UClass*> ChildFirstSortedAncestry;
 	TMap<UClass*, TArray<FMDViewModelEditorAssignment>> AllAssignments;
-	
-	{
-		ChildFirstSortedAncestry.Add(GeneratedClass);
-		AllAssignments.Add(GeneratedClass, Extension->GetAssignments());
 
-		// TODO - Actor View Models Parent Assignments
-		for (auto* SuperClass = Cast<UWidgetBlueprintGeneratedClass>(GeneratedClass->GetSuperClass()); IsValid(SuperClass); SuperClass = Cast<UWidgetBlueprintGeneratedClass>(SuperClass->GetSuperClass()))
+	ChildFirstSortedAncestry.Add(GeneratedClass);
+	AllAssignments.Add(GeneratedClass, Extension->GetAssignments());
+
+	// Skip the first one since that's just ThisBP
+	for (int32 i = 1; i < Hierarchy.Num(); ++i)
+	{
+		if (UBlueprintGeneratedClass* SuperClass = Hierarchy[i])
 		{
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
-			if (const UMDViewModelWidgetClassExtension* ClassExtension = SuperClass->GetExtension<UMDViewModelWidgetClassExtension>())
-#else
-			if (const UMDViewModelWidgetClassExtension* ClassExtension = SuperClass->GetExtension<UMDViewModelWidgetClassExtension>(false))
-#endif
+			ChildFirstSortedAncestry.Add(SuperClass);
+			
+			TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> SuperAssignments;
+			MDViewModelUtils::GetViewModelAssignments(SuperClass, SuperAssignments);
+		
+			TArray<FMDViewModelEditorAssignment>& SuperEditorAssignments = AllAssignments.Add(SuperClass);
+			for (const auto& Pair : SuperAssignments)
 			{
-				ChildFirstSortedAncestry.Add(SuperClass);
-				
-				TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> SuperAssignments = ClassExtension->GetAssignments();
-				TArray<FMDViewModelEditorAssignment>& SuperEditorAssignments = AllAssignments.Add(SuperClass);
-				for (const auto& Pair : SuperAssignments)
-				{
-					FMDViewModelEditorAssignment NewAssignment;
-					NewAssignment.Assignment = Pair.Key;
-					NewAssignment.Data = Pair.Value;
-					NewAssignment.SuperAssignmentOwner = SuperClass;
-					SuperEditorAssignments.Emplace(MoveTemp(NewAssignment));
-				}
+				FMDViewModelEditorAssignment NewAssignment;
+				NewAssignment.Assignment = Pair.Key;
+				NewAssignment.Data = Pair.Value;
+				NewAssignment.SuperAssignmentOwner = SuperClass;
+				SuperEditorAssignments.Emplace(MoveTemp(NewAssignment));
 			}
 		}
 	}
@@ -322,7 +320,6 @@ void SMDViewModelList::OnPasteClicked()
 		}
 		
 		FScopedTransaction Transaction = FScopedTransaction(INVTEXT("Pasted View Model Assignment"));
-		Extension->ModifyObject();
 		Extension->AddAssignment(MoveTemp(Assignment));
 	}
 }
@@ -372,7 +369,6 @@ void SMDViewModelList::OnDeleteItem(TSharedPtr<FMDViewModelEditorAssignment> Ite
 		if (IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetAssignableInterface(GetBlueprint()))
 		{
 			FScopedTransaction Transaction = FScopedTransaction(INVTEXT("Removed View Model Assignment"));
-			Extension->ModifyObject();
 			Extension->RemoveAssignment(*Item.Get());
 		}
 	}

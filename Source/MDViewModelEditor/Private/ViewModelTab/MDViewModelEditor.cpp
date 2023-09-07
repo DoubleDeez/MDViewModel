@@ -15,7 +15,13 @@ void SMDViewModelEditor::Construct(const FArguments& InArgs, const TSharedPtr<FB
 {
 	UBlueprint* Blueprint = BlueprintEditor->GetBlueprintObj();
 	Blueprint->OnSetObjectBeingDebugged().AddSP(this, &SMDViewModelEditor::OnSetObjectBeingDebugged);
-	Blueprint->OnCompiled().AddSP(this, &SMDViewModelEditor::OnBlueprintCompiled);
+	
+	TArray<UBlueprint*> Hierarchy;
+	UBlueprint::GetBlueprintHierarchyFromClass(Blueprint->GeneratedClass, Hierarchy);
+	for (UBlueprint* BP : Hierarchy)
+	{
+		BP->OnCompiled().AddSP(this, &SMDViewModelEditor::OnBlueprintCompiled);
+	}
 
 	ChildSlot
 	[

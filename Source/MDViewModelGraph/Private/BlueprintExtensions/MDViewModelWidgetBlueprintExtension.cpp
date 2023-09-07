@@ -16,15 +16,20 @@ void UMDViewModelWidgetBlueprintExtension::HandleFinishCompilingClass(UWidgetBlu
 {
 	Super::HandleFinishCompilingClass(Class);
 
-	if (CompilerContext != nullptr && !Assignments.IsEmpty())
+	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> CompiledAssignments;
+	GetAllAssignments(CompiledAssignments);
+	if (CompilerContext != nullptr && !CompiledAssignments.IsEmpty())
 	{
-		// TODO - Consider whether the parent assignments should be copied into the class extension here (see UMDViewModelWidgetClassExtension::GetThisAndAncestorAssignments)
-		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> CompiledAssignments;
 		CompiledAssignments.Reserve(Assignments.Num());
 		for (const FMDViewModelEditorAssignment& Assignment : Assignments)
 		{
 			CompiledAssignments.Add(Assignment.Assignment, Assignment.Data);
 		}
+
+		// Apply parent assignments last so they overwrite any collisions in this BP
+		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ParentAssignments;
+		GetParentAssignments(ParentAssignments);
+		CompiledAssignments.Append(ParentAssignments);
 
 		UMDViewModelWidgetClassExtension* ClassExtension = NewObject<UMDViewModelWidgetClassExtension>(Class);
 		ClassExtension->SetAssignments(CompiledAssignments);
@@ -38,20 +43,4 @@ void UMDViewModelWidgetBlueprintExtension::HandleEndCompilation()
 	Super::HandleEndCompilation();
 
 	CompilerContext = nullptr;
-}
-
-void UMDViewModelWidgetBlueprintExtension::SearchParentAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments, TSubclassOf<UMDViewModelBase> ViewModelClass, const FGameplayTag& ProviderTag, const FName& ViewModelName) const
-{
-	UClass* SuperClass = GetWidgetBlueprint()->SkeletonGeneratedClass->GetSuperClass();
-	if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(SuperClass))
-	{
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
-		if (UMDViewModelWidgetClassExtension* Extension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
-#else
-		if (UMDViewModelWidgetClassExtension* Extension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>(false))
-#endif
-		{
-			Extension->SearchAssignments(OutViewModelAssignments, ViewModelClass, ProviderTag, ViewModelName);
-		}
-	}
 }

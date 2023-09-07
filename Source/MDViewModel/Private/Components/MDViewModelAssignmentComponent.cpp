@@ -5,6 +5,11 @@ void UMDViewModelAssignmentComponent::SetAssignments(const TMap<FMDViewModelAssi
 	Assignments = InAssignments;
 }
 
+const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& UMDViewModelAssignmentComponent::GetAssignments() const
+{
+	return Assignments;
+}
+
 void UMDViewModelAssignmentComponent::BeginPlay()
 {
 	Super::BeginPlay();

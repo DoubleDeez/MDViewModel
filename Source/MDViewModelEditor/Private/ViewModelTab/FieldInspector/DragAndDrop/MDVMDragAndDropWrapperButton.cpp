@@ -17,6 +17,7 @@ void SMDVMDragAndDropWrapperButton::Construct(const FArguments& InArgs, TSharedR
 
 	SButton::Construct(
 		SButton::FArguments()
+		.ContentPadding(0)
 		.ButtonStyle(&ButtonStyle)
 		.Content()
 		[

@@ -29,7 +29,5 @@ protected:
 	TArray<FMDViewModelEditorAssignment> Assignments;
 
 private:
-	virtual void SearchParentAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FGameplayTag& ProviderTag = FGameplayTag::EmptyTag, const FName& ViewModelName = NAME_None) const override;
-	
 	FWidgetBlueprintCompilerContext* CompilerContext = nullptr;
 };

@@ -10,7 +10,6 @@ class FWidgetBlueprintApplicationMode;
 class FWorkflowAllowedTabSet;
 class UBlueprint;
 class UMDViewModelBase;
-class UMDViewModelBlueprintCompilerExtension;
 
 class FMDViewModelEditorModule : public IModuleInterface
 {
@@ -28,9 +27,6 @@ private:
 	void RegisterBlueprintEditorLayout(FLayoutExtender& Extender);
 	void RegisterBlueprintEditorTab(FWorkflowAllowedTabSet& TabFactories, FName InModeName, TSharedPtr<FBlueprintEditor> BlueprintEditor);
 	void RegisterBlueprintEditorDrawer(UObject* Asset);
-
-	// Use a weak ptr even though we add it to root, it can be destroyed before the module shuts down
-	TWeakObjectPtr<UMDViewModelBlueprintCompilerExtension> CompilerExtensionPtr = nullptr;
 	
 	TSharedPtr<FMDViewModelGraphPanelPinFactory> ViewModelGraphPanelPinFactory;
 };

@@ -30,13 +30,16 @@ void IMDViewModelAssignableInterface::GetAllAssignments(TMap<FMDViewModelAssignm
 		OutViewModelAssignments.Add(Assignment.Assignment, Assignment.Data);
 	}
 
-	SearchParentAssignments(OutViewModelAssignments);
+	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ParentAssignments;
+	GetParentAssignments(ParentAssignments);
+	OutViewModelAssignments.Append(ParentAssignments);
 }
 
 void IMDViewModelAssignableInterface::AddAssignment(FMDViewModelEditorAssignment&& Assignment)
 {
 	if (!GetAssignments().Contains(Assignment))
 	{
+		ModifyObject();
 		GetAssignments().Emplace(MoveTemp(Assignment));
 		OnAssignmentsChanged.Broadcast();
 
@@ -50,6 +53,8 @@ void IMDViewModelAssignableInterface::UpdateAssignment(const FMDViewModelEditorA
 	const int32 AssignmentIndex = GetAssignments().IndexOfByKey(Assignment);
 	if (AssignmentIndex != INDEX_NONE)
 	{
+		ModifyObject();
+		
 		const FMDViewModelEditorAssignment OldAssignment = GetAssignments()[AssignmentIndex];
 		GetAssignments()[AssignmentIndex] = UpdatedAssignment;
 
@@ -69,6 +74,7 @@ void IMDViewModelAssignableInterface::UpdateAssignment(const FMDViewModelEditorA
 
 void IMDViewModelAssignableInterface::RemoveAssignment(const FMDViewModelEditorAssignment& Assignment)
 {
+	ModifyObject();
 	if (GetAssignments().Remove(Assignment) > 0)
 	{
 		OnAssignmentsChanged.Broadcast();
@@ -116,4 +122,18 @@ bool IMDViewModelAssignableInterface::HasAssignments() const
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
 	GetAllAssignments(ViewModelAssignments);
 	return !ViewModelAssignments.IsEmpty();
+}
+
+void IMDViewModelAssignableInterface::GetParentAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments) const
+{
+	SearchParentAssignments(OutViewModelAssignments);
+}
+
+void IMDViewModelAssignableInterface::SearchParentAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments,
+                                                              TSubclassOf<UMDViewModelBase> ViewModelClass, const FGameplayTag& ProviderTag, const FName& ViewModelName) const
+{
+	if (const UBlueprint* Blueprint = GetBlueprint())
+	{
+		MDViewModelUtils::SearchViewModelAssignments(Blueprint->ParentClass, OutViewModelAssignments, ViewModelClass, ProviderTag, ViewModelName);
+	}
 }
