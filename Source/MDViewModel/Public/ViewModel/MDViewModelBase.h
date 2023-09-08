@@ -152,6 +152,21 @@ protected:
 	// Called by view model providers when they stop referencing the view model object
 	virtual void ShutdownViewModel() {}
 
+	// Creates and initializes a view model instance that is intended to be owned by this view model. Passes along this view model's World Context Object
+	UMDViewModelBase* CreateSubViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, UObject* InContextObject, const FInstancedStruct& ViewModelSettings = FInstancedStruct()) const;
+	template<typename T>
+	T* CreateSubViewModel(UObject* InContextObject, const FInstancedStruct& ViewModelSettings = FInstancedStruct()) const;
+	
+	// Iterates an array of View Models, shuts them down and resets the array
+	template<typename T>
+	static void ShutdownSubViewModels(TArray<T>& ViewModels);
+	// Iterates a set of View Models, shuts them down and resets the set
+	template<typename T>
+	static void ShutdownSubViewModels(TSet<T>& ViewModels);
+	// Iterates a map of View Model keys and/or values, shuts them down and resets the map
+	template<typename T, typename U>
+	static void ShutdownSubViewModels(TMap<T, U>& ViewModels);
+
 	void BroadcastFieldValueChanged(UE::FieldNotification::FFieldId InFieldId);
 
 	// Helper that changes for equality before setting and broadcasting the specified field. Uses operator==.
@@ -177,6 +192,8 @@ protected:
 	void K2_BroadcastFieldValueChanged(FFieldNotificationId FieldId);
 
 private:
+	const UObject* GetEffectiveWorldContextObject() const;
+	
 	UPROPERTY(Transient)
 	TWeakObjectPtr<UObject> ContextObject;
 
@@ -232,4 +249,66 @@ bool UMDViewModelBase::GetFieldValue(UE::FieldNotification::FFieldId FieldId, T&
 	}
 
 	return false;
+}
+
+template <typename T>
+T* UMDViewModelBase::CreateSubViewModel(UObject* InContextObject, const FInstancedStruct& ViewModelSettings) const
+{
+	static_assert(TIsDerivedFrom<T, UMDViewModelBase>::Value, "ViewModels must derive from UMDViewModelBase");
+	return Cast<T>(CreateSubViewModel(T::StaticClass(), InContextObject, ViewModelSettings));
+}
+
+template <typename T>
+void UMDViewModelBase::ShutdownSubViewModels(TArray<T>& ViewModels)
+{
+	for (UMDViewModelBase* ViewModel : ViewModels)
+	{
+		if (IsValid(ViewModel))
+		{
+			ViewModel->ShutdownViewModelFromProvider();
+		}
+	}
+
+	ViewModels.Reset();
+}
+
+template <typename T>
+void UMDViewModelBase::ShutdownSubViewModels(TSet<T>& ViewModels)
+{
+	for (UMDViewModelBase* ViewModel : ViewModels)
+	{
+		if (IsValid(ViewModel))
+		{
+			ViewModel->ShutdownViewModelFromProvider();
+		}
+	}
+
+	ViewModels.Reset();
+}
+
+template <typename T, typename U>
+void UMDViewModelBase::ShutdownSubViewModels(TMap<T, U>& ViewModels)
+{
+	for (const TTuple<T, U>& Pair : ViewModels)
+	{
+		if constexpr (std::is_convertible_v<T, UMDViewModelBase*>)
+		{
+			UMDViewModelBase* ViewModel = Pair.Key;
+			if (IsValid(ViewModel))
+			{
+				ViewModel->ShutdownViewModelFromProvider();
+			}
+		}
+
+		if constexpr (std::is_convertible_v<U, UMDViewModelBase*>)
+		{
+			UMDViewModelBase* ViewModel = Pair.Value;
+			if (IsValid(ViewModel))
+			{
+				ViewModel->ShutdownViewModelFromProvider();
+			}
+		}
+	}
+
+	ViewModels.Reset();
 }

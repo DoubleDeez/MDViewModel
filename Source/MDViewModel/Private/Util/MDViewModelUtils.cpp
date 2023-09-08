@@ -1,7 +1,6 @@
 #include "Util/MDViewModelUtils.h"
 
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
-#include "Components/MDViewModelAssignmentComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/InheritableComponentHandler.h"
 #include "Engine/SCS_Node.h"

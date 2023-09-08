@@ -165,6 +165,15 @@ UObject* UMDViewModelBase::GetContextObject() const
 	return GetContextObject<UObject>();
 }
 
+UMDViewModelBase* UMDViewModelBase::CreateSubViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, UObject* InContextObject, const FInstancedStruct& ViewModelSettings) const
+{
+	checkf(IsValid(ViewModelClass), TEXT("UMDViewModelBase::CreateSubViewModel required a valid ViewModelClass"));
+
+	UMDViewModelBase* ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), ViewModelClass);
+	ViewModel->InitializeViewModelWithContext(ViewModelSettings, InContextObject, GetEffectiveWorldContextObject());
+	return ViewModel;
+}
+
 void UMDViewModelBase::BroadcastFieldValueChanged(UE::FieldNotification::FFieldId InFieldId)
 {
 	if (InFieldId.IsValid() && EnabledFieldNotifications.IsValidIndex(InFieldId.GetIndex()) && EnabledFieldNotifications[InFieldId.GetIndex()])
@@ -195,4 +204,23 @@ void UMDViewModelBase::K2_BroadcastFieldValueChanged(FFieldNotificationId InFiel
 			BroadcastFieldValueChanged(FieldId);
 		}
 	}
+}
+
+const UObject* UMDViewModelBase::GetEffectiveWorldContextObject() const
+{
+	if (IsValid(GEngine))
+	{
+		const UObject* WorldContext = WorldContextObjectPtr.Get();
+		if (IsValid(WorldContext))
+		{
+			UWorld* World = GEngine->GetWorldFromContextObject(WorldContext, EGetWorldErrorMode::ReturnNull);
+			if (IsValid(World))
+			{
+				return WorldContext;
+			}
+		}
+	}
+
+	// Fallback to the context object
+	return GetContextObject<UObject>();
 }
