@@ -4,6 +4,7 @@
 #include "Templates/SubclassOf.h"
 #include "UObject/NameTypes.h"
 
+class IMDViewModelRuntimeInterface;
 struct FGameplayTag;
 struct FMDViewModelAssignmentData;
 struct FMDViewModelAssignment;
@@ -25,5 +26,7 @@ namespace MDViewModelUtils
 	MDVIEWMODEL_API void SearchViewModelAssignments(UClass* ObjectClass, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FGameplayTag& ProviderTag = FGameplayTag::EmptyTag, const FName& ViewModelName = NAME_None);
 	MDVIEWMODEL_API bool HasViewModelAssignments(UClass* ObjectClass);
 
-	IMDVMCompiledAssignmentsInterface* GetCompiledAssignmentsInterface(UClass* ObjectClass);
+	MDVIEWMODEL_API IMDVMCompiledAssignmentsInterface* GetCompiledAssignmentsInterface(UClass* ObjectClass);
+	MDVIEWMODEL_API IMDViewModelRuntimeInterface* GetViewModelRuntimeInterface(const UObject* Object);
+	MDVIEWMODEL_API IMDViewModelRuntimeInterface* GetOrCreateViewModelRuntimeInterface(UObject* Object);
 }

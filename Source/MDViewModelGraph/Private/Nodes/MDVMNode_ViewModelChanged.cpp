@@ -3,11 +3,10 @@
 #include "Bindings/MDViewModelChangedBinding.h"
 #include "EdGraphSchema_K2.h"
 #include "K2Node_FunctionEntry.h"
+#include "Util/MDViewModelAssignment.h"
+#include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelGraphStatics.h"
-#include "Util/MDViewModelUtils.h"
 #include "ViewModel/MDViewModelBase.h"
-#include "WidgetBlueprint.h"
-#include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 
 namespace MDVMNode_ViewModelChanged_Private
 {

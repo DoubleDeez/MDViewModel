@@ -121,7 +121,7 @@ TSharedRef<SWidget> UMDViewModelComboBox::GenerateEntryWidget(UMDViewModelBase* 
 	{
 		if (IsValid(Item))
 		{
-			UMDViewModelFunctionLibrary::SetViewModel(Widget, Item, ViewModelAssignment.ViewModelClass.Get(), ViewModelAssignment.ViewModelName);
+			UMDViewModelFunctionLibrary::BP_SetViewModel(Widget, Item, ViewModelAssignment);
 		}
 
 		return Widget->TakeWidget();

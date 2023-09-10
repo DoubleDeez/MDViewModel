@@ -9,7 +9,7 @@ class UWidgetBlueprint;
 /**
  * Blueprint Compiler Extension to inject View Model assignments when compiling Blueprints
  * Widget Blueprints: Injects MDViewModelClassExtensions when compiling widgets with super classes that have view model assignments
- * Actor Blueprints: TODO
+ * Actor Blueprints: Adds a UMDViewModelAssignmentComponent to the Actor if the parent doesn't have one, and adds the view model assignments to it
  */
 UCLASS()
 class MDVIEWMODELGRAPH_API UMDViewModelBlueprintCompilerExtension : public UBlueprintCompilerExtension

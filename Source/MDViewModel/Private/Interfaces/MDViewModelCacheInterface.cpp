@@ -5,8 +5,6 @@
 #include "Util/MDViewModelLog.h"
 #include "ViewModel/MDViewModelBase.h"
 
-uint64 IMDViewModelCacheInterface::LastHandle = 0;
-
 UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const UObject* WorldContextObject, const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
 {
 	if (bIsShutdown)
@@ -78,7 +76,16 @@ void IMDViewModelCacheInterface::BroadcastShutdown()
 	const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>> ShutdownViewModels = MoveTemp(Cache);
 	Cache.Reset();
 
-	OnViewModelCacheShuttingDown.Broadcast(ShutdownViewModels);
+	OnShuttingDown.Broadcast();
+
+	for (auto It = ShutdownViewModels.CreateConstIterator(); It; ++It)
+	{
+		UMDViewModelBase* ViewModel = It.Value();
+		if (IsValid(ViewModel))
+		{
+			ViewModel->ShutdownViewModelFromProvider();
+		}
+	}
 }
 
 const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& IMDViewModelCacheInterface::GetViewModelCache() const

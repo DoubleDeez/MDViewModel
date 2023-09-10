@@ -4,7 +4,6 @@
 #include "Launch/Resources/Version.h"
 #include "Logging/StructuredLog.h"
 #include "Util/MDViewModelLog.h"
-#include "ViewModel/MDViewModelBase.h"
 #include "WidgetExtensions/MDViewModelWidgetExtension.h"
 
 void UMDViewModelWidgetClassExtension::Initialize(UUserWidget* UserWidget)
@@ -21,7 +20,7 @@ void UMDViewModelWidgetClassExtension::Initialize(UUserWidget* UserWidget)
 	{
 		for (QueuedListenerData& Data : *QueuedListenerDatas)
 		{
-			Extension->ListenForChanges(MoveTemp(Data.Delegate), Data.ViewModelClass, Data.ViewModelName);
+			Extension->ListenForChanges(MoveTemp(Data.Delegate), Data.Assignment);
 		}
 
 		QueuedDelegates.Remove(UserWidget);
@@ -48,17 +47,17 @@ void UMDViewModelWidgetClassExtension::SetAssignments(const TMap<FMDViewModelAss
 	Assignments = InAssignments;
 }
 
-void UMDViewModelWidgetClassExtension::QueueListenForChanges(UUserWidget* Widget, FMDVMOnViewModelSet::FDelegate&& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
+void UMDViewModelWidgetClassExtension::QueueListenForChanges(UUserWidget* Widget, FMDVMOnViewModelSet::FDelegate&& Delegate, const FMDViewModelAssignmentReference& Assignment)
 {
 	if (IsValid(Widget))
 	{
 		if (UMDViewModelWidgetExtension* Extension = Widget->GetExtension<UMDViewModelWidgetExtension>())
 		{
-			Extension->ListenForChanges(MoveTemp(Delegate), ViewModelClass, ViewModelName);
+			Extension->ListenForChanges(MoveTemp(Delegate), Assignment);
 		}
 		else
 		{
-			QueuedDelegates.FindOrAdd(Widget).Emplace(QueuedListenerData{ MoveTemp(Delegate), ViewModelClass, ViewModelName });
+			QueuedDelegates.FindOrAdd(Widget).Emplace(QueuedListenerData{ MoveTemp(Delegate), Assignment });
 		}
 	}
 }

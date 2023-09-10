@@ -2,6 +2,7 @@
 
 #include "InstancedStruct.h"
 #include "UObject/Interface.h"
+#include "UObject/WeakInterfacePtr.h"
 #include "Util/MDViewModelInstanceKey.h"
 #include "MDViewModelCacheInterface.generated.h"
 
@@ -27,11 +28,7 @@ public:
 
 	bool IsShutdown() const { return bIsShutdown; }
 
-	uint64 GetCacheHandle() const { return CacheHandle; }
-
-	using ViewModelCacheMap = TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>;
-	DECLARE_MULTICAST_DELEGATE_OneParam(FOnViewModelCacheShuttingDown, const ViewModelCacheMap&);
-	FOnViewModelCacheShuttingDown OnViewModelCacheShuttingDown;
+	FSimpleMulticastDelegate OnShuttingDown;
 
 protected:
 	void BroadcastShutdown();
@@ -45,8 +42,10 @@ protected:
 	virtual const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& GetViewModelCache() const;
 
 private:
-	static uint64 LastHandle;
-	
 	bool bIsShutdown = false;
-	uint64 CacheHandle = ++LastHandle;
 };
+
+FORCEINLINE uint32 GetTypeHash(const TWeakInterfacePtr<IMDViewModelCacheInterface>& WeakInterfacePtr)
+{
+	return WeakInterfacePtr.GetWeakObjectPtr().GetWeakPtrTypeHash();
+}

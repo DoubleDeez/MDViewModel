@@ -7,10 +7,10 @@
 #include "MDViewModelProviderBase.generated.h"
 
 struct FInstancedStruct;
-struct FMDViewModelAssignmentData;
-class UGameInstance;
 struct FMDViewModelAssignment;
-class UUserWidget;
+struct FMDViewModelAssignmentData;
+class IMDViewModelRuntimeInterface;
+class UGameInstance;
 class UMDViewModelBase;
 
 struct FMDViewModelSupportedClass
@@ -38,8 +38,8 @@ public:
 
 	virtual FGameplayTag GetProviderTag() const { PURE_VIRTUAL(UMDViewModelProviderBase::GetProviderTag, return FGameplayTag::EmptyTag;) }
 
-	// Set the view model on the widget using the specified assignment and data
-	virtual UMDViewModelBase* SetViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)  { PURE_VIRTUAL(UMDViewModelProviderBase::SetViewModel, return nullptr;) }
+	// Set the view model on the object using the specified assignment and data
+	virtual UMDViewModelBase* SetViewModel(IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)  { PURE_VIRTUAL(UMDViewModelProviderBase::SetViewModel, return nullptr;) }
 
 #if WITH_EDITOR
 	virtual void GetSupportedViewModelClasses(TArray<FMDViewModelSupportedClass>& OutViewModelClasses);

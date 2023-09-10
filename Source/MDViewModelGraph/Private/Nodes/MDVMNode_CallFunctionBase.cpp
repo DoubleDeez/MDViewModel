@@ -1,6 +1,7 @@
 #include "Nodes/MDVMNode_CallFunctionBase.h"
 
 #include "BlueprintActionDatabaseRegistrar.h"
+#include "BlueprintExtensions/MDViewModelAssignableInterface.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "KismetCompiler.h"
 #include "Nodes/MDViewModelNodeSpawner.h"
@@ -12,8 +13,6 @@
 #include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelGraphStatics.h"
 #include "ViewModel/MDViewModelBase.h"
-#include "WidgetBlueprint.h"
-#include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 
 void UMDVMNode_CallFunctionBase::BeginDestroy()
 {
@@ -355,20 +354,13 @@ bool UMDVMNode_CallFunctionBase::CanTogglePurity() const
 
 void UMDVMNode_CallFunctionBase::BindAssignmentChanges()
 {
-	UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNode(this);
-	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(Blueprint))
+	const UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNode(this);
+	if (IMDViewModelAssignableInterface* Assignments = FMDViewModelGraphStatics::GetAssignableInterface(Blueprint))
 	{
-		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
+		if (!Assignments->OnAssignmentChanged.IsBoundToObject(this))
 		{
-			if (!VMExtension->OnAssignmentChanged.IsBoundToObject(this))
-			{
-				VMExtension->OnAssignmentChanged.AddUObject(this, &UMDVMNode_CallFunctionBase::OnAssignmentChanged);
-			}
+			Assignments->OnAssignmentChanged.AddUObject(this, &UMDVMNode_CallFunctionBase::OnAssignmentChanged);
 		}
-	}
-	else if (IsValid(Blueprint))
-	{
-		// TODO - Actor View Models
 	}
 }
 
@@ -393,17 +385,13 @@ void UMDVMNode_CallFunctionBase::OnAssignmentChanged(const FName& OldName, const
 
 void UMDVMNode_CallFunctionBase::UnbindAssignmentChanges()
 {
-	UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNode(this);
-	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(Blueprint))
+	const UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNode(this);
+	if (IMDViewModelAssignableInterface* Assignments = FMDViewModelGraphStatics::GetAssignableInterface(Blueprint))
 	{
-		if (auto* VMExtension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
+		if (!Assignments->OnAssignmentChanged.IsBoundToObject(this))
 		{
-			VMExtension->OnAssignmentChanged.RemoveAll(this);
+			Assignments->OnAssignmentChanged.RemoveAll(this);
 		}
-	}
-	else if (IsValid(Blueprint))
-	{
-		// TODO - Actor View Models
 	}
 }
 

@@ -2,14 +2,13 @@
 
 #include "UObject/StrongObjectPtr.h"
 #include "UObject/WeakInterfacePtr.h"
+#include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
 #include "Widgets/SCompoundWidget.h"
 
 class IMDViewModelAssignableInterface;
 class UBlueprint;
 struct FMDViewModelEditorAssignment;
-class UMDViewModelWidgetBlueprintExtension;
 struct FMDViewModelClassItem;
-class UMDViewModelAssignmentEditorObject;
 
 enum class EMDVMDialogMode : uint8
 {

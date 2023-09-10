@@ -1,7 +1,6 @@
 #include "ViewModelTab/MDViewModelEditor.h"
 
-#include "WidgetBlueprint.h"
-#include "WidgetBlueprintEditor.h"
+#include "BlueprintEditor.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "Util/MDViewModelFunctionLibrary.h"
 #include "ViewModel/MDViewModelBase.h"
@@ -88,15 +87,8 @@ void SMDViewModelEditor::OnViewModelChanged()
 	{
 		if (SelectedViewModelClass != nullptr)
 		{
-			UMDViewModelBase* DebugViewModel = nullptr;
-			if (UUserWidget* DebugWidget = Cast<UUserWidget>(ObjectBeingDebugged))
-			{
-				DebugViewModel = UMDViewModelFunctionLibrary::GetViewModel(DebugWidget, SelectedViewModelClass, SelectedViewModelName);
-			}
-			else
-			{
-				// TODO - Actor View Models
-			}
+			bool bIsValid = false;
+			UMDViewModelBase* DebugViewModel = UMDViewModelFunctionLibrary::BP_GetViewModel(ObjectBeingDebugged.Get(), { SelectedViewModelClass, SelectedViewModelName }, bIsValid);
 
 			ViewModelDetailsWidget->UpdateViewModel(SelectedViewModelClass, DebugViewModel, SelectedViewModelName);
 		}

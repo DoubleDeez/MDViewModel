@@ -1,13 +1,12 @@
 #include "Util/MDViewModelFunctionLibrary.h"
 
-#include "Util/MDViewModelUtils.h"
 #include "Blueprint/UserWidget.h"
 #include "UObject/Package.h"
 #include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelAssignmentReference.h"
+#include "Util/MDViewModelUtils.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProvider_Cached.h"
-#include "WidgetExtensions/MDViewModelWidgetExtension.h"
 
 UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModel(UUserWidget* Widget, UMDViewModelBase* ViewModel, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName)
 {
@@ -20,14 +19,9 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModel(UUserWidget* Widget,
 
 UMDViewModelBase* UMDViewModelFunctionLibrary::BP_SetViewModel(UObject* Object, UMDViewModelBase* ViewModel, const FMDViewModelAssignmentReference& Assignment)
 {
-	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Cast<UUserWidget>(Object));
-	if (IsValid(Extension))
+	if (IMDViewModelRuntimeInterface* Interface = MDViewModelUtils::GetOrCreateViewModelRuntimeInterface(Object))
 	{
-		return Extension->SetViewModel(ViewModel, Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
-	}
-	else
-	{
-		// TODO - Actor View Models
+		return Interface->SetViewModel(ViewModel, Assignment);
 	}
 
 	return nullptr;
@@ -42,15 +36,11 @@ void UMDViewModelFunctionLibrary::ClearViewModel(UUserWidget* Widget, TSubclassO
 	BP_ClearViewModel(Widget, AssignmentReference);
 }
 
-void UMDViewModelFunctionLibrary::BP_ClearViewModel(UUserWidget* Widget, const FMDViewModelAssignmentReference& Assignment)
+void UMDViewModelFunctionLibrary::BP_ClearViewModel(UObject* Object, const FMDViewModelAssignmentReference& Assignment)
 {
-	if (IsValid(Widget))
+	if (IMDViewModelRuntimeInterface* Interface = MDViewModelUtils::GetViewModelRuntimeInterface(Object))
 	{
-		UMDViewModelWidgetExtension* Extension = Widget->GetExtension<UMDViewModelWidgetExtension>();
-		if (IsValid(Extension))
-		{
-			Extension->ClearViewModel(Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
-		}
+		Interface->ClearViewModel(Assignment);
 	}
 }
 
@@ -65,14 +55,9 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModelOfClass(const UObject
 
 UMDViewModelBase* UMDViewModelFunctionLibrary::BP_SetViewModelOfClass(const UObject* WorldContextObject, UObject* Object, UObject* ContextObject, const FMDViewModelAssignmentReference& Assignment, const FInstancedStruct& ViewModelSettings)
 {
-	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Cast<UUserWidget>(Object));
-	if (IsValid(Extension))
+	if (IMDViewModelRuntimeInterface* Interface = MDViewModelUtils::GetOrCreateViewModelRuntimeInterface(Object))
 	{
-		return Extension->SetViewModelOfClass(WorldContextObject, ContextObject, Assignment.ViewModelClass.Get(), ViewModelSettings, Assignment.ViewModelName);
-	}
-	else
-	{
-		// TODO - Actor View Models
+		return Interface->SetViewModelOfClass(WorldContextObject, ContextObject, Assignment, ViewModelSettings);
 	}
 
 	return nullptr;
@@ -90,22 +75,13 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::GetViewModel(UUserWidget* Widget,
 
 UMDViewModelBase* UMDViewModelFunctionLibrary::BP_GetViewModel(UObject* Object, const FMDViewModelAssignmentReference& Assignment, bool& bIsValid)
 {
-	const UUserWidget* Widget = Cast<UUserWidget>(Object);
-	if (IsValid(Widget))
+	if (const IMDViewModelRuntimeInterface* Interface = MDViewModelUtils::GetViewModelRuntimeInterface(Object))
 	{
-		const UMDViewModelWidgetExtension* Extension = Widget->GetExtension<UMDViewModelWidgetExtension>();
-		if (IsValid(Extension))
-		{
-			UMDViewModelBase* ViewModel = Extension->GetViewModel(Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
-			bIsValid = IsValid(ViewModel);
-			return ViewModel;
-		}
+		UMDViewModelBase* ViewModel = Interface->GetViewModel(Assignment);
+		bIsValid = IsValid(ViewModel);
+		return ViewModel;
 	}
-	else
-	{
-		// TODO - Actor View Models
-	}
-
+	
 	bIsValid = false;
 	return nullptr;
 }
@@ -131,14 +107,9 @@ void UMDViewModelFunctionLibrary::BindViewModelChangedEvent(UUserWidget* Widget,
 
 void UMDViewModelFunctionLibrary::BP_BindViewModelChangedEvent(UObject* Object, FMDVMOnViewModelSetDynamic Delegate, const FMDViewModelAssignmentReference& Assignment)
 {
-	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Cast<UUserWidget>(Object));
-	if (IsValid(Extension))
+	if (IMDViewModelRuntimeInterface* Interface = MDViewModelUtils::GetOrCreateViewModelRuntimeInterface(Object))
 	{
-		Extension->ListenForChanges(MoveTemp(Delegate), Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
-	}
-	else
-	{
-		// TODO - Actor View Models
+		Interface->ListenForChanges(MoveTemp(Delegate), Assignment);
 	}
 }
 
@@ -153,26 +124,16 @@ void UMDViewModelFunctionLibrary::UnbindViewModelChangedEvent(UUserWidget* Widge
 
 void UMDViewModelFunctionLibrary::BP_UnbindViewModelChangedEvent(UObject* Object, FMDVMOnViewModelSetDynamic Delegate, const FMDViewModelAssignmentReference& Assignment)
 {
-	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Cast<UUserWidget>(Object));
-	if (IsValid(Extension))
+	if (IMDViewModelRuntimeInterface* Interface = MDViewModelUtils::GetViewModelRuntimeInterface(Object))
 	{
-		Extension->StopListeningForChanges(Delegate, Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
-	}
-	else
-	{
-		// TODO - Actor View Models
+		Interface->StopListeningForChanges(MoveTemp(Delegate), Assignment);
 	}
 }
 
 void UMDViewModelFunctionLibrary::UnbindAllViewModelChangedEvent(UObject* Object)
 {
-	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(Cast<UUserWidget>(Object));
-	if (IsValid(Extension))
+	if (IMDViewModelRuntimeInterface* Interface = MDViewModelUtils::GetViewModelRuntimeInterface(Object))
 	{
-		Extension->StopListeningForAllDynamicViewModelsChanged(Object);
-	}
-	else
-	{
-		// TODO - Actor View Models
+		Interface->StopListeningForAllDynamicViewModelsChanged(Object);
 	}
 }

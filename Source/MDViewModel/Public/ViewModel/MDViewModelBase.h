@@ -104,6 +104,11 @@ public:
 				return IsValid(Object);
 			}
 
+			if constexpr (TIsIInterface<DecayedT>::Value)
+			{
+				return IsValid(Cast<UObject>(Object));
+			}
+
 			return Object != nullptr;
 		};
 		

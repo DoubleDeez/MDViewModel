@@ -1,26 +1,17 @@
 #pragma once
 
-#include "Engine/DynamicBlueprintBinding.h"
-#include "Templates/SubclassOf.h"
+#include "MDVMBlueprintBindingBase.h"
 #include "MDViewModelDelegateBinding.generated.h"
 
 class UMDViewModelBase;
 
 /** Entry for a delegate to assign after a blueprint has been instanced */
 USTRUCT()
-struct MDVIEWMODEL_API FMDViewModelDelegateBindingEntry
+struct MDVIEWMODEL_API FMDViewModelDelegateBindingEntry : public FMDViewModeBindingEntryBase
 {
 	GENERATED_BODY()
 
 public:
-	// Class of the view model we're binding to
-	UPROPERTY()
-	TSubclassOf<UMDViewModelBase> ViewModelClass;
-
-	// Name of the view model we're binding to
-	UPROPERTY()
-	FName ViewModelName = NAME_None;
-
 	// Name of the delegate on the viewmodel we're going to bind to
 	UPROPERTY()
 	FName DelegatePropertyName = NAME_None;
@@ -34,7 +25,7 @@ public:
  * Class to handle binding to viewmodel events at runtime
  */
 UCLASS()
-class MDVIEWMODEL_API UMDViewModelDelegateBinding : public UDynamicBlueprintBinding
+class MDVIEWMODEL_API UMDViewModelDelegateBinding : public UMDVMBlueprintBindingBase
 {
 	GENERATED_BODY()
 
@@ -42,9 +33,9 @@ public:
 	UPROPERTY()
 	TArray<FMDViewModelDelegateBindingEntry> ViewModelDelegateBindings;
 
-	virtual void BindDynamicDelegates(UObject* InInstance) const override;
-	virtual void UnbindDynamicDelegates(UObject* InInstance) const override;
+protected:
+	virtual void OnViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, int32 EntryIndex, TWeakObjectPtr<UObject> BoundObject) const override;
 
-private:
-	void OnViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, int32 EntryIndex, TWeakObjectPtr<UObject> BoundObject) const;
+	virtual const FMDViewModeBindingEntryBase* GetEntry(int32 Index) const override { return ViewModelDelegateBindings.IsValidIndex(Index) ? &ViewModelDelegateBindings[Index] : nullptr; }
+	virtual int32 GetNumEntries() const override { return ViewModelDelegateBindings.Num(); }
 };

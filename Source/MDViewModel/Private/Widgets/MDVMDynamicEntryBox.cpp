@@ -51,7 +51,7 @@ void UMDVMDynamicEntryBox::PopulateItems(const TArray<UMDViewModelBase*>& ViewMo
 				OnEntryRemoved.Broadcast(Widget, UMDViewModelFunctionLibrary::BP_GetViewModel(Widget, ViewModelAssignment, bIsValid));
 			}
 			
-			UMDViewModelFunctionLibrary::ClearViewModel(Widget, ViewModelAssignment.ViewModelClass.Get(), ViewModelAssignment.ViewModelName);
+			UMDViewModelFunctionLibrary::BP_ClearViewModel(Widget, ViewModelAssignment);
 			RemoveEntry(Widget);
 		}
 	}

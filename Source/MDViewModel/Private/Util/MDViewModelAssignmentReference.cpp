@@ -1,26 +1,19 @@
 #include "Util/MDViewModelAssignmentReference.h"
 
-#include "Blueprint/UserWidget.h"
+#include "Serialization/CompactBinaryWriter.h"
+#include "Util/MDViewModelAssignment.h"
 #include "ViewModel/MDViewModelBase.h"
-#include "WidgetExtensions/MDViewModelWidgetExtension.h"
 
-UMDViewModelBase* FMDViewModelAssignmentReference::ResolveViewModelAssignment(const UObject* Object) const
+FMDViewModelAssignmentReference::FMDViewModelAssignmentReference(const FMDViewModelAssignment& Assignment)
+	: ViewModelClass(Assignment.ViewModelClass)
+	, ViewModelName(Assignment.ViewModelName)
 {
-	if (const UUserWidget* Widget = Cast<UUserWidget>(Object))
-	{
-		const UMDViewModelWidgetExtension* Extension = Widget->GetExtension<UMDViewModelWidgetExtension>();
-		if (IsValid(Extension))
-		{
-			// SoftClassPtr doesn't need loading since it will be loaded if the view model exists
-			return Extension->GetViewModel(ViewModelClass.Get(), ViewModelName);
-		}
-	}
-	else
-	{
-		// TODO - Actor View Models
-	}
+}
 
-	return nullptr;
+FMDViewModelAssignmentReference::FMDViewModelAssignmentReference(TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+	: ViewModelClass(ViewModelClass)
+	, ViewModelName(ViewModelName)
+{
 }
 
 bool FMDViewModelAssignmentReference::IsAssignmentValid() const
@@ -41,4 +34,18 @@ FMDViewModelAssignmentReference& FMDViewModelAssignmentReference::operator=(cons
 #endif
 
 	return *this;
+}
+
+bool FMDViewModelAssignmentReference::operator==(const FMDViewModelAssignmentReference& Other) const
+{
+	return ViewModelClass == Other.ViewModelClass && ViewModelName == Other.ViewModelName;
+}
+
+FCbWriter& operator<<(FCbWriter& Writer, const FMDViewModelAssignmentReference& Assignment)
+{
+	Writer.BeginObject();
+	Writer << "Class" << Assignment.ViewModelClass.ToString();
+	Writer << "Name" << Assignment.ViewModelName;
+	Writer.EndObject();
+	return Writer;
 }

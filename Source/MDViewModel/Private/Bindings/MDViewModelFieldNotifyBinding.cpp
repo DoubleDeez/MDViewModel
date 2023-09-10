@@ -1,49 +1,6 @@
 #include "Bindings/MDViewModelFieldNotifyBinding.h"
 
-#include "Blueprint/UserWidget.h"
-#include "Blueprint/WidgetBlueprintGeneratedClass.h"
 #include "ViewModel/MDViewModelBase.h"
-#include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
-
-void UMDViewModelFieldNotifyBinding::BindDynamicDelegates(UObject* InInstance) const
-{
-	if (UUserWidget* Widget = Cast<UUserWidget>(InInstance))
-	{
-		if (UWidgetBlueprintGeneratedClass* WBGC = Cast<UWidgetBlueprintGeneratedClass>(Widget->GetClass()))
-		{
-			if (UMDViewModelWidgetClassExtension* Extension = WBGC->GetExtension<UMDViewModelWidgetClassExtension>())
-			{
-				TWeakObjectPtr<UObject> WeakObject = Widget;
-				for (int32 i = 0; i < ViewModelFieldNotifyBindings.Num(); ++i)
-				{
-					const FMDViewModelFieldNotifyBindingEntry& Entry = ViewModelFieldNotifyBindings[i];
-					auto Delegate = FMDVMOnViewModelSet::FDelegate::CreateUObject(this, &UMDViewModelFieldNotifyBinding::OnViewModelChanged, i, WeakObject);
-					Extension->QueueListenForChanges(Widget, MoveTemp(Delegate), Entry.ViewModelClass, Entry.ViewModelName);
-				}
-			}
-		}
-	}
-	else
-	{
-		// TODO - Actor View Models
-	}
-}
-
-void UMDViewModelFieldNotifyBinding::UnbindDynamicDelegates(UObject* InInstance) const
-{
-	if (UUserWidget* Widget = Cast<UUserWidget>(InInstance))
-	{
-		UMDViewModelWidgetExtension* Extension = Widget->GetExtension<UMDViewModelWidgetExtension>();
-		if (IsValid(Extension))
-		{
-			Extension->StopListeningForAllNativeViewModelsChanged(this);
-		}
-	}
-	else
-	{
-		// TODO - Actor View Models
-	}
-}
 
 void UMDViewModelFieldNotifyBinding::OnViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, int32 EntryIndex, TWeakObjectPtr<UObject> BoundObject) const
 {
@@ -54,7 +11,7 @@ void UMDViewModelFieldNotifyBinding::OnViewModelChanged(UMDViewModelBase* OldVie
 
 	const FMDViewModelFieldNotifyBindingEntry& Entry = ViewModelFieldNotifyBindings[EntryIndex];
 	const TTuple<int32, TWeakObjectPtr<UObject>> DelegateKey = { EntryIndex, BoundObject };
-
+	GetTypeHash(DelegateKey);
 	if (IsValid(OldViewModel))
 	{
 		FDelegateHandle* HandlePtr = BoundDelegates.Find(DelegateKey);

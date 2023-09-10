@@ -12,7 +12,7 @@ FCbWriter& operator<<(FCbWriter& Writer, const FMDVMAssignmentObjectKey& Key)
 {
 	Writer.BeginObject();
 	Writer << "Assignment" << Key.Assignment;
-	Writer << "Object" << GetNameSafe(Key.ObjectPtr.Get());
+	Writer << "Object" << GetNameSafe(Key.ObjectPtr.GetObject());
 	Writer.EndObject();
 	return Writer;
 }

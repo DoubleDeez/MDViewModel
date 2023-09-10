@@ -27,7 +27,7 @@ public:
 	virtual const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& GetAssignments() const override { return Assignments; }
 
 	// Used to listen for changes before the specified widget's viewmodel extension is created
-	void QueueListenForChanges(UUserWidget* Widget, FMDVMOnViewModelSet::FDelegate&& Delegate, TSubclassOf<UMDViewModelBase> ViewModelClass, FName ViewModelName = MDViewModelUtils::DefaultViewModelName);
+	void QueueListenForChanges(UUserWidget* Widget, FMDVMOnViewModelSet::FDelegate&& Delegate, const FMDViewModelAssignmentReference& Assignment);
 
 protected:
 	UPROPERTY()
@@ -37,8 +37,7 @@ private:
 	struct QueuedListenerData
 	{
 		FMDVMOnViewModelSet::FDelegate Delegate;
-		TSubclassOf<UMDViewModelBase> ViewModelClass;
-		FName ViewModelName = NAME_None;
+		FMDViewModelAssignmentReference Assignment;
 	};
 
 	TMap<TWeakObjectPtr<UUserWidget>, TArray<QueuedListenerData>> QueuedDelegates;

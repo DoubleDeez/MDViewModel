@@ -1,13 +1,18 @@
 #include "Util/MDViewModelUtils.h"
 
+#include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
+#include "Components/MDViewModelAssignmentComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/InheritableComponentHandler.h"
 #include "Engine/SCS_Node.h"
 #include "Engine/SimpleConstructionScript.h"
+#include "Interfaces/MDViewModelRuntimeInterface.h"
+#include "Logging/StructuredLog.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "UObject/Class.h"
 #include "UObject/Object.h"
+#include "Util/MDViewModelLog.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
 #include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
 
@@ -102,6 +107,43 @@ namespace MDViewModelUtils
 				
 				ObjectClass = BPGC->GetSuperClass();
 			}
+		}
+
+		return nullptr;
+	}
+
+	IMDViewModelRuntimeInterface* GetOrCreateViewModelRuntimeInterface(UObject* Object)
+	{
+		if (UUserWidget* Widget = Cast<UUserWidget>(Object))
+		{
+			return UMDViewModelWidgetExtension::GetOrCreate(Widget);
+		}
+		else if (const AActor* Actor = Cast<AActor>(Object))
+		{
+			IMDViewModelRuntimeInterface* Interface = Actor->FindComponentByClass<UMDViewModelAssignmentComponent>();
+			if (Interface == nullptr)
+			{
+				UE_LOGFMT(LogMDViewModel, Warning,
+					"Calling GetOrCreateViewModelRuntimeInterface on an actor [{ActorName}] that does not have a view model component is not valid since actors are given their components at compile time.\n"
+					"Do you expect this actor to have a view models assigned or should you use GetViewModelRuntimeInterface instead?",
+					("ActorName", Actor->GetPathName())
+				);
+			}
+			return Interface;
+		}
+
+		return nullptr;
+	}
+
+	IMDViewModelRuntimeInterface* GetViewModelRuntimeInterface(const UObject* Object)
+	{
+		if (const UUserWidget* Widget = Cast<UUserWidget>(Object))
+		{
+			return Widget->GetExtension<UMDViewModelWidgetExtension>();
+		}
+		else if (const AActor* Actor = Cast<AActor>(Object))
+		{
+			return Actor->FindComponentByClass<UMDViewModelAssignmentComponent>();
 		}
 
 		return nullptr;

@@ -3,17 +3,17 @@
 #include "Engine/MemberReference.h"
 #include "FieldNotification/FieldId.h"
 #include "InstancedStruct.h"
+#include "Interfaces/MDViewModelCacheInterface.h"
+#include "Interfaces/MDViewModelRuntimeInterface.h"
 #include "MDViewModelProviderBase.h"
 #include "NativeGameplayTags.h"
 #include "UObject/WeakInterfacePtr.h"
-#include "Util/MDViewModelAssignment.h"
 #include "Util/MDViewModelAssignmentReference.h"
 #include "Util/MDVMAssignmentObjectKey.h"
 #include "MDViewModelProvider_Cached.generated.h"
 
-struct FMDViewModelInstanceKey;
+struct MDViewModelAssignment;
 struct MDViewModelAssignmentData;
-class IMDViewModelCacheInterface;
 class AActor;
 class APlayerController;
 class APlayerState;
@@ -39,6 +39,7 @@ MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes
 MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty);
 MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_RelativeViewModelProperty);
 MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_WorldActor);
+MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Cached_Lifetimes_Self);
 
 USTRUCT()
 struct MDVIEWMODEL_API FMDVMWorldActorFilter
@@ -187,7 +188,7 @@ public:
 
 	virtual FGameplayTag GetProviderTag() const override { return TAG_MDVMProvider_Cached; }
 
-	virtual UMDViewModelBase* SetViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data) override;
+	virtual UMDViewModelBase* SetViewModel(IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data) override;
 
 #if WITH_EDITOR
 	virtual FText GetDisplayName() const override { return INVTEXT("Cached Viewmodel"); }
@@ -202,27 +203,27 @@ public:
 #endif
 
 protected:
-	virtual IMDViewModelCacheInterface* ResolveAndBindViewModelCache(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data, const FMDViewModelProvider_Cached_Settings& Settings);
+	virtual IMDViewModelCacheInterface* ResolveAndBindViewModelCache(IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data, const FMDViewModelProvider_Cached_Settings& Settings);
 	
 	UMDViewModelBase* FindOrCreateCachedViewModel_Internal(const UObject* WorldContextObject, UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings);
 	UMDViewModelBase* FindCachedViewModel_Internal(const UObject* WorldContextObject, const UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass) const;
 
-	void BindOnWidgetDestroy(UUserWidget& Widget);
-	void OnWidgetDestroy(TWeakObjectPtr<UUserWidget> WidgetPtr);
+	void BindOnObjectDestroy(IMDViewModelRuntimeInterface& Object);
+	void OnObjectDestroy(TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr);
 
-	void RefreshViewModel(TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
-	UMDViewModelBase* SetViewModelFromCache(const UObject* WorldContextObject, IMDViewModelCacheInterface* CacheInterface, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	void RefreshViewModel(TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
+	UMDViewModelBase* SetViewModelFromCache(const UObject* WorldContextObject, IMDViewModelCacheInterface* CacheInterface, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
-	void OnGameStateChanged(AGameStateBase* GameState, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
-	void OnViewTargetChanged(APlayerController* PC, AActor* OldViewTarget, AActor* NewViewTarget, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
-	void OnRelativeViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
+	void OnGameStateChanged(AGameStateBase* GameState, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
+	void OnViewTargetChanged(APlayerController* PC, AActor* OldViewTarget, AActor* NewViewTarget, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
+	void OnRelativeViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 
-	void OnFieldValueChanged(UObject* Widget, UE::FieldNotification::FFieldId FieldId, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
+	void OnFieldValueChanged(UObject* Widget, UE::FieldNotification::FFieldId FieldId, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 
-	void OnActorSpawned(AActor* Actor, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
-	void OnActorRemoved(AActor* Actor, TWeakObjectPtr<AActor> BoundActor, TWeakObjectPtr<UUserWidget> WidgetPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
+	void OnActorSpawned(AActor* Actor, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
+	void OnActorRemoved(AActor* Actor, TWeakObjectPtr<AActor> BoundActor, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 	
-	void OnViewModelCacheShutdown(const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& ViewModelCache, uint64 BoundCacheHandle);
+	void OnViewModelCacheShuttingDown(TWeakInterfacePtr<IMDViewModelCacheInterface> CachePtr);
 
 	IMDViewModelCacheInterface* ResolveGlobalCache(const UGameInstance* GameInstance) const;
 	IMDViewModelCacheInterface* ResolveLocalPlayerCache(const ULocalPlayer* LocalPlayer) const;
@@ -232,32 +233,32 @@ protected:
 	IMDViewModelCacheInterface* ResolveObjectCache(UObject* Object, const UObject* WorldContextObject) const;
 	const IMDViewModelCacheInterface* ResolveObjectCache(const UObject* Object, const UObject* WorldContextObject) const;
 
-	IMDViewModelCacheInterface* ResolveHUDCacheAndBindDelegates(APlayerController* PlayerController, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolveHUDCacheAndBindDelegates(APlayerController* PlayerController, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
 	// Only local pawns can be bound to via the player controller, remote pawns must be bound through the player state
-	IMDViewModelCacheInterface* ResolvePawnCacheAndBindDelegates(APlayerController* PlayerController, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
-	IMDViewModelCacheInterface* ResolvePawnCacheAndBindDelegates(APlayerState* PlayerState, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolvePawnCacheAndBindDelegates(APlayerController* PlayerController, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolvePawnCacheAndBindDelegates(APlayerState* PlayerState, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
-	IMDViewModelCacheInterface* ResolvePlayerStateCacheAndBindDelegates(APlayerController* PlayerController, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
-	IMDViewModelCacheInterface* ResolvePlayerStateCacheAndBindDelegates(APawn* Pawn, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolvePlayerStateCacheAndBindDelegates(APlayerController* PlayerController, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolvePlayerStateCacheAndBindDelegates(APawn* Pawn, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
-	IMDViewModelCacheInterface* ResolveGameStateCacheAndBindDelegates(UWorld* World, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolveGameStateCacheAndBindDelegates(UWorld* World, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
-	IMDViewModelCacheInterface* ResolveViewTargetCacheAndBindDelegates(const APlayerController* PlayerController, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
-	IMDViewModelCacheInterface* ResolveViewTargetPlayerStateCacheAndBindDelegates(const APlayerController* PlayerController, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolveViewTargetCacheAndBindDelegates(const APlayerController* PlayerController, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolveViewTargetPlayerStateCacheAndBindDelegates(const APlayerController* PlayerController, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
-	IMDViewModelCacheInterface* ResolveRelativeViewModelCacheAndBindDelegates(const FMDViewModelAssignmentReference& Reference, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
-	IMDViewModelCacheInterface* ResolveRelativePropertyCacheAndBindDelegates(const FMemberReference& Reference, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
-	IMDViewModelCacheInterface* ResolveRelativeViewModelPropertyCacheAndBindDelegates(const FMDViewModelAssignmentReference& VMReference, const FMemberReference& PropertyReference, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
-	IMDViewModelCacheInterface* ResolveFieldCacheAndBindDelegates(UObject* Owner, const FMemberReference& Reference, int32 DelegateIndex, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolveRelativeViewModelCacheAndBindDelegates(const FMDViewModelAssignmentReference& Reference, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolveRelativePropertyCacheAndBindDelegates(const FMemberReference& Reference, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolveRelativeViewModelPropertyCacheAndBindDelegates(const FMDViewModelAssignmentReference& VMReference, const FMemberReference& PropertyReference, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolveFieldCacheAndBindDelegates(UObject* Owner, const FMemberReference& Reference, int32 DelegateIndex, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
-	IMDViewModelCacheInterface* ResolveWorldActorCacheAndBindDelegates(const FMDVMWorldActorFilter& Filter, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
-	IMDViewModelCacheInterface* ResolveWorldActorCacheAndBindDelegates(AActor* Actor, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolveWorldActorCacheAndBindDelegates(const FMDVMWorldActorFilter& Filter, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	IMDViewModelCacheInterface* ResolveWorldActorCacheAndBindDelegates(AActor* Actor, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
 	// Bind RefreshViewModel to the specified view model changing and get the view model
-	UMDViewModelBase* ResolveViewModelAndBindDelegates(const FMDViewModelAssignmentReference& Reference, int32 DelegateIndex, UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	UMDViewModelBase* ResolveViewModelAndBindDelegates(const FMDViewModelAssignmentReference& Reference, int32 DelegateIndex, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 	
-	void BindViewTargetDelegates(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
+	void BindViewTargetDelegates(IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
 	bool DoesActorPassFilter(AActor* Candidate, const FMDVMWorldActorFilter& Filter) const;
 
@@ -271,13 +272,19 @@ protected:
 
 	// Checks WidgetDelegateHandles to see if the delegate owner is different, if so it calls UnbindFunc and resets the stored delegate data
 	template<typename T>
-	void UnbindDelegateIfNewOwner(const FMDVMAssignmentObjectKey& BindingKey, const UObject* Owner, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc);
+	void UnbindDelegateIfNewOwner(const FMDVMAssignmentObjectKey& BindingKey, const T* Owner, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc);
 
 	// Certain lifetimes may require binding multiple delegates, they can index into the array to store multiple handles
-	TMap<FMDVMAssignmentObjectKey, TArray<FMDWrappedDelegateHandle, TInlineAllocator<4>>> WidgetDelegateHandles;
+	TMap<FMDVMAssignmentObjectKey, TArray<FMDWrappedDelegateHandle, TInlineAllocator<4>>> ObjectDelegateHandles;
 
-	// Maps assignments to Widgets and their ViewModelCache handles
-	TMap<FMDViewModelAssignment, TMap<TWeakObjectPtr<UUserWidget>, uint64>> BoundAssignments;
+	// TODO - Make TInterfaceKey or TObjectKey accept IInterface
+	// Maps View Model caches to bound object assignments
+	TMap<TWeakInterfacePtr<IMDViewModelCacheInterface>, TMultiMap<TWeakInterfacePtr<IMDViewModelRuntimeInterface>, FMDViewModelAssignmentReference>> BoundCaches;
+	// Maps bound object assignments to the view model cache they're bound to
+	TMap<TWeakInterfacePtr<IMDViewModelRuntimeInterface>, TMap<FMDViewModelAssignmentReference, TWeakInterfacePtr<IMDViewModelCacheInterface>>> BoundAssignments;
+
+	template<typename T>
+	bool IsValidObject(const T* Object) const;
 };
 
 template <typename T>
@@ -302,25 +309,14 @@ T* UMDViewModelProvider_Cached::FindCachedViewModel(const UObject* WorldContextO
 
 template <typename T, typename TBindingKey, typename>
 void UMDViewModelProvider_Cached::BindDelegateIfUnbound(TBindingKey&& BindingKey, T* Owner, int32 DelegateIndex, TFunctionRef<FDelegateHandle(T&)> BindFunc)
-{
-	auto IsValidObject = [](const auto* Object)
-	{
-		using DecayedT = typename TDecay<T>::Type;
-		if constexpr (TIsDerivedFrom<DecayedT, UObject>::Value)
-		{
-			return IsValid(Object);
-		}
-
-		return Object != nullptr;
-	};
-	
+{	
 	if (!IsValidObject(Owner))
 	{
 		return;
 	}
 	
 	// Find or Add a Delegate Wrapper at the specified DelegateIndex
-	auto& WrapperArray = WidgetDelegateHandles.FindOrAdd(Forward<FMDVMAssignmentObjectKey>(BindingKey));
+	auto& WrapperArray = ObjectDelegateHandles.FindOrAdd(Forward<FMDVMAssignmentObjectKey>(BindingKey));
 	if (WrapperArray.IsValidIndex(DelegateIndex))
 	{
 		if (WrapperArray[DelegateIndex].IsBound())
@@ -342,22 +338,11 @@ void UMDViewModelProvider_Cached::BindDelegateIfUnbound(TBindingKey&& BindingKey
 template <typename T>
 void UMDViewModelProvider_Cached::UnbindDelegate(const FMDVMAssignmentObjectKey& BindingKey, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc)
 {
-	auto* WrapperArrayPtr = WidgetDelegateHandles.Find(BindingKey);
+	auto* WrapperArrayPtr = ObjectDelegateHandles.Find(BindingKey);
 	if (WrapperArrayPtr == nullptr || !WrapperArrayPtr->IsValidIndex(DelegateIndex))
 	{
 		return;
 	}
-
-	auto IsValidObject = [](const auto* Object)
-	{
-		using DecayedT = typename TDecay<T>::Type;
-		if constexpr (TIsDerivedFrom<DecayedT, UObject>::Value)
-		{
-			return IsValid(Object);
-		}
-
-		return Object != nullptr;
-	};
 	
 	FMDWrappedDelegateHandle& Wrapper = (*WrapperArrayPtr)[DelegateIndex];
 	T* OldOwner = Cast<T>(Wrapper.DelegateOwner.Get());
@@ -372,9 +357,9 @@ void UMDViewModelProvider_Cached::UnbindDelegate(const FMDVMAssignmentObjectKey&
 }
 
 template <typename T>
-void UMDViewModelProvider_Cached::UnbindDelegateIfNewOwner(const FMDVMAssignmentObjectKey& BindingKey, const UObject* Owner, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc)
+void UMDViewModelProvider_Cached::UnbindDelegateIfNewOwner(const FMDVMAssignmentObjectKey& BindingKey, const T* Owner, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc)
 {
-	auto* WrapperArrayPtr = WidgetDelegateHandles.Find(BindingKey);
+	auto* WrapperArrayPtr = ObjectDelegateHandles.Find(BindingKey);
 	if (WrapperArrayPtr == nullptr || !WrapperArrayPtr->IsValidIndex(DelegateIndex))
 	{
 		return;
@@ -382,21 +367,17 @@ void UMDViewModelProvider_Cached::UnbindDelegateIfNewOwner(const FMDVMAssignment
 
 	FMDWrappedDelegateHandle& Wrapper = (*WrapperArrayPtr)[DelegateIndex];
 	UObject* OldOwnerObject = Wrapper.DelegateOwner.Get();
-	if (OldOwnerObject == Owner)
+	if constexpr (TIsIInterface<T>::Value)
+	{
+		if (OldOwnerObject == Cast<UObject>(Owner))
+		{
+			return;
+		}
+	}
+	else if (OldOwnerObject == Owner)
 	{
 		return;
 	}
-
-	auto IsValidObject = [](const auto* Object)
-	{
-		using DecayedT = typename TDecay<T>::Type;
-		if constexpr (TIsDerivedFrom<DecayedT, UObject>::Value)
-		{
-			return IsValid(Object);
-		}
-
-		return Object != nullptr;
-	};
 
 	T* OldOwner = Cast<T>(OldOwnerObject);
 	if (!IsValidObject(OldOwner))
@@ -407,4 +388,21 @@ void UMDViewModelProvider_Cached::UnbindDelegateIfNewOwner(const FMDVMAssignment
 
 	UnbindFunc(*OldOwner, Wrapper.Handle);
 	Wrapper = {};
+}
+
+template <typename T>
+bool UMDViewModelProvider_Cached::IsValidObject(const T* Object) const
+{
+	using DecayedT = typename TDecay<T>::Type;
+	if constexpr (TIsDerivedFrom<DecayedT, UObject>::Value)
+	{
+		return IsValid(Object);
+	}
+
+	if constexpr (TIsIInterface<DecayedT>::Value)
+	{
+		return IsValid(Cast<UObject>(Object));
+	}
+
+	return Object != nullptr;
 }

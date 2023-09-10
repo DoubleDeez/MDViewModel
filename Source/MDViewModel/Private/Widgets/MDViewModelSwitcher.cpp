@@ -24,7 +24,7 @@ void UMDViewModelSwitcher::SetViewModel(UMDViewModelBase* ViewModel)
 					if (ViewModel->GetClass() == Assignment.ViewModelClass || (WidgetSlot->DoesSupportChildViewModelClasses() && ViewModel->IsA(Assignment.ViewModelClass.Get())))
 					{
 						SetActiveWidget(ChildUserWidget);
-						UMDViewModelFunctionLibrary::SetViewModel(ChildUserWidget, ViewModel, Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
+						UMDViewModelFunctionLibrary::BP_SetViewModel(ChildUserWidget, ViewModel, Assignment);
 						break;
 					}
 				}
@@ -40,7 +40,7 @@ void UMDViewModelSwitcher::SetViewModel(UMDViewModelBase* ViewModel)
 			if (const UMDViewModelSwitcherSlot* PreviousWidgetSlot = Cast<UMDViewModelSwitcherSlot>(PreviousUserWidget->Slot))
 			{
 				const FMDViewModelAssignmentReference& Assignment = PreviousWidgetSlot->GetViewModelAssignment();
-				UMDViewModelFunctionLibrary::ClearViewModel(PreviousUserWidget, Assignment.ViewModelClass.Get(), Assignment.ViewModelName);
+				UMDViewModelFunctionLibrary::BP_ClearViewModel(PreviousUserWidget, Assignment);
 			}
 		}
 	}

@@ -1,19 +1,18 @@
 #include "Customizations/MDViewModelAssignmentReferenceCustomization.h"
 
-#include "Blueprint/WidgetBlueprintGeneratedClass.h"
 #include "DetailWidgetRow.h"
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "IDetailChildrenBuilder.h"
 #include "Launch/Resources/Version.h"
-#include "Util/MDViewModelGraphStatics.h"
 #include "PropertyHandle.h"
 #include "ScopedTransaction.h"
 #include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelAssignmentReference.h"
+#include "Util/MDViewModelGraphStatics.h"
+#include "Util/MDViewModelUtils.h"
 #include "ViewModel/MDViewModelBase.h"
-#include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
 
@@ -38,22 +37,6 @@ namespace MDViewModelAssignmentReferenceCustomization_Private
 		}
 
 		return false;
-	}
-
-	void GatherViewModelAssignments(UClass* ObjectClass, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments)
-	{
-		// TODO - Actor View Models
-		for (auto* WidgetBPClass = Cast<UWidgetBlueprintGeneratedClass>(ObjectClass); IsValid(WidgetBPClass); WidgetBPClass = Cast<UWidgetBlueprintGeneratedClass>(WidgetBPClass->GetSuperClass()))
-		{
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION < 2
-			if (const UMDViewModelWidgetClassExtension* ClassExtension = WidgetBPClass->GetExtension<UMDViewModelWidgetClassExtension>())
-#else
-			if (const UMDViewModelWidgetClassExtension* ClassExtension = WidgetBPClass->GetExtension<UMDViewModelWidgetClassExtension>(false))
-#endif
-			{
-				OutViewModelAssignments.Append(ClassExtension->GetAssignments());
-			}
-		}
 	}
 }
 
@@ -97,7 +80,7 @@ void FMDViewModelAssignmentReferenceCustomization::CustomizeChildren(TSharedRef<
 		[
 			SNew(STextBlock)
 			.AutoWrapText(true)
-			.Text(FText::Format(INVTEXT("{0}.OnGetWidgetClass must be bound to set the assignment reference in the editor"), StructHandle->GetPropertyDisplayName()))
+			.Text(FText::Format(INVTEXT("{0}.OnGetBoundObjectClass must be bound to set the assignment reference in the editor"), StructHandle->GetPropertyDisplayName()))
 		];
 	}
 }
@@ -129,7 +112,7 @@ TSharedRef<SWidget> FMDViewModelAssignmentReferenceCustomization::MakeAssignment
 	if (UClass* BoundObjectClass = GetBoundObjectClass())
 	{
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
-		MDViewModelAssignmentReferenceCustomization_Private::GatherViewModelAssignments(BoundObjectClass, ViewModelAssignments);
+		MDViewModelUtils::GetViewModelAssignments(BoundObjectClass, ViewModelAssignments);
 
 		for (const auto& Pair : ViewModelAssignments)
 		{
@@ -215,7 +198,7 @@ void SMDViewModelAssignmentReferenceGraphPin::GetWidgetViewModelAssignments(TMap
 	else
 	{
 		UClass* ObjectClass = Cast<UClass>(WidgetPin->PinType.PinSubCategoryObject.Get());
-		MDViewModelAssignmentReferenceCustomization_Private::GatherViewModelAssignments(ObjectClass, OutViewModelAssignments);
+		MDViewModelUtils::GetViewModelAssignments(ObjectClass, OutViewModelAssignments);
 	}
 }
 

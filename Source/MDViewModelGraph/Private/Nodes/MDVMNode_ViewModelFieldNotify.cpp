@@ -4,10 +4,10 @@
 #include "EdGraphSchema_K2.h"
 #include "K2Node_FunctionEntry.h"
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "Util/MDViewModelAssignment.h"
+#include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelGraphStatics.h"
 #include "ViewModel/MDViewModelBase.h"
-#include "WidgetBlueprint.h"
-#include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 
 bool UMDVMNode_ViewModelFieldNotify::Modify(bool bAlwaysMarkDirty)
 {

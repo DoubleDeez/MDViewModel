@@ -1,6 +1,5 @@
 #include "ViewModelProviders/MDViewModelProvider_Unique.h"
 
-#include "Blueprint/UserWidget.h"
 #include "Engine/Blueprint.h"
 #include "Logging/StructuredLog.h"
 #include "Util/MDViewModelAssignment.h"
@@ -12,14 +11,15 @@
 UE_DEFINE_GAMEPLAY_TAG(TAG_MDVMProvider_Unique, "MDVM.Provider.Unique");
 
 
-UMDViewModelBase* UMDViewModelProvider_Unique::SetViewModel(UUserWidget& Widget, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
+UMDViewModelBase* UMDViewModelProvider_Unique::SetViewModel(IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
 	if (IsValid(Assignment.ViewModelClass))
 	{
-		UE_LOGFMT(LogMDViewModel, Verbose, "Creating Unique View Model with Assignment [{Assignment}] for Widget [{WidgetName}]",
-			("WidgetName", Widget.GetPathName()),
+		UObject* OwningObject = Object.GetOwningObject();
+		UE_LOGFMT(LogMDViewModel, Verbose, "Creating Unique View Model with Assignment [{Assignment}] for Object [{ObjectName}]",
+			("ObjectName", GetPathNameSafe(OwningObject)),
 			("Assignment", Assignment));
-		return UMDViewModelFunctionLibrary::SetViewModelOfClass(&Widget, &Widget, &Widget, Assignment.ViewModelClass, Data.ViewModelSettings, Assignment.ViewModelName);
+		return Object.SetViewModelOfClass(OwningObject, OwningObject, FMDViewModelAssignmentReference(Assignment), Data.ViewModelSettings);
 	}
 
 	return nullptr;

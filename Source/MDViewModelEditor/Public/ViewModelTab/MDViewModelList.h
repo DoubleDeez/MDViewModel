@@ -4,9 +4,7 @@
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/Views/SListView.h"
 
-class UMDViewModelWidgetBlueprintExtension;
 class FBlueprintEditor;
-class UUserWidget;
 struct FMDViewModelEditorAssignment;
 
 class SMDViewModelList : public SCompoundWidget
