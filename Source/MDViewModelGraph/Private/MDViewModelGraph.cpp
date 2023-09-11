@@ -44,7 +44,7 @@ class FMDViewModelGraphModule : public IModuleInterface
 	{
 		if (IsValid(Blueprint) && IsValid(Blueprint->ParentClass) && Blueprint->ParentClass->IsChildOf<AActor>())
 		{
-			if (UMDViewModelBlueprintCompilerExtension* CompilerExtension = CompilerExtensionPtr.Get())
+			if (const UMDViewModelBlueprintCompilerExtension* CompilerExtension = CompilerExtensionPtr.Get())
 			{
 				IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetAssignableInterface(Blueprint);
 				if (Extension == nullptr || Extension->GetAssignments().IsEmpty())

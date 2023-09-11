@@ -21,15 +21,15 @@ class MDVIEWMODEL_API UMDViewModelFunctionLibrary : public UBlueprintFunctionLib
 	GENERATED_BODY()
 	
 public:
-	// Set a view model on a widget
+	// Set a view model on an object
 	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Set View Model", meta = (DefaultToSelf = "Widget", AutoCreateRefTerm = "Assignment", DeterminesOutputType = "ViewModel"))
 	static UMDViewModelBase* BP_SetViewModel(UPARAM(meta = (VMAssignment = "Assignment", DisplayName = "Object")) UObject* Widget, UPARAM(meta = (VMAssignment = "Assignment")) UMDViewModelBase* ViewModel, const FMDViewModelAssignmentReference& Assignment);
 
-	// Clear a view model that's been set on a widget
+	// Clear a view model that's been set on an object
 	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Clear View Model", meta = (DefaultToSelf = "Widget", AutoCreateRefTerm = "Assignment"))
 	static void BP_ClearViewModel(UPARAM(meta = (VMAssignment = "Assignment", DisplayName = "Object")) UObject* Widget, const FMDViewModelAssignmentReference& Assignment);
 
-	// Create a view model and immediately set it on a widget
+	// Create a view model and immediately set it on an object
 	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Set View Model of Class", meta = (DefaultToSelf = "Object", WorldContext="WorldContextObject", AutoCreateRefTerm = "Assignment,ViewModelSettings", BlueprintInternalUseOnly = "true"))
 	static UMDViewModelBase* BP_SetViewModelOfClass(const UObject* WorldContextObject, UPARAM(meta = (VMAssignment = "Assignment")) UObject* Object, UObject* ContextObject, const FMDViewModelAssignmentReference& Assignment, const FInstancedStruct& ViewModelSettings);
 	

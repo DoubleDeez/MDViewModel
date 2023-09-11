@@ -10,6 +10,7 @@
 #include "Launch/Resources/Version.h"
 #include "Logging/StructuredLog.h"
 #include "ScopedTransaction.h"
+#include "Subsystems/MDViewModelGraphSubsystem.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "Util/MDViewModelGraphStatics.h"
 #include "Util/MDViewModelLog.h"
@@ -21,9 +22,12 @@
 
 SMDViewModelList::~SMDViewModelList()
 {
-	if (IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetAssignableInterface(GetBlueprint()))
+	if (IsValid(GEngine))
 	{
-		Extension->OnAssignmentsChanged.RemoveAll(this);
+		if (UMDViewModelGraphSubsystem* MDVMGraphSubsystem = GEngine->GetEngineSubsystem<UMDViewModelGraphSubsystem>())
+		{
+			MDVMGraphSubsystem->OnAssignmentsChanged.RemoveAll(this);
+		}
 	}
 }
 
@@ -33,14 +37,11 @@ void SMDViewModelList::Construct(const FArguments& InArgs, const TSharedPtr<FBlu
 	OnViewModelSelected = InArgs._OnViewModelSelected;
 	BlueprintEditorPtr = InBlueprintEditor;
 
-	// TODO - We should delay BP extension creation until we're adding the first VM assignment
-	if (IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetOrCreateAssignableInterface(GetBlueprint()))
+	if (IsValid(GEngine))
 	{
-		Extension->OnAssignmentsChanged.AddSP(this, &SMDViewModelList::OnAssignmentsChanged);
-
-		if (UObject* ExtensionObject = Cast<UObject>(Extension))
+		if (UMDViewModelGraphSubsystem* MDVMGraphSubsystem = GEngine->GetEngineSubsystem<UMDViewModelGraphSubsystem>())
 		{
-			ExtensionObject->SetFlags(RF_Transactional);
+			MDVMGraphSubsystem->OnAssignmentsChanged.AddSP(this, &SMDViewModelList::OnAssignmentsChanged);
 		}
 	}
 
@@ -161,18 +162,13 @@ TSharedPtr<SWidget> SMDViewModelList::OnContextMenuOpening()
 
 void SMDViewModelList::PopulateAssignments()
 {
-	UBlueprint* ThisBP = GetBlueprint();
 	UClass* GeneratedClass = GetGeneratedClass();
-	if (!ensure(IsValid(ThisBP)) || !ensure(IsValid(GeneratedClass)))
+	if (!ensure(IsValid(GeneratedClass)))
 	{
 		return;
 	}
 	
-	IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetAssignableInterface(ThisBP);
-	if (Extension == nullptr)
-	{
-		return;
-	}
+	IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetAssignableInterface(GetBlueprint());
 	
 	TArray<UBlueprintGeneratedClass*> Hierarchy;
 	UBlueprint::GetBlueprintHierarchyFromClass(GeneratedClass, Hierarchy);
@@ -181,7 +177,7 @@ void SMDViewModelList::PopulateAssignments()
 	TMap<UClass*, TArray<FMDViewModelEditorAssignment>> AllAssignments;
 
 	ChildFirstSortedAncestry.Add(GeneratedClass);
-	AllAssignments.Add(GeneratedClass, Extension->GetAssignments());
+	AllAssignments.Add(GeneratedClass, Extension ? Extension->GetAssignments() : TArray<FMDViewModelEditorAssignment>{});
 
 	// Skip the first one since that's just ThisBP
 	for (int32 i = 1; i < Hierarchy.Num(); ++i)
@@ -223,7 +219,7 @@ void SMDViewModelList::PopulateAssignments()
 					{
 						OverridenAssignments.Add(EditorAssignment);
 						UE_LOGFMT(LogMDViewModel, Warning, "Blueprint {BPName} has a view model assignment {Assignment} that is being overridden by a matching assignment from its ancestor {SuperName}",
-							("BPName", ThisBP->GetPathName()),
+							("BPName", GetPathNameSafe(GetBlueprint())),
 							("Assignment", EditorAssignment.Assignment),
 							("SuperName", GetPathNameSafe(ExistingAssignment->SuperAssignmentOwner))
 						);
@@ -237,14 +233,62 @@ void SMDViewModelList::PopulateAssignments()
 		}
 	}
 
-	// Display assignments from this blueprint first
-	Algo::Reverse(ActiveAssignments);
+	// Display assignments from this blueprint first, but maintain the order they were added in
+	ActiveAssignments.Sort([&](const FMDViewModelEditorAssignment& A, const FMDViewModelEditorAssignment& B)
+	{
+		// Non-Super first
+		const bool bAIsSuper = IsValid(A.SuperAssignmentOwner); 
+		const bool bBIsSuper = IsValid(B.SuperAssignmentOwner); 
+		if (bAIsSuper != bBIsSuper)
+		{
+			return bBIsSuper;
+		}
+
+		// Child-most class first
+		if (bAIsSuper && bBIsSuper && (A.SuperAssignmentOwner != B.SuperAssignmentOwner))
+		{
+			return A.SuperAssignmentOwner->IsChildOf(B.SuperAssignmentOwner);
+		}
+
+		// Maintain order they were added in
+		const UClass* AssignmentOwner = bAIsSuper ? A.SuperAssignmentOwner.Get() : GeneratedClass;
+		const TArray<FMDViewModelEditorAssignment>* AssignmentsPtr = AllAssignments.Find(AssignmentOwner);
+		if (AssignmentsPtr == nullptr)
+		{
+			UE_LOGFMT(LogMDViewModel, Error, "Failed to sort assignments for ViewModelList. Class [{ClassName}] was not in AllAssignments map",
+				("ClassName", GetNameSafe(AssignmentOwner))
+			);
+			return true;
+		}
+
+		const int32 AIndex = AssignmentsPtr->IndexOfByKey(A);
+		if (AIndex < 0)
+		{
+			UE_LOGFMT(LogMDViewModel, Error, "Failed to sort assignments for ViewModelList. Assignment [{Assignment}] was not in Class's [{ClassName}] assignments list",
+				("Assignment", A.Assignment),
+				("ClassName", GetNameSafe(AssignmentOwner))
+			);
+			return false;
+		}
+		
+		const int32 BIndex = AssignmentsPtr->IndexOfByKey(B);
+		if (BIndex < 0)
+		{
+			UE_LOGFMT(LogMDViewModel, Error, "Failed to sort assignments for ViewModelList. Assignment [{Assignment}] was not in Class's [{ClassName}] assignments list",
+				("Assignment", B.Assignment),
+				("ClassName", GetNameSafe(AssignmentOwner))
+			);
+			return true;
+		}
+
+		return AIndex < BIndex;
+	});
 
 	// Keep existing sharedptrs active and reuse them when possible
 	TArray<TSharedPtr<FMDViewModelEditorAssignment>> OldAssignment = Assignments;
 	Assignments.Reset(ActiveAssignments.Num());
 
-	// TODO - Display OverridenAssignments so User can decide how they want to handle the collisions
+	// TODO - Display OverridenAssignments right after their colliding assignment so User can decide how they want to handle the collision
 
 	for (const FMDViewModelEditorAssignment& MyAssignment : ActiveAssignments)
 	{
@@ -265,16 +309,23 @@ void SMDViewModelList::PopulateAssignments()
 	}
 }
 
-void SMDViewModelList::OnAssignmentsChanged()
+void SMDViewModelList::OnAssignmentsChanged(UBlueprint* Blueprint)
 {
-	RefreshList();
+	if (Blueprint == GetBlueprint())
+	{
+		RefreshList();
+	}
 }
 
 FReply SMDViewModelList::OnAddViewModel()
 {
-	if (IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetAssignableInterface(GetBlueprint()))
+	SMDViewModelAssignmentDialog::OpenAssignmentDialog(GetBlueprint());
+	if (const TSharedPtr<SMDViewModelAssignmentDialog> ActiveDialog = SMDViewModelAssignmentDialog::GetActiveDialog())
 	{
-		SMDViewModelAssignmentDialog::OpenAssignmentDialog(Extension);
+		if (!ActiveDialog->OnAssignmentAdded.IsBoundToObject(this))
+		{
+			ActiveDialog->OnAssignmentAdded.AddSP(this, &SMDViewModelList::OnAssignmentAdded);
+		}
 	}
 
 	return FReply::Handled();
@@ -283,6 +334,24 @@ FReply SMDViewModelList::OnAddViewModel()
 bool SMDViewModelList::CanAddViewModel() const
 {
 	return !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
+}
+
+void SMDViewModelList::OnAssignmentAdded(const FMDViewModelEditorAssignment& Assignment)
+{
+	if (AssignmentList.IsValid())
+	{
+		const TSharedPtr<FMDViewModelEditorAssignment>* AssignmentPtr = Assignments.FindByPredicate(
+			[&Assignment](const TSharedPtr<FMDViewModelEditorAssignment>& AssignmentPtr)
+			{
+				return AssignmentPtr.IsValid() && *AssignmentPtr == Assignment;
+			}
+		);
+		
+		if (AssignmentPtr != nullptr)
+		{
+			AssignmentList->SetSelection(*AssignmentPtr);
+		}
+	}
 }
 
 void SMDViewModelList::OnPasteClicked()
@@ -296,7 +365,7 @@ void SMDViewModelList::OnPasteClicked()
 	
 	Assignment.SuperAssignmentOwner = nullptr;
 
-	if (IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetAssignableInterface(GetBlueprint()))
+	if (IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetOrCreateAssignableInterface(GetBlueprint()))
 	{
 		if (Extension->DoesContainViewModelAssignment(Assignment.Assignment.ViewModelClass, FGameplayTag::EmptyTag, Assignment.Assignment.ViewModelName))
 		{
@@ -348,18 +417,12 @@ bool SMDViewModelList::CanPaste() const
 
 void SMDViewModelList::OnDuplicateItem(TSharedPtr<FMDViewModelEditorAssignment> Item)
 {
-	if (IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetAssignableInterface(GetBlueprint()))
-	{
-		SMDViewModelAssignmentDialog::OpenDuplicateDialog(Extension, Item);
-	}
+	SMDViewModelAssignmentDialog::OpenDuplicateDialog(GetBlueprint(), Item);
 }
 
 void SMDViewModelList::OnEditItem(TSharedPtr<FMDViewModelEditorAssignment> Item)
 {
-	if (IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetAssignableInterface(GetBlueprint()))
-	{
-		SMDViewModelAssignmentDialog::OpenEditDialog(Extension, Item);
-	}
+	SMDViewModelAssignmentDialog::OpenEditDialog(GetBlueprint(), Item);
 }
 
 void SMDViewModelList::OnDeleteItem(TSharedPtr<FMDViewModelEditorAssignment> Item)

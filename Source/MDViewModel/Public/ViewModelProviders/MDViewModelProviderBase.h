@@ -23,7 +23,7 @@ struct FMDViewModelSupportedClass
 /**
  * Abstract base class for creating custom view model providers
  *
- * A View Model Provider sets view models on a passed-in user widget
+ * A View Model Provider sets view models on a passed-in object
  */
 UCLASS(Abstract)
 class MDVIEWMODEL_API UMDViewModelProviderBase : public UEngineSubsystem

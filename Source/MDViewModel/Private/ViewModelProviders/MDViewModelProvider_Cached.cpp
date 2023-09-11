@@ -33,23 +33,23 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_MDVMProvider_Cached, "MDVM.Provider.Cached");
 UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_Global, "MDVM.Provider.Cached.Lifetimes.Global",
 	"View model lifetime will be tied to the game instance");
 UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_LocalPlayer, "MDVM.Provider.Cached.Lifetimes.LocalPlayer",
-	"View model lifetime will be tied to the widget's owning local player");
+	"View model lifetime will be tied to the object's owning local player. Object must be related to a player controller to function.");
 UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_World, "MDVM.Provider.Cached.Lifetimes.World",
 	"View model lifetime will be tied to the world");
 UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_OwningPlayerController, "MDVM.Provider.Cached.Lifetimes.OwningPlayerController",
-	"View model lifetime will be tied to the widget's owning player controller");
+	"View model lifetime will be tied to the object's owning player controller. Object must be related to a player controller to function.");
 UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_OwningHUD, "MDVM.Provider.Cached.Lifetimes.OwningHUD",
-	"View model lifetime will be tied to the widget's owning player's HUD");
+	"View model lifetime will be tied to the object's owning player's HUD. Object must be related to a player controller to function.");
 UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_OwningPawn, "MDVM.Provider.Cached.Lifetimes.OwningPawn",
-	"View model lifetime will be tied to the widget's owning pawn");
+	"View model lifetime will be tied to the object's owning player's pawn. Object must be related to a player controller to function.");
 UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_OwningPlayerState, "MDVM.Provider.Cached.Lifetimes.OwningPlayerState",
-	"View model lifetime will be tied to the widget's owning player state");
+	"View model lifetime will be tied to the object's owning player state. Object must be related to a player controller to function.");
 UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_GameState, "MDVM.Provider.Cached.Lifetimes.GameState",
 	"View model lifetime will be tied to the game state");
 UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_ViewTarget, "MDVM.Provider.Cached.Lifetimes.ViewTarget",
-	"View model lifetime will be tied to the player's view target");
+	"View model lifetime will be tied to the player's view target. Object must be related to a player controller to function.");
 UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_ViewTargetPlayerState, "MDVM.Provider.Cached.Lifetimes.ViewTargetPlayerState",
-	"View model lifetime will be tied to the player's view target's player state");
+	"View model lifetime will be tied to the player's view target's player state. Object must be related to a player controller to function.");
 UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_Relative, "MDVM.Provider.Cached.Lifetimes.Relative",
 	"View model lifetime will be tied to another view model on the object and share its context object");
 UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty, "MDVM.Provider.Cached.Lifetimes.RelativeProperty",
@@ -597,7 +597,7 @@ void UMDViewModelProvider_Cached::OnRelativeViewModelChanged(UMDViewModelBase* O
 	RefreshViewModel(ObjectPtr, Assignment, Data);
 }
 
-void UMDViewModelProvider_Cached::OnFieldValueChanged(UObject* Widget, UE::FieldNotification::FFieldId FieldId, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment,
+void UMDViewModelProvider_Cached::OnFieldValueChanged(UObject* Object, UE::FieldNotification::FFieldId FieldId, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment,
 	FMDViewModelAssignmentData Data)
 {
 	RefreshViewModel(ObjectPtr, Assignment, Data);

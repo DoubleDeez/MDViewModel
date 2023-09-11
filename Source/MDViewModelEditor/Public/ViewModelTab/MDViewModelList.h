@@ -4,6 +4,7 @@
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/Views/SListView.h"
 
+class IMDViewModelAssignableInterface;
 class FBlueprintEditor;
 struct FMDViewModelEditorAssignment;
 
@@ -32,10 +33,11 @@ private:
 	TSharedPtr<SWidget> OnContextMenuOpening();
 	void PopulateAssignments();
 
-	void OnAssignmentsChanged();
+	void OnAssignmentsChanged(UBlueprint* Blueprint);
 
 	FReply OnAddViewModel();
 	bool CanAddViewModel() const;
+	void OnAssignmentAdded(const FMDViewModelEditorAssignment& Assignment);
 
 	void OnPasteClicked();
 	bool CanPaste() const;

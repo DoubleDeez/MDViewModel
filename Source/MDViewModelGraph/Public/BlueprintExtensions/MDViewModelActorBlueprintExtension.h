@@ -7,6 +7,7 @@
 
 /**
  * Editor-only class that holds design-time assigned view models for actors
+ * Assignment compilation happens in UMDViewModelBlueprintCompilerExtension::HandleActorBlueprintPreCompile
  */
 UCLASS()
 class MDVIEWMODELGRAPH_API UMDViewModelActorBlueprintExtension : public UBlueprintExtension, public IMDViewModelAssignableInterface

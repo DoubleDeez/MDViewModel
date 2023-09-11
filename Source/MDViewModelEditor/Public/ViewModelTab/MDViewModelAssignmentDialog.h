@@ -29,7 +29,7 @@ public:
 		}
 
 		SLATE_ARGUMENT(EMDVMDialogMode, Mode)
-		SLATE_ARGUMENT(TWeakInterfacePtr<IMDViewModelAssignableInterface>, ExtensionPtr)
+		SLATE_ARGUMENT(UBlueprint*, Blueprint)
 		SLATE_ARGUMENT(TSharedPtr<FMDViewModelEditorAssignment>, EditorItem)
 
 	SLATE_END_ARGS()
@@ -39,12 +39,17 @@ public:
 
 	UBlueprint* GetBlueprint() const;
 
-	static void OpenAssignmentDialog(IMDViewModelAssignableInterface* Extension);
-	static void OpenEditDialog(IMDViewModelAssignableInterface* Extension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem);
-	static void OpenDuplicateDialog(IMDViewModelAssignableInterface* Extension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem);
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnAssignmentAdded, const FMDViewModelEditorAssignment&);
+	FOnAssignmentAdded OnAssignmentAdded;
+
+	static void OpenAssignmentDialog(UBlueprint* Blueprint);
+	static void OpenEditDialog(UBlueprint* Blueprint, TSharedPtr<FMDViewModelEditorAssignment> EditorItem);
+	static void OpenDuplicateDialog(UBlueprint* Blueprint, TSharedPtr<FMDViewModelEditorAssignment> EditorItem);
+
+	static TSharedPtr<SMDViewModelAssignmentDialog> GetActiveDialog();
 
 private:
-	static void OpenDialog_Internal(IMDViewModelAssignableInterface* Extension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem = nullptr, bool bDuplicateItem = false);
+	static void OpenDialog_Internal(UBlueprint* Blueprint, TSharedPtr<FMDViewModelEditorAssignment> EditorItem = nullptr, bool bDuplicateItem = false);
 	static void OnDialogClosed(const TSharedRef<SWindow>& Window);
 	static TWeakPtr<SWindow> ActiveDialogWindowPtr;
 	
@@ -57,6 +62,8 @@ private:
 
 	bool DoesAssignmentHaveError() const;
 	FText GetAssignmentError() const;
+	
+	IMDViewModelAssignableInterface* GetExtension(bool bCreateIfNecessary = false) const; 
 
 	EMDVMDialogMode Mode = EMDVMDialogMode::Add;
 
@@ -64,6 +71,6 @@ private:
 
 	TSharedPtr<SWindow> ParentWindow;
 	TStrongObjectPtr<UMDViewModelAssignmentEditorObject> EditorObject;
-	TWeakInterfacePtr<IMDViewModelAssignableInterface> ExtensionPtr;
+	TWeakObjectPtr<UBlueprint> BlueprintPtr;
 	TOptional<FName> OriginalAssignmentName;
 };

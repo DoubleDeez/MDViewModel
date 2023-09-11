@@ -38,8 +38,6 @@ public:
 	bool DoesContainViewModelAssignment(TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FGameplayTag& ProviderTag = FGameplayTag::EmptyTag, const FName& ViewModelName = NAME_None) const;
 	bool HasAssignments() const;
 
-	FSimpleMulticastDelegate OnAssignmentsChanged;
-
 	DECLARE_MULTICAST_DELEGATE_FourParams(FOnViewModelAssignmentChanged, const FName& /*OldName*/, const FName& /*NewName*/, TSubclassOf<UMDViewModelBase> /*OldClass*/, TSubclassOf<UMDViewModelBase> /*NewClass*/);
 	FOnViewModelAssignmentChanged OnAssignmentChanged;
 

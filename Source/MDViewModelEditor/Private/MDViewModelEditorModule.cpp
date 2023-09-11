@@ -136,18 +136,23 @@ void FMDViewModelEditorModule::RegisterBlueprintEditorLayout(FLayoutExtender& Ex
 		return;
 	}
 	
-	Extender.ExtendLayout(FBlueprintEditorTabs::GraphEditorID, ELayoutExtensionPosition::Before, FTabManager::FTab(FMDViewModelSummoner::TabID, ETabState::ClosedTab));
+	Extender.ExtendLayout(FBlueprintEditorTabs::FindResultsID, ELayoutExtensionPosition::Before, FTabManager::FTab(FMDViewModelSummoner::TabID, ETabState::ClosedTab));
 }
 
 void FMDViewModelEditorModule::RegisterBlueprintEditorTab(FWorkflowAllowedTabSet& TabFactories, FName InModeName, TSharedPtr<FBlueprintEditor> BlueprintEditor)
 {
+	if (InModeName != FBlueprintEditorApplicationModes::StandardBlueprintEditorMode)
+	{
+		return;
+	}
+	
 	if (!GetDefault<UMDViewModelEditorConfig>()->bEnableViewModelsInActorBlueprints || !BlueprintEditor.IsValid())
 	{
 		return;
 	}
 
 	const UBlueprint* Blueprint = BlueprintEditor->GetBlueprintObj();
-	if (!IsValid(Blueprint) || FBlueprintEditorUtils::ShouldOpenWithDataOnlyEditor(Blueprint))
+	if (!IsValid(Blueprint))
 	{
 		return;
 	}
@@ -170,7 +175,7 @@ void FMDViewModelEditorModule::RegisterBlueprintEditorDrawer(UObject* Asset)
 	
 	const UBlueprint* Blueprint = Cast<UBlueprint>(Asset);
 	UAssetEditorSubsystem* AssetEditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
-	if (!IsValid(AssetEditorSubsystem) || !IsValid(Blueprint) || FBlueprintEditorUtils::ShouldOpenWithDataOnlyEditor(Blueprint))
+	if (!IsValid(AssetEditorSubsystem) || !IsValid(Blueprint))
 	{
 		return;
 	}
@@ -189,6 +194,11 @@ void FMDViewModelEditorModule::RegisterBlueprintEditorDrawer(UObject* Asset)
 	}
 
 	const TSharedRef<FBlueprintEditor> BlueprintEditor = StaticCastSharedRef<FBlueprintEditor>(static_cast<FBlueprintEditor*>(Editor)->AsShared());
+	if (!BlueprintEditor->IsModeCurrent(FBlueprintEditorApplicationModes::StandardBlueprintEditorMode))
+	{
+		return;
+	}
+	
 	BlueprintEditor->RegisterDrawer(FMDViewModelSummoner::CreateDrawerConfig(BlueprintEditor));
 }
 

@@ -98,7 +98,7 @@ TArray<FName> UMDViewModelAssignmentEditorObject::GetRelativePropertyNames() con
 	const FMDViewModelProvider_Cached_Settings* SettingsPtr = ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
 	if (SettingsPtr != nullptr)
 	{
-		const UClass* RelativeObjectClass = (SettingsPtr->GetLifetimeTag() == TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty) ? WidgetSkeletonClass.Get() : SettingsPtr->RelativeViewModel.ViewModelClass.LoadSynchronous();
+		const UClass* RelativeObjectClass = (SettingsPtr->GetLifetimeTag() == TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty) ? BPSkeletonClass.Get() : SettingsPtr->RelativeViewModel.ViewModelClass.LoadSynchronous();
 		if (IsValid(RelativeObjectClass))
 		{
 			TSet<FName> FieldNotifySupportedNames;

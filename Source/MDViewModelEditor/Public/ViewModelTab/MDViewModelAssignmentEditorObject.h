@@ -55,5 +55,5 @@ public:
 	TArray<FName> GetRelativePropertyNames() const;
 
 	UPROPERTY(Transient)
-	TSubclassOf<UObject> WidgetSkeletonClass = nullptr;
+	TSubclassOf<UObject> BPSkeletonClass = nullptr;
 };

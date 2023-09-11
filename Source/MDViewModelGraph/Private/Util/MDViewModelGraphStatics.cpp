@@ -67,6 +67,13 @@ void FMDViewModelGraphStatics::SearchViewModelAssignmentsForBlueprint(const UBlu
 	}
 }
 
+bool FMDViewModelGraphStatics::DoesBlueprintContainViewModelAssignments(const UBlueprint* Blueprint, TSubclassOf<UMDViewModelBase> ViewModelClass, const FGameplayTag& ProviderTag, const FName& ViewModelName)
+{
+	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
+	SearchViewModelAssignmentsForBlueprint(Blueprint, ViewModelAssignments, ViewModelClass, ProviderTag, ViewModelName);
+	return !ViewModelAssignments.IsEmpty();
+}
+
 bool FMDViewModelGraphStatics::DoesBlueprintBindToViewModelEvent(const UBlueprint* BP, const FName& EventName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
 {
 	return FindExistingViewModelEventNode(BP, EventName, ViewModelClass, ViewModelName) != nullptr;
@@ -236,7 +243,11 @@ IMDViewModelAssignableInterface* FMDViewModelGraphStatics::GetOrCreateAssignable
 {
 	if (UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(BP))
 	{
-		return UWidgetBlueprintExtension::RequestExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP);
+		if (UMDViewModelWidgetBlueprintExtension* Extension = UWidgetBlueprintExtension::RequestExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
+		{
+			Extension->SetFlags(RF_Transactional);
+			return Extension;
+		}
 	}
 	else if (IsValid(BP) && IsValid(BP->GeneratedClass) && BP->GeneratedClass->IsChildOf<AActor>())
 	{
@@ -250,7 +261,7 @@ IMDViewModelAssignableInterface* FMDViewModelGraphStatics::GetOrCreateAssignable
 			return Cast<IMDViewModelAssignableInterface>(*Extension);
 		}
 
-		UMDViewModelActorBlueprintExtension* NewExtension = NewObject<UMDViewModelActorBlueprintExtension>(BP);
+		UMDViewModelActorBlueprintExtension* NewExtension = NewObject<UMDViewModelActorBlueprintExtension>(BP, NAME_None, RF_Transactional);
 		BP->AddExtension(NewExtension);
 		return NewExtension;
 	}
@@ -262,16 +273,27 @@ IMDViewModelAssignableInterface* FMDViewModelGraphStatics::GetAssignableInterfac
 {
 	if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(BP))
 	{
-		return UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP);
+		if (UMDViewModelWidgetBlueprintExtension* Extension = UWidgetBlueprintExtension::GetExtension<UMDViewModelWidgetBlueprintExtension>(WidgetBP))
+		{
+			Extension->SetFlags(RF_Transactional);
+			return Extension;
+		}
 	}
 	else if (IsValid(BP) && IsValid(BP->GeneratedClass) && BP->GeneratedClass->IsChildOf<AActor>())
 	{
-		const TObjectPtr<UBlueprintExtension>* Extension = BP->GetExtensions().FindByPredicate([](const TObjectPtr<UBlueprintExtension>& Extension)
+		const TObjectPtr<UBlueprintExtension>* ExtensionPtr = BP->GetExtensions().FindByPredicate([](const TObjectPtr<UBlueprintExtension>& Extension)
 		{
 			return IsValid(Extension) && Extension->IsA<UMDViewModelActorBlueprintExtension>();
 		});
 
-		return (Extension != nullptr) ? Cast<IMDViewModelAssignableInterface>(*Extension) : nullptr;
+		IMDViewModelAssignableInterface* Extension = (ExtensionPtr != nullptr) ? Cast<IMDViewModelAssignableInterface>(*ExtensionPtr) : nullptr;
+
+		if (UObject* ExtensionObject = Cast<UObject>(Extension))
+		{
+			ExtensionObject->SetFlags(RF_Transactional);
+		}
+		
+		return Extension;
 	}
 
 	return nullptr;
@@ -288,6 +310,11 @@ UMDViewModelAssignmentComponent* FMDViewModelGraphStatics::GetOrCreateAssignment
 	USCS_Node* ComponentNode = nullptr;
 	for (UBlueprintGeneratedClass* Class : Hierarchy)
 	{
+		if (!IsValid(Class) || !IsValid(Class->SimpleConstructionScript))
+		{
+			continue;
+		}
+		
 		USCS_Node* const* CurrentComponentNodePtr = Class->SimpleConstructionScript->GetAllNodes().FindByPredicate([](const USCS_Node* Node)
 		{
 			return IsValid(Node) && IsValid(Node->ComponentTemplate) && Node->ComponentTemplate->IsA<UMDViewModelAssignmentComponent>();
@@ -307,12 +334,15 @@ UMDViewModelAssignmentComponent* FMDViewModelGraphStatics::GetOrCreateAssignment
 				: ICH->GetOverridenComponentTemplate(Key);
 
 			// Clean up any pre-existing components, which can happen if we had assignments before our parents did
-			const TArray<USCS_Node*> AllNodes = BPClass->SimpleConstructionScript->GetAllNodes();
-			for (USCS_Node* Node : AllNodes)
+			if (IsValid(BPClass) && IsValid(BPClass->SimpleConstructionScript))
 			{
-				if (Node->ComponentTemplate->IsA<UMDViewModelAssignmentComponent>())
+				const TArray<USCS_Node*> AllNodes = BPClass->SimpleConstructionScript->GetAllNodes();
+				for (USCS_Node* Node : AllNodes)
 				{
-					BPClass->SimpleConstructionScript->RemoveNode(Node);
+					if (Node->ComponentTemplate->IsA<UMDViewModelAssignmentComponent>())
+					{
+						BPClass->SimpleConstructionScript->RemoveNode(Node);
+					}
 				}
 			}
 				
@@ -325,7 +355,7 @@ UMDViewModelAssignmentComponent* FMDViewModelGraphStatics::GetOrCreateAssignment
 	}
 
 	// We don't have any parent assignments, use our existing component or create one if needed
-	if (!IsValid(ComponentNode))
+	if (!IsValid(ComponentNode) && IsValid(BPClass->SimpleConstructionScript))
 	{
 		ComponentNode = BPClass->SimpleConstructionScript->CreateNode(UMDViewModelAssignmentComponent::StaticClass(), TEXT("MDViewModelAssignments"));
 		ComponentNode->ComponentTemplate->CreationMethod = EComponentCreationMethod::Native;

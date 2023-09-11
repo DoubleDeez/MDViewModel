@@ -87,34 +87,21 @@ struct MDVIEWMODEL_API FMDWrappedDelegateHandle
 	}
 };
 
-UENUM()
+UENUM(meta = (Deprecated))
 enum class EMDViewModelProvider_CacheLifetime
 {
-	// View model lifetime will be tied to the game instance
 	Global,
-	// View model lifetime will be tied to the widget's owning local player
 	LocalPlayer,
-	// View model lifetime will be tied to the world
 	World,
-	// View model lifetime will be tied to the widget's owning player controller
 	OwningPlayerController,
-	// View model lifetime will be tied to the widget's owning player's HUD
 	OwningHUD,
-	// View model lifetime will be tied to the widget's owning pawn
 	OwningPawn,
-	// View model lifetime will be tied to the widget's owning player state
 	OwningPlayerState,
-	// View model lifetime will be tied to the game state
 	GameState,
-	// View model lifetime will be tied to the player's view target
 	ViewTarget,
-	// View model lifetime will be tied to the player's view target's player state
 	ViewTargetPlayerState,
-	// View model lifetime will be tied to another view model on the widget and share its context object
 	Relative,
-	// View model lifetime will be tied to a FieldNotify property or function on the widget, using the property as its context object (must be an Actor or other supported type)
 	RelativeProperty,
-	// To support custom lifetimes, ViewModelLifetimeTag was added in place of this enum
 	Custom UMETA(Hidden),
 };
 
@@ -218,7 +205,7 @@ protected:
 	void OnViewTargetChanged(APlayerController* PC, AActor* OldViewTarget, AActor* NewViewTarget, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 	void OnRelativeViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 
-	void OnFieldValueChanged(UObject* Widget, UE::FieldNotification::FFieldId FieldId, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
+	void OnFieldValueChanged(UObject* Object, UE::FieldNotification::FFieldId FieldId, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 
 	void OnActorSpawned(AActor* Actor, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 	void OnActorRemoved(AActor* Actor, TWeakObjectPtr<AActor> BoundActor, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);

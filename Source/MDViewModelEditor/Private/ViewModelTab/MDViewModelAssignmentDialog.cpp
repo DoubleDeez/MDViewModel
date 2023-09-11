@@ -13,6 +13,7 @@
 #include "PropertyEditorModule.h"
 #include "ScopedTransaction.h"
 #include "SPrimaryButton.h"
+#include "Util/MDViewModelGraphStatics.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
 #include "ViewModelProviders/MDViewModelProvider_Cached.h"
@@ -128,7 +129,7 @@ public:
 void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSharedRef<SWindow>& InParentWindow)
 {
 	Mode = InArgs._Mode;
-	ExtensionPtr = InArgs._ExtensionPtr;
+	BlueprintPtr = InArgs._Blueprint;
 	EditorItem = InArgs._EditorItem;
 
 	ParentWindow = InParentWindow;
@@ -136,7 +137,7 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 
 	if (const UBlueprint* Blueprint = GetBlueprint())
 	{
-		EditorObject->WidgetSkeletonClass = Blueprint->SkeletonGeneratedClass;
+		EditorObject->BPSkeletonClass = Blueprint->SkeletonGeneratedClass;
 	}
 
 	if (EditorItem.IsValid())
@@ -224,30 +225,35 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 
 UBlueprint* SMDViewModelAssignmentDialog::GetBlueprint() const
 {
-	if (const IMDViewModelAssignableInterface* Extension = ExtensionPtr.Get())
+	return BlueprintPtr.Get();
+}
+
+void SMDViewModelAssignmentDialog::OpenAssignmentDialog(UBlueprint* Blueprint)
+{
+	return OpenDialog_Internal(Blueprint);
+}
+
+void SMDViewModelAssignmentDialog::OpenEditDialog(UBlueprint* Blueprint, TSharedPtr<FMDViewModelEditorAssignment> EditorItem)
+{
+	return OpenDialog_Internal(Blueprint, EditorItem);
+}
+
+void SMDViewModelAssignmentDialog::OpenDuplicateDialog(UBlueprint* Blueprint, TSharedPtr<FMDViewModelEditorAssignment> EditorItem)
+{
+	return OpenDialog_Internal(Blueprint, EditorItem, true);
+}
+
+TSharedPtr<SMDViewModelAssignmentDialog> SMDViewModelAssignmentDialog::GetActiveDialog()
+{
+	if (const TSharedPtr<SWindow> ActiveDialogWindow = ActiveDialogWindowPtr.Pin())
 	{
-		return Extension->GetBlueprint();
+		return StaticCastSharedRef<SMDViewModelAssignmentDialog>(ActiveDialogWindow->GetContent());
 	}
 
 	return nullptr;
 }
 
-void SMDViewModelAssignmentDialog::OpenAssignmentDialog(IMDViewModelAssignableInterface* Extension)
-{
-	return OpenDialog_Internal(Extension);
-}
-
-void SMDViewModelAssignmentDialog::OpenEditDialog(IMDViewModelAssignableInterface* Extension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem)
-{
-	return OpenDialog_Internal(Extension, EditorItem);
-}
-
-void SMDViewModelAssignmentDialog::OpenDuplicateDialog(IMDViewModelAssignableInterface* Extension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem)
-{
-	return OpenDialog_Internal(Extension, EditorItem, true);
-}
-
-void SMDViewModelAssignmentDialog::OpenDialog_Internal(IMDViewModelAssignableInterface* Extension, TSharedPtr<FMDViewModelEditorAssignment> EditorItem, bool bDuplicateItem)
+void SMDViewModelAssignmentDialog::OpenDialog_Internal(UBlueprint* Blueprint, TSharedPtr<FMDViewModelEditorAssignment> EditorItem, bool bDuplicateItem)
 {
 	if (const TSharedPtr<SWindow> ActiveDialogWindow = ActiveDialogWindowPtr.Pin())
 	{
@@ -268,7 +274,7 @@ void SMDViewModelAssignmentDialog::OpenDialog_Internal(IMDViewModelAssignableInt
 	PickerWindow->GetOnWindowClosedEvent().AddStatic(&SMDViewModelAssignmentDialog::OnDialogClosed);
 
 	const TSharedRef<SMDViewModelAssignmentDialog> AssignmentDialog = SNew(SMDViewModelAssignmentDialog, PickerWindow)
-		.ExtensionPtr(Extension)
+		.Blueprint(Blueprint)
 		.EditorItem(EditorItem)
 		.Mode(bIsEditMode ? EMDVMDialogMode::Edit : (bDuplicateItem ? EMDVMDialogMode::Duplicate : EMDVMDialogMode::Add));
 
@@ -357,10 +363,11 @@ EVisibility SMDViewModelAssignmentDialog::GetAssignmentErrorVisibility() const
 
 FReply SMDViewModelAssignmentDialog::OnAddClicked() const
 {
-	if (IMDViewModelAssignableInterface* Extension = ExtensionPtr.Get())
+	if (IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetOrCreateAssignableInterface(GetBlueprint()))
 	{
 		FScopedTransaction Transaction = FScopedTransaction(INVTEXT("Added View Model Assignment"));
 		Extension->AddAssignment(EditorObject->CreateAssignment());
+		OnAssignmentAdded.Broadcast(EditorObject->CreateAssignment());
 	}
 
 	if (ParentWindow.IsValid())
@@ -375,7 +382,7 @@ FReply SMDViewModelAssignmentDialog::OnSaveClicked() const
 {
 	if (EditorItem.IsValid())
 	{
-		if (IMDViewModelAssignableInterface* Extension = ExtensionPtr.Get())
+		if (IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetOrCreateAssignableInterface(GetBlueprint()))
 		{
 			FScopedTransaction Transaction = FScopedTransaction(INVTEXT("Updated View Model Assignment"));
 			Extension->UpdateAssignment(*EditorItem.Get(), EditorObject->CreateAssignment());
@@ -419,12 +426,9 @@ FText SMDViewModelAssignmentDialog::GetAssignmentError() const
 
 	if (Mode != EMDVMDialogMode::Edit || !OriginalAssignmentName.IsSet() || EditorObject->ViewModelInstanceName != OriginalAssignmentName.GetValue())
 	{
-		if (const IMDViewModelAssignableInterface* Extension = ExtensionPtr.Get())
+		if (FMDViewModelGraphStatics::DoesBlueprintContainViewModelAssignments(GetBlueprint(), EditorObject->ViewModelClass, FGameplayTag::EmptyTag, EditorObject->ViewModelInstanceName))
 		{
-			if (Extension->DoesContainViewModelAssignment(EditorObject->ViewModelClass, FGameplayTag::EmptyTag, EditorObject->ViewModelInstanceName))
-			{
-				return INVTEXT("The assignment's Name and Class pairing is not unique.");;
-			}
+			return INVTEXT("The assignment's Name and Class pairing is not unique.");
 		}
 	}
 

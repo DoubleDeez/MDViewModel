@@ -84,10 +84,10 @@ namespace MDViewModelUtils
 					return Cast<IMDVMCompiledAssignmentsInterface>(*ComponentPtr);
 				}
 
-				const USCS_Node* const* NodePtr = BPGC->SimpleConstructionScript->GetAllNodes().FindByPredicate([&FindPred](const USCS_Node* Node)
+				const USCS_Node* const* NodePtr = IsValid(BPGC->SimpleConstructionScript) ? BPGC->SimpleConstructionScript->GetAllNodes().FindByPredicate([&FindPred](const USCS_Node* Node)
 				{
 					return IsValid(Node) && FindPred(Node->ComponentTemplate);
-				});
+				}) : nullptr;
 
 				if (NodePtr != nullptr)
 				{

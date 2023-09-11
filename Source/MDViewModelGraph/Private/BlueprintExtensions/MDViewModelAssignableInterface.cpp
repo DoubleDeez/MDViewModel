@@ -2,6 +2,7 @@
 
 #include "BlueprintActionDatabase.h"
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "Subsystems/MDViewModelGraphSubsystem.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "ViewModel/MDViewModelBase.h"
 
@@ -44,12 +45,13 @@ void IMDViewModelAssignableInterface::AddAssignment(FMDViewModelEditorAssignment
 {
 	if (!GetAssignments().Contains(Assignment))
 	{
+		UBlueprint* Blueprint = GetBlueprint();
 		ModifyObject();
 		GetAssignments().Emplace(MoveTemp(Assignment));
-		OnAssignmentsChanged.Broadcast();
-
-		FBlueprintEditorUtils::MarkBlueprintAsModified(GetBlueprint());
-		FBlueprintActionDatabase::Get().RefreshAssetActions(GetBlueprint());
+		
+		UMDViewModelGraphSubsystem::BroadcastBlueprintViewModelAssignmentsChanged(Blueprint);
+		FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+		FBlueprintActionDatabase::Get().RefreshAssetActions(Blueprint);
 	}
 }
 
@@ -69,11 +71,11 @@ void IMDViewModelAssignableInterface::UpdateAssignment(const FMDViewModelEditorA
 			OnAssignmentChanged.Broadcast(OldAssignment.Assignment.ViewModelName, UpdatedAssignment.Assignment.ViewModelName,
 				OldAssignment.Assignment.ViewModelClass, UpdatedAssignment.Assignment.ViewModelClass);
 		}
-		
-		OnAssignmentsChanged.Broadcast();
 
-		FBlueprintEditorUtils::MarkBlueprintAsModified(GetBlueprint());
-		FBlueprintActionDatabase::Get().RefreshAssetActions(GetBlueprint());
+		UBlueprint* Blueprint = GetBlueprint();
+		UMDViewModelGraphSubsystem::BroadcastBlueprintViewModelAssignmentsChanged(Blueprint);
+		FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+		FBlueprintActionDatabase::Get().RefreshAssetActions(Blueprint);
 	}
 }
 
@@ -82,10 +84,10 @@ void IMDViewModelAssignableInterface::RemoveAssignment(const FMDViewModelEditorA
 	ModifyObject();
 	if (GetAssignments().Remove(Assignment) > 0)
 	{
-		OnAssignmentsChanged.Broadcast();
-		
-		FBlueprintEditorUtils::MarkBlueprintAsModified(GetBlueprint());
-		FBlueprintActionDatabase::Get().RefreshAssetActions(GetBlueprint());
+		UBlueprint* Blueprint = GetBlueprint();
+		UMDViewModelGraphSubsystem::BroadcastBlueprintViewModelAssignmentsChanged(Blueprint);
+		FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+		FBlueprintActionDatabase::Get().RefreshAssetActions(Blueprint);
 	}
 }
 

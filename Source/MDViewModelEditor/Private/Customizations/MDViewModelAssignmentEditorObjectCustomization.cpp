@@ -49,9 +49,9 @@ public:
 	bool bAllowAbstract = false;
 	TArray<FMDViewModelSupportedClass> ProviderSupportedViewModelClasses;
 
-	virtual bool IsClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const UClass* InClass, TSharedRef< class FClassViewerFilterFuncs > InFilterFuncs ) override
+	virtual bool IsClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const UClass* InClass, TSharedRef< class FClassViewerFilterFuncs > InFilterFuncs) override
 	{
-		if (InClass == UMDViewModelBase::StaticClass())
+		if (InClass == UMDViewModelBase::StaticClass() || !InClass->IsChildOf<UMDViewModelBase>())
 		{
 			return false;
 		}
@@ -73,6 +73,11 @@ public:
 
 	virtual bool IsUnloadedClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const TSharedRef< const class IUnloadedBlueprintData > InUnloadedClassData, TSharedRef< class FClassViewerFilterFuncs > InFilterFuncs) override
 	{
+		if (!InUnloadedClassData->IsChildOf(UMDViewModelBase::StaticClass()))
+		{
+			return false;
+		}
+		
 		const bool bHasValidFlags = !InUnloadedClassData->HasAnyClassFlags(CLASS_Hidden | CLASS_HideDropDown | CLASS_Deprecated);
 		if (bHasValidFlags && (bAllowAbstract || !InUnloadedClassData->HasAnyClassFlags(CLASS_Abstract)))
 		{
