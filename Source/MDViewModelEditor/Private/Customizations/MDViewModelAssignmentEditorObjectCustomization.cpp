@@ -17,11 +17,13 @@
 
 namespace MDViewModelAssignmentEditorObjectCustomization_Private
 {
+	const FName VMHiddenPropertyMeta = TEXT("MDVMHidden");
+	
 	bool DoesStructHaveEditableProperties(const UScriptStruct* Struct)
 	{
 		for (TFieldIterator<const FProperty> It(Struct); It; ++It)
 		{
-			if (It->HasAnyPropertyFlags(CPF_Edit))
+			if (It->HasAnyPropertyFlags(CPF_Edit) && !It->HasMetaData(VMHiddenPropertyMeta))
 			{
 				return true;
 			}
