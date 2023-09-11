@@ -37,7 +37,14 @@ public:
 		, AssignmentData(AssignmentData)
 	{}
 	
-	virtual FName GetName() const override { return TEXT("MDVMAssignmentViewModel"); }
+	virtual FName GetName() const override
+	{
+		const TSubclassOf<UMDViewModelBase> VMClass = Assignment.ViewModelClass;
+		const FText VMClassName = IsValid(VMClass) ? VMClass->GetDisplayNameText() : INVTEXT("[Invalid Assignment]");
+		const FString AssignmentName = FString::Printf(TEXT("%s (%s)"), *VMClassName.ToString(), *Assignment.ViewModelName.ToString());
+		return *AssignmentName;
+	}
+	
 	virtual bool InitiallyCollapsed() const override { return true; }
 
 	virtual TSharedPtr<IPropertyHandle> GetPropertyHandle() const override
@@ -67,7 +74,6 @@ public:
 		}();
 		
 		NodeRow
-		.ShouldAutoExpand(false)
 		.OverrideResetToDefault(FResetToDefaultOverride::Hide(true))
 		.NameContent()
 		[
@@ -87,6 +93,8 @@ public:
 	
 	virtual void GenerateChildContent(IDetailChildrenBuilder& ChildrenBuilder) override
 	{
+		static const FName VMHiddenPropertyMeta = TEXT("MDVMHidden");
+		
 		UMDViewModelBase* ViewModel = GetViewModel();
 		if (IsValid(ViewModel) && Assignment.IsValid())
 		{
@@ -94,14 +102,12 @@ public:
 				.ForceShowProperty()
 				.AllowChildren(true)
 				.CreateCategoryNodes(false)
-				.HideRootObjectNode(true)
 				.UniqueId(*FString::Printf(TEXT("%s - %s"), *Assignment.ViewModelClass->GetDisplayNameText().ToString(), *Assignment.ViewModelName.ToString()));
 
 			IDetailPropertyRow* ChildRow = ChildrenBuilder.AddExternalObjects({ ViewModel }, Params);
 			if (ChildRow != nullptr)
 			{
-				ChildRow->OverrideResetToDefault(FResetToDefaultOverride::Hide(true));
-				ChildRow->IsEnabled(false);
+				ChildRow->Visibility(EVisibility::Collapsed);
 				if (const TSharedPtr<IPropertyHandle> Handle = ChildRow->GetPropertyHandle())
 				{
 					uint32 NumChildren = 0;
@@ -111,7 +117,15 @@ public:
 					{
 						if (const TSharedPtr<IPropertyHandle> Child = Handle->GetChildHandle(i))
 						{
-							Child->SetInstanceMetaData(TEXT("NoResetToDefault"), TEXT("true"));
+							const FProperty* Property = Child->GetProperty();
+							if (Property != nullptr && !Property->HasMetaData(VMHiddenPropertyMeta))
+							{
+								const bool bCanEdit = Property->HasAnyPropertyFlags(CPF_Edit);
+								ChildrenBuilder
+									.AddProperty(Child.ToSharedRef())
+									.IsEnabled(bCanEdit)
+									.EditCondition(bCanEdit, {});
+							}
 						}
 					}
 				}
@@ -158,7 +172,6 @@ public:
 	virtual void GenerateHeaderRowContent(FDetailWidgetRow& NodeRow) override
 	{
 		NodeRow
-		.ShouldAutoExpand(true)
 		.OverrideResetToDefault(FResetToDefaultOverride::Hide(true))
 		.NameContent()
 		[
@@ -321,8 +334,6 @@ void FMDViewModelAssignmentComponentCustomization::AddViewModelDetails()
 	}
 
 	IDetailCategoryBuilder& AssignmentCategory = DetailBuilder->EditCategory("ViewModelAssignments", INVTEXT("View Model Assignments"));
-	AssignmentCategory.RestoreExpansionState(true);
-	
 	TSharedRef<IPropertyHandle> ViewModelsHandle = DetailBuilder->GetProperty(TEXT("ViewModels"), UMDViewModelAssignmentComponent::StaticClass());
 	TSharedPtr<IPropertyHandle> AssignmentsHandle = nullptr;
 	
