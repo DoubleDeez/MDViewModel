@@ -107,8 +107,3 @@ TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& UMDViewMode
 {
 	return ViewModels;
 }
-
-const TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& UMDViewModelWidgetExtension::GetViewModels() const
-{
-	return ViewModels;
-}

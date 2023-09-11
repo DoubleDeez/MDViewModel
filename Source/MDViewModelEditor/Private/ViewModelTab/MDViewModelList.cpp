@@ -255,7 +255,7 @@ void SMDViewModelList::PopulateAssignments()
 
 		if (AssignmentPtr == nullptr)
 		{
-			Assignments.Add(MakeShareable(new FMDViewModelEditorAssignment(MyAssignment)));
+			Assignments.Add(MakeShared<FMDViewModelEditorAssignment>(MyAssignment));
 		}
 		else
 		{

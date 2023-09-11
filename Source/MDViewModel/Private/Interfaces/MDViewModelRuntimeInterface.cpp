@@ -15,6 +15,11 @@ UClass* IMDViewModelRuntimeInterface::GetOwningObjectClass() const
 	return IsValid(Object) ? Object->GetClass() : nullptr;
 }
 
+const TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& IMDViewModelRuntimeInterface::GetViewModels() const
+{
+	return const_cast<IMDViewModelRuntimeInterface*>(this)->GetViewModels();
+}
+
 UMDViewModelBase* IMDViewModelRuntimeInterface::SetViewModel(UMDViewModelBase* ViewModel, const FMDViewModelAssignmentReference& Assignment)
 {
 	UE_LOGFMT(LogMDViewModel, Verbose, "Setting View Model to [{VMInstance}] for assignment [{Assignment}] on Object [{ObjectName}] (Was [{CurrentVM}])",
@@ -59,14 +64,25 @@ UMDViewModelBase* IMDViewModelRuntimeInterface::SetViewModel(UMDViewModelBase* V
 
 UMDViewModelBase* IMDViewModelRuntimeInterface::SetViewModelOfClass(const UObject* WorldContextObject, UObject* ContextObject, const FMDViewModelAssignmentReference& Assignment, const FInstancedStruct& ViewModelSettings)
 {
-	UE_LOGFMT(LogMDViewModel, Verbose, "Creating View Model for Assignment [{Assignment}] for Object [{ObjectName}]",
-		("Assignment", Assignment),
-		("ObjectName", GetPathNameSafe(GetOwningObject())));
-	UMDViewModelBase* ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), Assignment.ViewModelClass.LoadSynchronous());
-	if (IsValid(ViewModel))
+	const UClass* VMClass = Assignment.ViewModelClass.LoadSynchronous();
+	if (IsValid(VMClass))
 	{
-		ViewModel->InitializeViewModelWithContext(ViewModelSettings, ContextObject, WorldContextObject);
-		return SetViewModel(ViewModel, Assignment);
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+		const FName NameBase = *FString::Printf(TEXT("SetVMofClass_%s_%s"), *VMClass->GetName(), *Assignment.ViewModelName.ToString());
+		const FName VMObjectName = MakeUniqueObjectName(GetTransientPackage(), VMClass, NameBase);
+#else
+		const FName VMObjectName = NAME_None;
+#endif
+	
+		UE_LOGFMT(LogMDViewModel, Verbose, "Creating View Model for Assignment [{Assignment}] for Object [{ObjectName}]",
+			("Assignment", Assignment),
+			("ObjectName", GetPathNameSafe(GetOwningObject())));
+		UMDViewModelBase* ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), VMClass, VMObjectName);
+		if (IsValid(ViewModel))
+		{
+			ViewModel->InitializeViewModelWithContext(ViewModelSettings, ContextObject, WorldContextObject);
+			return SetViewModel(ViewModel, Assignment);
+		}
 	}
 
 	return nullptr;
@@ -92,6 +108,24 @@ void IMDViewModelRuntimeInterface::ClearViewModel(const FMDViewModelAssignmentRe
 			BroadcastViewModelChanged(OldViewModel, nullptr, Assignment);
 		}
 	}
+}
+
+FDelegateHandle IMDViewModelRuntimeInterface::ListenForAnyViewModelChanged(FSimpleDelegate&& Delegate)
+{
+	return OnAnyViewModelSetDelegates.Add(MoveTemp(Delegate));
+}
+
+void IMDViewModelRuntimeInterface::StopListeningForAnyViewModelChanged(FDelegateHandle& Handle)
+{
+	if (OnAnyViewModelSetDelegates.Remove(Handle))
+	{
+		Handle.Reset();
+	}
+}
+
+void IMDViewModelRuntimeInterface::StopListeningForAnyViewModelChanged(const void* BoundObject)
+{
+	OnAnyViewModelSetDelegates.RemoveAll(BoundObject);
 }
 
 FDelegateHandle IMDViewModelRuntimeInterface::ListenForChanges(FMDVMOnViewModelSet::FDelegate&& Delegate, const FMDViewModelAssignmentReference& Assignment)

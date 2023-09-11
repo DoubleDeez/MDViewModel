@@ -86,7 +86,7 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::BP_GetViewModel(UObject* Object, 
 	return nullptr;
 }
 
-UMDViewModelBase* UMDViewModelFunctionLibrary::FindOrCreateCachedViewModel(const UObject* WorldContextObject, UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, FName CachedViewModelKey, const FInstancedStruct& ViewModelSettings)
+UMDViewModelBase* UMDViewModelFunctionLibrary::FindOrCreateCachedViewModel(const UObject* WorldContextObject, UObject* CacheContextObject, const FInstancedStruct& ViewModelSettings, TSubclassOf<UMDViewModelBase> ViewModelClass, FName CachedViewModelKey)
 {
 	return UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(WorldContextObject, CacheContextObject, ViewModelClass, CachedViewModelKey, ViewModelSettings);
 }

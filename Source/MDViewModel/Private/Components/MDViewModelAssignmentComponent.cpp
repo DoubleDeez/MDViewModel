@@ -81,11 +81,6 @@ TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& UMDViewMode
 	return ViewModels;
 }
 
-const TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& UMDViewModelAssignmentComponent::GetViewModels() const
-{
-	return ViewModels;
-}
-
 void UMDViewModelAssignmentComponent::BindDelegates(IMDViewModelRuntimeInterface& Object, UBlueprintGeneratedClass* Class)
 {
 	if (IsValid(Class))

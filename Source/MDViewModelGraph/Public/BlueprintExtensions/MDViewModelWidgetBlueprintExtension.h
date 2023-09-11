@@ -17,7 +17,6 @@ class MDVIEWMODELGRAPH_API UMDViewModelWidgetBlueprintExtension : public UWidget
 	GENERATED_BODY()
 
 public:
-	virtual const TArray<FMDViewModelEditorAssignment>& GetAssignments() const override { return Assignments; }
 	virtual TArray<FMDViewModelEditorAssignment>& GetAssignments() override { return Assignments; }
 
 protected:

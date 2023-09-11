@@ -575,7 +575,7 @@ FReply FMDViewModelAssignmentEditorObjectCustomization::OnClassPickerButtonClick
 		{
 			FClassViewerInitializationOptions ClassPickerOptions;
 			ClassPickerOptions.bShowNoneOption = false;
-			ClassPickerOptions.ClassFilters.Add(MakeShareable(new FMDViewModelProviderClassFilter(Provider)));
+			ClassPickerOptions.ClassFilters.Add(MakeShared<FMDViewModelProviderClassFilter>(Provider));
 			ClassPickerOptions.InitiallySelectedClass = GetCurrentViewModelClass();
 			ClassPickerOptions.NameTypeToDisplay = GetDefault<UMDViewModelEditorConfig>()->GetNameTypeToDisplay();
 

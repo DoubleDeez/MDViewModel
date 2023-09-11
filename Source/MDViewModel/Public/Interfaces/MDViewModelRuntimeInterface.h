@@ -34,11 +34,17 @@ public:
 	virtual UWorld* ResolveWorld() const = 0;
 	virtual ULocalPlayer* ResolveOwningLocalPlayer() const = 0;
 	virtual APlayerController* ResolveOwningPlayer() const = 0;
+	
+	const TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& GetViewModels() const;
 
 	UMDViewModelBase* SetViewModel(UMDViewModelBase* ViewModel, const FMDViewModelAssignmentReference& Assignment);
 	UMDViewModelBase* SetViewModelOfClass(const UObject* WorldContextObject, UObject* ContextObject, const FMDViewModelAssignmentReference& Assignment, const FInstancedStruct& ViewModelSettings);
 	UMDViewModelBase* GetViewModel(const FMDViewModelAssignmentReference& Assignment) const;
 	void ClearViewModel(const FMDViewModelAssignmentReference& Assignment);
+
+	FDelegateHandle ListenForAnyViewModelChanged(FSimpleDelegate&& Delegate);
+	void StopListeningForAnyViewModelChanged(FDelegateHandle& Handle);
+	void StopListeningForAnyViewModelChanged(const void* BoundObject);
 	
 	FDelegateHandle ListenForChanges(FMDVMOnViewModelSet::FDelegate&& Delegate, const FMDViewModelAssignmentReference& Assignment);
 	void StopListeningForChanges(FDelegateHandle& Handle, const FMDViewModelAssignmentReference& Assignment);
@@ -56,7 +62,6 @@ public:
 
 protected:
 	virtual TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& GetViewModels() = 0;
-	virtual const TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& GetViewModels() const = 0;
 	
 	void PopulateViewModels();
 	void CleanUpViewModels();
@@ -64,6 +69,7 @@ protected:
 	void BroadcastViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, const FMDViewModelAssignmentReference& Assignment);
 	
 private:
+	FSimpleMulticastDelegate OnAnyViewModelSetDelegates;;
 	TMap<FMDViewModelAssignmentReference, FMDVMOnViewModelSet> OnViewModelSetDelegates;
 	TMap<FMDViewModelAssignmentReference, TArray<FMDVMOnViewModelSetDynamic>> OnViewModelSetDynamicDelegates;
 };

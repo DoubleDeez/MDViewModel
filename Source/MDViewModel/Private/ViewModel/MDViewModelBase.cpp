@@ -169,7 +169,14 @@ UMDViewModelBase* UMDViewModelBase::CreateSubViewModel(TSubclassOf<UMDViewModelB
 {
 	checkf(IsValid(ViewModelClass), TEXT("UMDViewModelBase::CreateSubViewModel required a valid ViewModelClass"));
 
-	UMDViewModelBase* ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), ViewModelClass);
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+	const FName NameBase = *FString::Printf(TEXT("SubVM_%s_From_%s"), *ViewModelClass->GetName(), *GetName());
+	const FName VMObjectName = MakeUniqueObjectName(GetTransientPackage(), ViewModelClass, NameBase);
+#else
+	const FName VMObjectName = NAME_None;
+#endif
+	
+	UMDViewModelBase* ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), ViewModelClass, VMObjectName);
 	ViewModel->InitializeViewModelWithContext(ViewModelSettings, InContextObject, GetEffectiveWorldContextObject());
 	return ViewModel;
 }

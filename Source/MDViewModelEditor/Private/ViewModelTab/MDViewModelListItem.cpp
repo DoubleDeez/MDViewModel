@@ -210,7 +210,11 @@ FReply SMDViewModelListItem::OnDragDetected(const FGeometry& MyGeometry, const F
 
 FReply SMDViewModelListItem::OnMouseButtonDoubleClick(const FGeometry& InMyGeometry, const FPointerEvent& InMouseEvent)
 {
-	OnEditClicked();
+	if (CanEdit())
+	{
+		OnEditClicked();
+	}
+	
 	return FReply::Handled();
 }
 

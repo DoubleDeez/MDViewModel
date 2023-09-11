@@ -22,13 +22,13 @@ class MDVIEWMODELGRAPH_API IMDViewModelAssignableInterface
 	GENERATED_BODY()
 
 public:
-	virtual const TArray<FMDViewModelEditorAssignment>& GetAssignments() const = 0;
 	virtual TArray<FMDViewModelEditorAssignment>& GetAssignments() = 0;
 	
 	virtual UBlueprint* GetBlueprint() const;
 
 	void ModifyObject();
 	
+	const TArray<FMDViewModelEditorAssignment>& GetAssignments() const;
 	void GetAllAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments) const;
 
 	void AddAssignment(FMDViewModelEditorAssignment&& Assignment);

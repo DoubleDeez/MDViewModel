@@ -10,7 +10,7 @@
 
 class UBlueprintGeneratedClass;
 
-// Auto-generated component to track view models on an actor
+// Auto-generated component to track view model assignments and instances on an actor
 UCLASS(Hidden, meta=(BlueprintSpawnableComponent))
 class MDVIEWMODEL_API UMDViewModelAssignmentComponent : public UActorComponent, public IMDVMCompiledAssignmentsInterface, public IMDViewModelRuntimeInterface
 {
@@ -34,19 +34,16 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	virtual TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& GetViewModels() override;
-	virtual const TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& GetViewModels() const override;
-
-	// TODO - Details customization to hide all properties and add a button to open view model tab
 
 private:
 	static void BindDelegates(IMDViewModelRuntimeInterface& Object, UBlueprintGeneratedClass* Class);
 	static void UnbindDelegates(IMDViewModelRuntimeInterface& Object, UBlueprintGeneratedClass* Class);
 
 	// The compiled assignments for the owning actor
-	UPROPERTY(DuplicateTransient)
+	UPROPERTY(VisibleAnywhere, DuplicateTransient, Category = "View Model Component")
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
 
 	// The runtime view model instances for the owning actor
-	UPROPERTY(Transient)
+	UPROPERTY(VisibleAnywhere, Transient, Category = "View Model Component")
 	TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>> ViewModels;
 };

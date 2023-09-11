@@ -21,10 +21,17 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const UObject
 	TObjectPtr<UMDViewModelBase>& ViewModel = GetViewModelCache().FindOrAdd(Key);
 	if (!IsValid(ViewModel))
 	{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+		const FName NameBase = *FString::Printf(TEXT("%s_%s_%s"), *GetDebugViewModelNameBase().ToString(), *Key.ViewModelClass->GetName(), *Key.ViewModelName.ToString());
+		const FName VMObjectName = MakeUniqueObjectName(GetTransientPackage(), Key.ViewModelClass, NameBase);
+#else
+		const FName VMObjectName = NAME_None;
+#endif
+		
 		UE_LOGFMT(LogMDViewModel, Verbose, "Creating Cached View Model with Key [{Key}] on Cache [{CacheName}]",
 			("Key", Key),
 			("CacheName", GetCacheDebugName()));
-		ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), Key.ViewModelClass);
+		ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), Key.ViewModelClass, VMObjectName);
 		ViewModel->InitializeViewModelWithContext(ViewModelSettings, GetViewModelOwner(), WorldContextObject);
 	}
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
@@ -92,3 +99,20 @@ const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& IMDViewModelC
 {
 	return const_cast<IMDViewModelCacheInterface*>(this)->GetViewModelCache();
 }
+
+FName IMDViewModelCacheInterface::CreateDebugViewModelNameBase() const
+{
+	return *FString::Printf(TEXT("CachedVM_%s"), *GetCacheDebugName());
+}
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+const FName& IMDViewModelCacheInterface::GetDebugViewModelNameBase()
+{
+	if (DebugViewModelNameBase == NAME_None)
+	{
+		DebugViewModelNameBase = CreateDebugViewModelNameBase();
+	}
+
+	return DebugViewModelNameBase;
+}
+#endif

@@ -23,6 +23,11 @@ void IMDViewModelAssignableInterface::ModifyObject()
 	}
 }
 
+const TArray<FMDViewModelEditorAssignment>& IMDViewModelAssignableInterface::GetAssignments() const
+{
+	return const_cast<IMDViewModelAssignableInterface*>(this)->GetAssignments();
+}
+
 void IMDViewModelAssignableInterface::GetAllAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments) const
 {
 	for (const FMDViewModelEditorAssignment& Assignment : GetAssignments())

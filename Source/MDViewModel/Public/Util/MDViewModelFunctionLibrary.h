@@ -38,7 +38,7 @@ public:
 	static UMDViewModelBase* BP_GetViewModel(UPARAM(meta = (VMAssignment = "Assignment")) UObject* Object, const FMDViewModelAssignmentReference& Assignment, bool& IsValid);
 
 	UFUNCTION(BlueprintCallable, Category = "View Model", meta = (AutoCreateRefTerm = "ViewModelSettings", DeterminesOutputType="ViewModelClass", WorldContext="WorldContextObject"))
-	static UMDViewModelBase* FindOrCreateCachedViewModel(const UObject* WorldContextObject, UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, FName CachedViewModelKey = TEXT("Default"), const FInstancedStruct& ViewModelSettings = FInstancedStruct());
+	static UMDViewModelBase* FindOrCreateCachedViewModel(const UObject* WorldContextObject, UObject* CacheContextObject, const FInstancedStruct& ViewModelSettings, TSubclassOf<UMDViewModelBase> ViewModelClass, FName CachedViewModelKey = TEXT("Default"));
 	
 	UFUNCTION(BlueprintCallable, Category = "View Model", meta = (AutoCreateRefTerm = "ViewModelSettings", DeterminesOutputType="ViewModelClass", WorldContext="WorldContextObject"))
 	static UMDViewModelBase* FindCachedViewModel(const UObject* WorldContextObject, const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, FName CachedViewModelKey = TEXT("Default"));

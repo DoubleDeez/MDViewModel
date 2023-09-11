@@ -41,8 +41,16 @@ protected:
 
 	virtual const TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& GetViewModelCache() const;
 
+	virtual FName CreateDebugViewModelNameBase() const;
+
 private:
 	bool bIsShutdown = false;
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+	const FName& GetDebugViewModelNameBase();
+	
+	FName DebugViewModelNameBase = NAME_None;
+#endif
 };
 
 FORCEINLINE uint32 GetTypeHash(const TWeakInterfacePtr<IMDViewModelCacheInterface>& WeakInterfacePtr)

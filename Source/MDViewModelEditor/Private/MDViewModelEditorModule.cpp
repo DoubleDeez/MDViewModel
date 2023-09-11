@@ -6,6 +6,8 @@
 #include "UMGEditorModule.h"
 #include "BlueprintModes/WidgetBlueprintApplicationMode.h"
 #include "BlueprintModes/WidgetBlueprintApplicationModes.h"
+#include "Components/MDViewModelAssignmentComponent.h"
+#include "Customizations/MDViewModelAssignmentComponentCustomization.h"
 #include "Customizations/MDViewModelAssignmentReferenceCustomization.h"
 #include "EdGraphUtilities.h"
 #include "Framework/Application/SlateApplication.h"
@@ -40,10 +42,11 @@ void FMDViewModelEditorModule::StartupModule()
 
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditorModule.RegisterCustomPropertyTypeLayout(FMDViewModelAssignmentReference::StaticStruct()->GetFName(), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FMDViewModelAssignmentReferenceCustomization::MakeInstance));
+	PropertyEditorModule.RegisterCustomClassLayout(UMDViewModelAssignmentComponent::StaticClass()->GetFName(), FOnGetDetailCustomizationInstance::CreateStatic(&FMDViewModelAssignmentComponentCustomization::MakeInstance));
 
 	GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OnAssetEditorOpened().AddRaw(this, &FMDViewModelEditorModule::RegisterBlueprintEditorDrawer);
 	
-	ViewModelGraphPanelPinFactory = MakeShareable(new FMDViewModelGraphPanelPinFactory());
+	ViewModelGraphPanelPinFactory = MakeShared<FMDViewModelGraphPanelPinFactory>();
 	FEdGraphUtilities::RegisterVisualPinFactory(ViewModelGraphPanelPinFactory);
 }
 
@@ -76,6 +79,7 @@ void FMDViewModelEditorModule::ShutdownModule()
 	if (FPropertyEditorModule* PropertyEditorModule = FModuleManager::GetModulePtr<FPropertyEditorModule>("PropertyEditor"))
 	{
 		PropertyEditorModule->UnregisterCustomPropertyTypeLayout(FMDViewModelAssignmentReference::StaticStruct()->GetFName());
+		PropertyEditorModule->UnregisterCustomPropertyTypeLayout(UMDViewModelAssignmentComponent::StaticClass()->GetFName());
 	}
 }
 

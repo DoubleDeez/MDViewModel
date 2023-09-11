@@ -35,7 +35,6 @@ public:
 
 protected:
 	virtual TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& GetViewModels() override;
-	virtual const TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& GetViewModels() const override;
 
 private:
 	UPROPERTY(Transient)

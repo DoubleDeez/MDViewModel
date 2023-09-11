@@ -381,6 +381,10 @@ void UMDViewModelProvider_Cached::GetExpectedContextObjectType(const FMDViewMode
 	{
 		OutContextObjectClasses.Add(ProviderSettings.WorldActorFilter.ActorClass.IsNull() ? AActor::StaticClass() : ProviderSettings.WorldActorFilter.ActorClass.LoadSynchronous());
 	}
+	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_Self)
+	{
+		OutContextObjectClasses.Add(AssignedObjectClass);
+	}
 }
 #endif
 
