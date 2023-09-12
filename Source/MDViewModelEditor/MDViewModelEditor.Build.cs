@@ -15,6 +15,10 @@ public class MDViewModelEditor : ModuleRules
                 "StructUtilsEditor"
             }
         );
+		
+#if UE_5_3_OR_LATER
+        PublicDependencyModuleNames.Add("FieldNotification");
+#endif
 
         PrivateDependencyModuleNames.AddRange(
             new string[]
@@ -32,6 +36,7 @@ public class MDViewModelEditor : ModuleRules
                 "SharedSettingsWidgets",
                 "Slate",
                 "SlateCore",
+                "SourceControl",
                 "StructUtils",
                 "ToolWidgets",
                 "UMG",

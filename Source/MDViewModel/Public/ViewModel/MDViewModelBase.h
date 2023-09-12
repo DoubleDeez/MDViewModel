@@ -1,8 +1,17 @@
 #pragma once
 
+#include "Runtime/Launch/Resources/Version.h"
+
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+#include "FieldNotificationDeclaration.h"
+#include "FieldNotificationDelegate.h"
+#include "INotifyFieldValueChanged.h"
+#else
 #include "FieldNotification/FieldMulticastDelegate.h"
 #include "FieldNotification/FieldNotificationDeclaration.h"
 #include "FieldNotification/IFieldValueChanged.h"
+#endif
+
 #include "InstancedStruct.h"
 #include "UObject/Object.h"
 #include "UObject/Package.h"

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Launch/Resources/Version.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "MDViewModelAssignment.h"
 #include "UObject/WeakInterfacePtr.h"
 

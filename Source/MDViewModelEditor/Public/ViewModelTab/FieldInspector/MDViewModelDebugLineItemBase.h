@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Debugging/SKismetDebugTreeView.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "Templates/SubclassOf.h"
 #include "Util/MDViewModelAssignmentReference.h"
 
@@ -17,7 +18,11 @@ public:
 	// TODO - Add DebugViewModel
 	void UpdateViewModel(const FName& InViewModelName, TSubclassOf<UMDViewModelBase> InViewModelClass);
 
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+	virtual uint32 GetHash() const override
+#else
 	virtual uint32 GetHash() override
+#endif
 	{
 		return HashCombine(GetTypeHash(ViewModelName), GetTypeHash(ViewModelClass));
 	}

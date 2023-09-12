@@ -3,7 +3,7 @@
 #include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 #include "Components/MDViewModelAssignmentComponent.h"
 #include "Engine/SCS_Node.h"
-#include "Launch/Resources/Version.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "Util/MDViewModelGraphStatics.h"
 #include "Util/MDViewModelUtils.h"
 #include "WidgetBlueprint.h"

@@ -2,7 +2,7 @@
 
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
-#include "Launch/Resources/Version.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "Serialization/CompactBinaryWriter.h"
 #include "ViewModel/MDViewModelBase.h"
 

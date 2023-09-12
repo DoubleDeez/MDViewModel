@@ -4,13 +4,10 @@
 #include "DetailWidgetRow.h"
 #include "Engine/Engine.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
-#include "Framework/Notifications/NotificationManager.h"
-#include "HAL/PlatformFileManager.h"
 #include "IDetailGroup.h"
 #include "Kismet2/SClassPickerDialog.h"
-#include "Launch/Resources/Version.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "MDViewModelEditorConfig.h"
-#include "SSettingsEditorCheckoutNotice.h"
 #include "Util/MDViewModelClassFilter.h"
 #include "Util/MDVMEditorUtils.h"
 #include "ViewModel/MDViewModelBase.h"
@@ -19,7 +16,6 @@
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
-#include "Widgets/Notifications/SNotificationList.h"
 
 namespace MDViewModelAssignmentEditorObjectCustomization_Private
 {
@@ -620,29 +616,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::OnConfigPropertyChanged(co
 	if (Event.GetNumObjectsBeingEdited() > 0)
 	{
 		UMDViewModelBase* ViewModelCDO = Cast<UMDViewModelBase>(const_cast<UObject*>(Event.GetObjectBeingEdited(0)));
-		if (IsValid(ViewModelCDO) && ViewModelCDO->IsTemplate())
-		{
-			const FString ConfigFilePath = FPaths::ConvertRelativePathToFull(ViewModelCDO->GetDefaultConfigFilename());
-			const bool bIsNewFile = !FPlatformFileManager::Get().GetPlatformFile().FileExists(*ConfigFilePath);
-			if (!bIsNewFile && !SettingsHelpers::IsCheckedOut(ConfigFilePath))
-			{
-				if (!SettingsHelpers::CheckOutOrAddFile(ConfigFilePath, true))
-				{
-					FNotificationInfo Info = FNotificationInfo(FText::Format(INVTEXT("Could not check out config file {0}"), FText::FromString(FPaths::GetCleanFilename(ConfigFilePath))));
-					Info.ExpireDuration = 6.0f;
-					FSlateNotificationManager::Get().AddNotification(Info);
-				
-					SettingsHelpers::MakeWritable(ConfigFilePath);
-				}
-			}
-
-			ViewModelCDO->TryUpdateDefaultConfigFile();
-
-			if (bIsNewFile)
-			{
-				SettingsHelpers::CheckOutOrAddFile(ConfigFilePath, true);
-			}
-		}
+		MDVMEditorUtils::SaveViewModelConfig(ViewModelCDO);
 	}
 }
 

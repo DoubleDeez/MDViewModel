@@ -1,6 +1,6 @@
 #include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 
-#include "Launch/Resources/Version.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
 

@@ -1,6 +1,12 @@
 #pragma once
 
+#include "Runtime/Launch/Resources/Version.h"
+
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+#include "FieldNotificationId.h"
+#else
 #include "FieldNotification/FieldId.h"
+#endif
 #include "MDVMBlueprintBindingBase.h"
 #include "MDViewModelFieldNotifyBinding.generated.h"
 

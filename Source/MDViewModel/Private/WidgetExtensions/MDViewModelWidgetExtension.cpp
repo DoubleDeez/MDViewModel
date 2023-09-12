@@ -1,6 +1,6 @@
 #include "WidgetExtensions/MDViewModelWidgetExtension.h"
 
-#include "Launch/Resources/Version.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "Blueprint/UserWidget.h"
 #include "UObject/Package.h"
 

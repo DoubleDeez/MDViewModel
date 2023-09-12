@@ -5,7 +5,7 @@
 #include "Engine/Blueprint.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "IDetailChildrenBuilder.h"
-#include "Launch/Resources/Version.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "PropertyHandle.h"
 #include "ScopedTransaction.h"
 #include "Util/MDViewModelAssignmentData.h"

@@ -15,7 +15,11 @@ public:
 
 	virtual bool Compare(const FDebugLineItem* BaseOther) const override;
 
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+	virtual uint32 GetHash() const override
+#else
 	virtual uint32 GetHash() override
+#endif
 	{
 		return HashCombine(GetTypeHash(PropertyPtr), GetTypeHash(ValuePtr));
 	}

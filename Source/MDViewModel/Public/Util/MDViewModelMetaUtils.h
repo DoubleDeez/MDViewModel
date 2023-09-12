@@ -1,7 +1,14 @@
 #pragma once
 
+#include "Runtime/Launch/Resources/Version.h"
+
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+template<typename T>
+using TMDVMResolveVMType = typename std::remove_cv_t<typename TRemoveObjectPointer<typename std::remove_cv_t<typename TRemovePointer<T>::Type>>::Type>;
+#else
 template<typename T>
 using TMDVMResolveVMType = typename TRemoveCV<typename TRemoveObjectPointer<typename TRemoveCV<typename TRemovePointer<T>::Type>::Type>::Type>::Type;
+#endif
 
 template<typename Func>
 struct TMDVMFuncTraits {};

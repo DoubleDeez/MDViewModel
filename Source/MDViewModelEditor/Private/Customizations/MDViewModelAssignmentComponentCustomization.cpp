@@ -5,7 +5,7 @@
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
 #include "IDetailChildrenBuilder.h"
-#include "Launch/Resources/Version.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "Util/MDVMEditorUtils.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/MDViewModelTab.h"

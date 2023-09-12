@@ -1,7 +1,7 @@
 #include "ViewModelProviders/MDViewModelProvider_Unique.h"
 
 #include "Engine/Blueprint.h"
-#include "Launch/Resources/Version.h"
+#include "Runtime/Launch/Resources/Version.h"
 #if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 #include "Logging/StructuredLog.h"
 #endif

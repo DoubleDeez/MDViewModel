@@ -4,19 +4,15 @@
 #include "DetailCategoryBuilder.h"
 #include "DetailLayoutBuilder.h"
 #include "DetailsViewArgs.h"
-#include "Framework/Notifications/NotificationManager.h"
-#include "HAL/PlatformFileManager.h"
 #include "IDetailCustomization.h"
 #include "MDViewModelEditorConfig.h"
 #include "Modules/ModuleManager.h"
 #include "PropertyEditorModule.h"
-#include "SSettingsEditorCheckoutNotice.h"
 #include "Util/MDViewModelClassFilter.h"
 #include "Util/MDVMEditorUtils.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Layout/SBox.h"
-#include "Widgets/Notifications/SNotificationList.h"
 
 class FMDVMConfigDetails : public IDetailCustomization
 {
@@ -117,29 +113,7 @@ void SMDVMConfigEditor::NotifyPostChange(const FPropertyChangedEvent& PropertyCh
 		if (PropertyChangedEvent.GetNumObjectsBeingEdited() > 0)
 		{
 			UMDViewModelBase* ViewModelCDO = Cast<UMDViewModelBase>(const_cast<UObject*>(PropertyChangedEvent.GetObjectBeingEdited(0)));
-			if (IsValid(ViewModelCDO) && ViewModelCDO->IsTemplate())
-			{
-				const FString ConfigFilePath = FPaths::ConvertRelativePathToFull(ViewModelCDO->GetDefaultConfigFilename());
-				const bool bIsNewFile = !FPlatformFileManager::Get().GetPlatformFile().FileExists(*ConfigFilePath);
-				if (!bIsNewFile && !SettingsHelpers::IsCheckedOut(ConfigFilePath))
-				{
-					if (!SettingsHelpers::CheckOutOrAddFile(ConfigFilePath, true))
-					{
-						FNotificationInfo Info = FNotificationInfo(FText::Format(INVTEXT("Could not check out config file {0}"), FText::FromString(FPaths::GetCleanFilename(ConfigFilePath))));
-						Info.ExpireDuration = 6.0f;
-						FSlateNotificationManager::Get().AddNotification(Info);
-				
-						SettingsHelpers::MakeWritable(ConfigFilePath);
-					}
-				}
-
-				ViewModelCDO->TryUpdateDefaultConfigFile();
-
-				if (bIsNewFile)
-				{
-					SettingsHelpers::CheckOutOrAddFile(ConfigFilePath, true);
-				}
-			}
+			MDVMEditorUtils::SaveViewModelConfig(ViewModelCDO);
 		}
 	}
 }
