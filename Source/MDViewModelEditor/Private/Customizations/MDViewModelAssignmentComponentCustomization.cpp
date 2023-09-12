@@ -5,6 +5,7 @@
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
 #include "IDetailChildrenBuilder.h"
+#include "Util/MDVMEditorUtils.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/MDViewModelTab.h"
 #include "Widgets/Input/SButton.h"
@@ -93,8 +94,6 @@ public:
 	
 	virtual void GenerateChildContent(IDetailChildrenBuilder& ChildrenBuilder) override
 	{
-		static const FName VMHiddenPropertyMeta = TEXT("MDVMHidden");
-		
 		UMDViewModelBase* ViewModel = GetViewModel();
 		if (IsValid(ViewModel) && Assignment.IsValid())
 		{
@@ -118,7 +117,7 @@ public:
 						if (const TSharedPtr<IPropertyHandle> Child = Handle->GetChildHandle(i))
 						{
 							const FProperty* Property = Child->GetProperty();
-							if (Property != nullptr && !Property->HasMetaData(VMHiddenPropertyMeta))
+							if (Property != nullptr && !Property->HasMetaData(MDVMEditorUtils::VMHiddenMeta))
 							{
 								const bool bCanEdit = Property->HasAnyPropertyFlags(CPF_Edit);
 								ChildrenBuilder

@@ -3,6 +3,7 @@
 #include "Templates/SubclassOf.h"
 #include "Modules/ModuleManager.h"
 
+class SMDVMConfigEditor;
 class FBlueprintEditor;
 class FLayoutExtender;
 class FMDViewModelGraphPanelPinFactory;
@@ -29,4 +30,5 @@ private:
 	void RegisterBlueprintEditorDrawer(UObject* Asset);
 	
 	TSharedPtr<FMDViewModelGraphPanelPinFactory> ViewModelGraphPanelPinFactory;
+	TSharedPtr<SMDVMConfigEditor> ViewModelConfigEditor;
 };

@@ -1,6 +1,5 @@
 #include "Customizations/MDViewModelAssignmentEditorObjectCustomization.h"
 
-#include "ClassViewerFilter.h"
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
 #include "Engine/Engine.h"
@@ -11,6 +10,8 @@
 #include "Kismet2/SClassPickerDialog.h"
 #include "MDViewModelEditorConfig.h"
 #include "SSettingsEditorCheckoutNotice.h"
+#include "Util/MDViewModelClassFilter.h"
+#include "Util/MDVMEditorUtils.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/MDViewModelAssignmentDialog.h"
 #include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
@@ -21,13 +22,11 @@
 
 namespace MDViewModelAssignmentEditorObjectCustomization_Private
 {
-	const FName VMHiddenPropertyMeta = TEXT("MDVMHidden");
-	
 	bool DoesStructHaveEditableProperties(const UScriptStruct* Struct)
 	{
 		for (TFieldIterator<const FProperty> It(Struct); It; ++It)
 		{
-			if (It->HasAnyPropertyFlags(CPF_Edit) && !It->HasMetaData(VMHiddenPropertyMeta))
+			if (It->HasAnyPropertyFlags(CPF_Edit) && !It->HasMetaData(MDVMEditorUtils::VMHiddenMeta))
 			{
 				return true;
 			}
@@ -40,7 +39,7 @@ namespace MDViewModelAssignmentEditorObjectCustomization_Private
 	{
 		for (TFieldIterator<const FProperty> It(VMClass); It; ++It)
 		{
-			if (It->HasAnyPropertyFlags(CPF_Config) && !It->HasMetaData(VMHiddenPropertyMeta))
+			if (It->HasAnyPropertyFlags(CPF_Config) && !It->HasMetaData(MDVMEditorUtils::VMHiddenMeta))
 			{
 				return true;
 			}
@@ -49,69 +48,6 @@ namespace MDViewModelAssignmentEditorObjectCustomization_Private
 		return false;
 	}
 }
-
-
-class FMDViewModelProviderClassFilter : public IClassViewerFilter
-{
-public:
-	FMDViewModelProviderClassFilter(UMDViewModelProviderBase* Provider)
-	{
-		if (IsValid(Provider))
-		{
-			Provider->GetSupportedViewModelClasses(ProviderSupportedViewModelClasses);
-			bAllowAbstract = !Provider->DoesCreateViewModels();
-		}
-	}
-
-	bool bAllowAbstract = false;
-	TArray<FMDViewModelSupportedClass> ProviderSupportedViewModelClasses;
-
-	virtual bool IsClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const UClass* InClass, TSharedRef< class FClassViewerFilterFuncs > InFilterFuncs) override
-	{
-		if (InClass == UMDViewModelBase::StaticClass() || !InClass->IsChildOf<UMDViewModelBase>())
-		{
-			return false;
-		}
-		
-		const bool bHasValidFlags = !InClass->HasAnyClassFlags(CLASS_Hidden | CLASS_HideDropDown | CLASS_Deprecated);
-		if (bHasValidFlags && (bAllowAbstract || !InClass->HasAnyClassFlags(CLASS_Abstract)))
-		{
-			for (const FMDViewModelSupportedClass& SupportedClass : ProviderSupportedViewModelClasses)
-			{
-				if (SupportedClass.Class == InClass || (SupportedClass.bAllowChildClasses && InClass->IsChildOf(SupportedClass.Class)))
-				{
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
-
-	virtual bool IsUnloadedClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const TSharedRef< const class IUnloadedBlueprintData > InUnloadedClassData, TSharedRef< class FClassViewerFilterFuncs > InFilterFuncs) override
-	{
-		if (!InUnloadedClassData->IsChildOf(UMDViewModelBase::StaticClass()))
-		{
-			return false;
-		}
-		
-		const bool bHasValidFlags = !InUnloadedClassData->HasAnyClassFlags(CLASS_Hidden | CLASS_HideDropDown | CLASS_Deprecated);
-		if (bHasValidFlags && (bAllowAbstract || !InUnloadedClassData->HasAnyClassFlags(CLASS_Abstract)))
-		{
-			for (const FMDViewModelSupportedClass& SupportedClass : ProviderSupportedViewModelClasses)
-			{
-				if (SupportedClass.bAllowChildClasses && InUnloadedClassData->IsChildOf(SupportedClass.Class))
-				{
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
-
-};
-
 
 FMDViewModelAssignmentEditorObjectCustomization::FMDViewModelAssignmentEditorObjectCustomization(TSharedRef<SMDViewModelAssignmentDialog> InDialog)
 	: Dialog(InDialog)
@@ -496,7 +432,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 							if (const TSharedPtr<IPropertyHandle> Child = CDOHandle->GetChildHandle(i))
 							{
 								const FProperty* Property = Child->GetProperty();
-								if (Property != nullptr && Property->HasAnyPropertyFlags(CPF_Config) && !Property->HasMetaData(MDViewModelAssignmentEditorObjectCustomization_Private::VMHiddenPropertyMeta))
+								if (Property != nullptr && Property->HasAnyPropertyFlags(CPF_Config) && !Property->HasMetaData(MDVMEditorUtils::VMHiddenMeta))
 								{
 									Child->SetOnPropertyValueChangedWithData(TDelegate<void(const FPropertyChangedEvent&)>::CreateSP(this, &FMDViewModelAssignmentEditorObjectCustomization::OnConfigPropertyChanged));
 									Child->SetOnChildPropertyValueChangedWithData(TDelegate<void(const FPropertyChangedEvent&)>::CreateSP(this, &FMDViewModelAssignmentEditorObjectCustomization::OnConfigPropertyChanged));
@@ -641,12 +577,12 @@ FReply FMDViewModelAssignmentEditorObjectCustomization::OnClassPickerButtonClick
 		{
 			FClassViewerInitializationOptions ClassPickerOptions;
 			ClassPickerOptions.bShowNoneOption = false;
-			ClassPickerOptions.ClassFilters.Add(MakeShared<FMDViewModelProviderClassFilter>(Provider));
+			ClassPickerOptions.ClassFilters.Add(MakeShared<FMDViewModelClassFilter>(Provider));
 			ClassPickerOptions.InitiallySelectedClass = GetCurrentViewModelClass();
 			ClassPickerOptions.NameTypeToDisplay = GetDefault<UMDViewModelEditorConfig>()->GetNameTypeToDisplay();
 
 			UClass* Class = nullptr;
-			if (SClassPickerDialog::PickClass(INVTEXT("Select the View Model Class"), ClassPickerOptions, Class, UClass::StaticClass()))
+			if (SClassPickerDialog::PickClass(INVTEXT("Select the View Model Class"), ClassPickerOptions, Class, UMDViewModelBase::StaticClass()))
 			{
 				OnViewModelClassPicked(Class);
 			}

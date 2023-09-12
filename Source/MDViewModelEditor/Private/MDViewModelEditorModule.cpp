@@ -11,9 +11,11 @@
 #include "Customizations/MDViewModelAssignmentReferenceCustomization.h"
 #include "EdGraphUtilities.h"
 #include "Framework/Application/SlateApplication.h"
+#include "ISettingsModule.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "MDViewModelEditorConfig.h"
 #include "Util/MDViewModelAssignmentReference.h"
+#include "Widgets/SMDVMConfigEditor.h"
 #include "ViewModelTab/MDViewModelTab.h"
 
 #define LOCTEXT_NAMESPACE "FMDViewModelEditorModule"
@@ -43,7 +45,10 @@ void FMDViewModelEditorModule::StartupModule()
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditorModule.RegisterCustomPropertyTypeLayout(FMDViewModelAssignmentReference::StaticStruct()->GetFName(), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FMDViewModelAssignmentReferenceCustomization::MakeInstance));
 	PropertyEditorModule.RegisterCustomClassLayout(UMDViewModelAssignmentComponent::StaticClass()->GetFName(), FOnGetDetailCustomizationInstance::CreateStatic(&FMDViewModelAssignmentComponentCustomization::MakeInstance));
-
+	
+	ISettingsModule& SettingsModule = FModuleManager::LoadModuleChecked<ISettingsModule>("Settings");
+	SettingsModule.RegisterSettings(TEXT("Project"), TEXT("Game"), TEXT("ViewModelConfig"), INVTEXT("View Model Config Properties"), INVTEXT("Set the values of Config properties on view model classes"), SAssignNew(ViewModelConfigEditor, SMDVMConfigEditor));
+	
 	GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OnAssetEditorOpened().AddRaw(this, &FMDViewModelEditorModule::RegisterBlueprintEditorDrawer);
 	
 	ViewModelGraphPanelPinFactory = MakeShared<FMDViewModelGraphPanelPinFactory>();
@@ -80,6 +85,12 @@ void FMDViewModelEditorModule::ShutdownModule()
 	{
 		PropertyEditorModule->UnregisterCustomPropertyTypeLayout(FMDViewModelAssignmentReference::StaticStruct()->GetFName());
 		PropertyEditorModule->UnregisterCustomPropertyTypeLayout(UMDViewModelAssignmentComponent::StaticClass()->GetFName());
+	}
+	
+	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
+	{
+		SettingsModule->UnregisterSettings(TEXT("Project"), TEXT("Game"), TEXT("ViewModelConfig"));
+		ViewModelConfigEditor.Reset();
 	}
 }
 
