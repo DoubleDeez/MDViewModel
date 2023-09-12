@@ -248,6 +248,16 @@ void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder
 		FUIAction(
 			FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnFindReferencesClicked)
 		)
+		);
+	
+	ContextMenuBuilder.AddMenuEntry(
+		INVTEXT("Open Source Asset"),
+		INVTEXT("Opens the blueprint where the view model assignment was created."),
+		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Edit")),
+		FUIAction(
+			FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnOpenOwnerAssetClicked),
+			FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanOpenOwnerAsset)
+		)
 	);
 
 	ContextMenuBuilder.AddMenuEntry(
@@ -329,6 +339,22 @@ void SMDViewModelListItem::OnEditClicked() const
 bool SMDViewModelListItem::CanEdit() const
 {
 	return Assignment.IsValid() && Assignment->SuperAssignmentOwner == nullptr && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
+}
+
+void SMDViewModelListItem::OnOpenOwnerAssetClicked() const
+{
+	if (CanOpenOwnerAsset())
+	{
+		if (UAssetEditorSubsystem* AssetEditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>())
+		{
+			AssetEditorSubsystem->OpenEditorForAsset(Assignment->SuperAssignmentOwner->ClassGeneratedBy);
+		}
+	}
+}
+
+bool SMDViewModelListItem::CanOpenOwnerAsset() const
+{
+	return GEditor != nullptr && Assignment.IsValid() && IsValid(Assignment->SuperAssignmentOwner) && IsValid(Assignment->SuperAssignmentOwner->ClassGeneratedBy);
 }
 
 void SMDViewModelListItem::OnDuplicateClicked() const

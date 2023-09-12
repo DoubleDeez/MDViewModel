@@ -5,15 +5,19 @@
 #include "DetailWidgetRow.h"
 #include "Engine/Engine.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "Framework/Notifications/NotificationManager.h"
+#include "HAL/PlatformFileManager.h"
 #include "IDetailGroup.h"
 #include "Kismet2/SClassPickerDialog.h"
 #include "MDViewModelEditorConfig.h"
+#include "SSettingsEditorCheckoutNotice.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/MDViewModelAssignmentDialog.h"
 #include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
+#include "Widgets/Notifications/SNotificationList.h"
 
 namespace MDViewModelAssignmentEditorObjectCustomization_Private
 {
@@ -24,6 +28,19 @@ namespace MDViewModelAssignmentEditorObjectCustomization_Private
 		for (TFieldIterator<const FProperty> It(Struct); It; ++It)
 		{
 			if (It->HasAnyPropertyFlags(CPF_Edit) && !It->HasMetaData(VMHiddenPropertyMeta))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+	
+	bool DoesViewModelHaveConfigProperties(const TSubclassOf<UMDViewModelBase>& VMClass)
+	{
+		for (TFieldIterator<const FProperty> It(VMClass); It; ++It)
+		{
+			if (It->HasAnyPropertyFlags(CPF_Config) && !It->HasMetaData(VMHiddenPropertyMeta))
 			{
 				return true;
 			}
@@ -257,7 +274,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 			DetailBuilder.HideProperty(ViewModelClassHandle);
 		}
 
-		if (const UMDViewModelBase* ViewModelCDO = EditorObject->ViewModelClass.GetDefaultObject())
+		if (UMDViewModelBase* ViewModelCDO = EditorObject->ViewModelClass.GetDefaultObject())
 		{
 			TArray<FText> ViewModelIssues;
 			ViewModelCDO->ValidateViewModelSettings(EditorObject->ViewModelSettings, Dialog->GetBlueprint(), Assignment, ViewModelIssues);
@@ -452,6 +469,48 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 					]
 				];
 			}
+
+			// View Model Config Properties
+			if (MDViewModelAssignmentEditorObjectCustomization_Private::DoesViewModelHaveConfigProperties(EditorObject->ViewModelClass))
+			{
+				IDetailCategoryBuilder& ContextObjectTypeCheckCategory = DetailBuilder.EditCategory(TEXT("ViewModelConfigProperties"));
+				ContextObjectTypeCheckCategory.SetSortOrder(++CustomSortOrder);
+				ContextObjectTypeCheckCategory.SetDisplayName(FText::Format(INVTEXT("Shared Config for {0}"), EditorObject->ViewModelClass->GetDisplayNameText()));
+
+				FAddPropertyParams Params;
+				Params.AllowChildren(true);
+				Params.ForceShowProperty();
+				Params.CreateCategoryNodes(false);
+				Params.UniqueId(ViewModelCDO->GetFName());
+				IDetailPropertyRow* CDORow = ContextObjectTypeCheckCategory.AddExternalObjects({ ViewModelCDO }, EPropertyLocation::Default, Params);
+				if (CDORow != nullptr)
+				{
+					CDORow->Visibility(EVisibility::Collapsed);
+					if (const TSharedPtr<IPropertyHandle> CDOHandle = CDORow->GetPropertyHandle())
+					{
+						uint32 NumChildren = 0;
+						CDOHandle->GetNumChildren(NumChildren);
+
+						for (uint32 i = 0; i < NumChildren; ++i)
+						{
+							if (const TSharedPtr<IPropertyHandle> Child = CDOHandle->GetChildHandle(i))
+							{
+								const FProperty* Property = Child->GetProperty();
+								if (Property != nullptr && Property->HasAnyPropertyFlags(CPF_Config) && !Property->HasMetaData(MDViewModelAssignmentEditorObjectCustomization_Private::VMHiddenPropertyMeta))
+								{
+									Child->SetOnPropertyValueChangedWithData(TDelegate<void(const FPropertyChangedEvent&)>::CreateSP(this, &FMDViewModelAssignmentEditorObjectCustomization::OnConfigPropertyChanged));
+									Child->SetOnChildPropertyValueChangedWithData(TDelegate<void(const FPropertyChangedEvent&)>::CreateSP(this, &FMDViewModelAssignmentEditorObjectCustomization::OnConfigPropertyChanged));
+									const bool bCanEdit = !Property->HasAnyPropertyFlags(CPF_GlobalConfig) || Property->GetOwnerClass() == EditorObject->ViewModelClass;
+									ContextObjectTypeCheckCategory
+										.AddProperty(Child.ToSharedRef())
+										.IsEnabled(bCanEdit)
+										.EditCondition(bCanEdit, {});
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 }
@@ -615,6 +674,37 @@ FText FMDViewModelAssignmentEditorObjectCustomization::GetSelectedClassToolTipTe
 	}
 
 	return INVTEXT("Select a ViewModel Class...");
+}
+
+void FMDViewModelAssignmentEditorObjectCustomization::OnConfigPropertyChanged(const FPropertyChangedEvent& Event) const
+{
+	if (Event.GetNumObjectsBeingEdited() > 0)
+	{
+		UMDViewModelBase* ViewModelCDO = Cast<UMDViewModelBase>(const_cast<UObject*>(Event.GetObjectBeingEdited(0)));
+		if (IsValid(ViewModelCDO) && ViewModelCDO->IsTemplate())
+		{
+			const FString ConfigFilePath = FPaths::ConvertRelativePathToFull(ViewModelCDO->GetDefaultConfigFilename());
+			const bool bIsNewFile = !FPlatformFileManager::Get().GetPlatformFile().FileExists(*ConfigFilePath);
+			if (!bIsNewFile && !SettingsHelpers::IsCheckedOut(ConfigFilePath))
+			{
+				if (!SettingsHelpers::CheckOutOrAddFile(ConfigFilePath, true))
+				{
+					FNotificationInfo Info = FNotificationInfo(FText::Format(INVTEXT("Could not check out config file {0}"), FText::FromString(FPaths::GetCleanFilename(ConfigFilePath))));
+					Info.ExpireDuration = 6.0f;
+					FSlateNotificationManager::Get().AddNotification(Info);
+				
+					SettingsHelpers::MakeWritable(ConfigFilePath);
+				}
+			}
+
+			ViewModelCDO->TryUpdateDefaultConfigFile();
+
+			if (bIsNewFile)
+			{
+				SettingsHelpers::CheckOutOrAddFile(ConfigFilePath, true);
+			}
+		}
+	}
 }
 
 void FMDViewModelAssignmentEditorObjectCustomization::RefreshDetails() const

@@ -50,6 +50,8 @@ private:
 
 	FText GetSelectedClassToolTipText() const;
 
+	void OnConfigPropertyChanged(const FPropertyChangedEvent& Event) const;
+
 	void RefreshDetails() const;
 
 	void OnProviderPropertyChanged() const;

@@ -56,6 +56,8 @@ private:
 	void OnCopyClicked() const;
 	void OnEditClicked() const;
 	bool CanEdit() const;
+	void OnOpenOwnerAssetClicked() const;
+	bool CanOpenOwnerAsset() const;
 	void OnDuplicateClicked() const;
 	bool CanDuplicate() const;
 	void OnDeleteClicked() const;

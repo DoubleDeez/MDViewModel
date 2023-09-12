@@ -29,6 +29,7 @@ public class MDViewModelEditor : ModuleRules
                 "Kismet",
                 "MDViewModelGraph",
                 "PropertyEditor",
+                "SharedSettingsWidgets",
                 "Slate",
                 "SlateCore",
                 "StructUtils",
