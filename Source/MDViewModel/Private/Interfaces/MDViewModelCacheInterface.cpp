@@ -1,6 +1,9 @@
 ﻿#include "Interfaces/MDViewModelCacheInterface.h"
 
+#include "Launch/Resources/Version.h"
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 #include "Logging/StructuredLog.h"
+#endif
 #include "Util/MDViewModelInstanceKey.h"
 #include "Util/MDViewModelLog.h"
 #include "ViewModel/MDViewModelBase.h"
@@ -28,9 +31,16 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const UObject
 		const FName VMObjectName = NAME_None;
 #endif
 		
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 		UE_LOGFMT(LogMDViewModel, Verbose, "Creating Cached View Model with Key [{Key}] on Cache [{CacheName}]",
 			("Key", Key),
 			("CacheName", GetCacheDebugName()));
+#else
+		UE_LOG(LogMDViewModel, Verbose, TEXT("Creating Cached View Model with Key [%s (%s)] on Cache [%s]"),
+			*GetNameSafe(Key.ViewModelClass),
+			*Key.ViewModelName.ToString(),
+			*GetCacheDebugName());
+#endif
 		ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), Key.ViewModelClass, VMObjectName);
 		ViewModel->InitializeViewModelWithContext(ViewModelSettings, GetViewModelOwner(), WorldContextObject);
 	}
@@ -47,10 +57,18 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const UObject
 #endif
 	else
 	{
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 		UE_LOGFMT(LogMDViewModel, Verbose, "Retrieving Cached View Model [{ViewModel}] with Key [{Key}] from Cache [{CacheName}]",
 			("ViewModel", ViewModel->GetName()),
 			("Key", Key),
 			("CacheName", GetCacheDebugName()));
+#else
+		UE_LOG(LogMDViewModel, Verbose, TEXT("Retrieving Cached View Model [%s] with Key [%s (%s)] from Cache [%s]"),
+			*ViewModel->GetName(),
+			*GetNameSafe(Key.ViewModelClass),
+			*Key.ViewModelName.ToString(),
+			*GetCacheDebugName());
+#endif
 	}
 
 	return ViewModel;
@@ -74,7 +92,11 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetViewModel(const FName& CachedVi
 
 void IMDViewModelCacheInterface::BroadcastShutdown()
 {
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 	UE_LOGFMT(LogMDViewModel, Verbose, "Shutting down View Model Cache [{CacheName}]", ("CacheName", GetCacheDebugName()));
+#else
+	UE_LOG(LogMDViewModel, Verbose, TEXT("Shutting down View Model Cache [%s]"), *GetCacheDebugName());
+#endif
 	
 	bIsShutdown = true;
 

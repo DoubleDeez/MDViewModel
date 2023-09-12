@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "InstancedStruct.h"
+#include "Launch/Resources/Version.h"
 #include "UObject/Interface.h"
 #include "UObject/WeakInterfacePtr.h"
 #include "Util/MDViewModelInstanceKey.h"
@@ -53,7 +54,14 @@ private:
 #endif
 };
 
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 1
+FORCEINLINE uint32 GetTypeHash(const TWeakInterfacePtr<IMDViewModelCacheInterface>& WeakInterfacePtr)
+{
+	return GetTypeHash(WeakInterfacePtr.GetWeakObjectPtr());
+}
+#else
 FORCEINLINE uint32 GetTypeHash(const TWeakInterfacePtr<IMDViewModelCacheInterface>& WeakInterfacePtr)
 {
 	return WeakInterfacePtr.GetWeakObjectPtr().GetWeakPtrTypeHash();
 }
+#endif

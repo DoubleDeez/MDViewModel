@@ -1,11 +1,12 @@
 #include "BlueprintExtensions/MDViewModelBlueprintCompilerExtension.h"
 
-#include "Util/MDViewModelUtils.h"
-#include "WidgetBlueprint.h"
 #include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 #include "Components/MDViewModelAssignmentComponent.h"
 #include "Engine/SCS_Node.h"
+#include "Launch/Resources/Version.h"
 #include "Util/MDViewModelGraphStatics.h"
+#include "Util/MDViewModelUtils.h"
+#include "WidgetBlueprint.h"
 #include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
 
 
@@ -52,7 +53,11 @@ void UMDViewModelBlueprintCompilerExtension::HandleActorBlueprintPreCompile(IMDV
 		}
 		else if (Extension != nullptr && !Extension->GetAssignments().IsEmpty())
 		{
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 			Blueprint->Message_Warn(TEXT("[MDVM] Blueprint @@ could not compile its view model assignments, it may need to be resaved in the editor. This can happen when introducing assignments in a parent blueprint."), Blueprint);
+#else
+			Blueprint->Message_Warn(FString::Printf(TEXT("[MDVM] Blueprint [%s] could not compile its view model assignments, it may need to be resaved in the editor. This can happen when introducing assignments in a parent blueprint."), *Blueprint->GetName()));
+#endif
 		}
 	}
 	else

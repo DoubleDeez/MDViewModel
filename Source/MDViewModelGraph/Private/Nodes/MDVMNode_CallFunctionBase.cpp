@@ -78,7 +78,7 @@ bool UMDVMNode_CallFunctionBase::IsActionFilteredOut(const FBlueprintActionFilte
 		bool bWidgetHasAssignment = false;
 		for (const auto& Pair : Assignments)
 		{
-			if (Pair.Key.ViewModelClass == Assignment.ViewModelClass && Pair.Key.ViewModelName == Assignment.ViewModelName)
+			if (Pair.Key.ViewModelClass == Assignment.ViewModelClass.Get() && Pair.Key.ViewModelName == Assignment.ViewModelName)
 			{
 				bWidgetHasAssignment = true;
 				break;
@@ -319,7 +319,7 @@ void UMDVMNode_CallFunctionBase::ValidateNodeDuringCompilation(FCompilerResultsL
 	bool bWidgetHasAssignment = false;
 	for (const auto& Pair : Assignments)
 	{
-		if (Pair.Key.ViewModelClass == Assignment.ViewModelClass && Pair.Key.ViewModelName == Assignment.ViewModelName)
+		if (Pair.Key.ViewModelClass == Assignment.ViewModelClass.Get() && Pair.Key.ViewModelName == Assignment.ViewModelName)
 		{
 			bWidgetHasAssignment = true;
 			break;

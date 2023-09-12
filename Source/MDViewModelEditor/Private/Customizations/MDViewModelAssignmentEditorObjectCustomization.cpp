@@ -8,6 +8,7 @@
 #include "HAL/PlatformFileManager.h"
 #include "IDetailGroup.h"
 #include "Kismet2/SClassPickerDialog.h"
+#include "Launch/Resources/Version.h"
 #include "MDViewModelEditorConfig.h"
 #include "SSettingsEditorCheckoutNotice.h"
 #include "Util/MDViewModelClassFilter.h"
@@ -409,9 +410,11 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 			// View Model Config Properties
 			if (MDViewModelAssignmentEditorObjectCustomization_Private::DoesViewModelHaveConfigProperties(EditorObject->ViewModelClass))
 			{
-				IDetailCategoryBuilder& ContextObjectTypeCheckCategory = DetailBuilder.EditCategory(TEXT("ViewModelConfigProperties"));
+				IDetailCategoryBuilder& ContextObjectTypeCheckCategory = DetailBuilder.EditCategory(TEXT("SharedViewModelConfigProperties"));
 				ContextObjectTypeCheckCategory.SetSortOrder(++CustomSortOrder);
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 				ContextObjectTypeCheckCategory.SetDisplayName(FText::Format(INVTEXT("Shared Config for {0}"), EditorObject->ViewModelClass->GetDisplayNameText()));
+#endif
 
 				FAddPropertyParams Params;
 				Params.AllowChildren(true);

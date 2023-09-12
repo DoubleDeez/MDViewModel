@@ -1,6 +1,9 @@
 #include "Interfaces/MDViewModelRuntimeInterface.h"
 
+#include "Launch/Resources/Version.h"
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 #include "Logging/StructuredLog.h"
+#endif
 #include "UObject/WeakObjectPtrTemplates.h"
 #include "Util/MDViewModelAssignment.h"
 #include "Util/MDViewModelAssignmentData.h"
@@ -22,11 +25,20 @@ const TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& IMDVi
 
 UMDViewModelBase* IMDViewModelRuntimeInterface::SetViewModel(UMDViewModelBase* ViewModel, const FMDViewModelAssignmentReference& Assignment)
 {
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 	UE_LOGFMT(LogMDViewModel, Verbose, "Setting View Model to [{VMInstance}] for assignment [{Assignment}] on Object [{ObjectName}] (Was [{CurrentVM}])",
 		("VMInstance", GetPathNameSafe(ViewModel)),
 		("Assignment", Assignment),
 		("ObjectName", GetPathNameSafe(GetOwningObject())),
 		("CurrentVM", GetPathNameSafe(GetViewModel(Assignment))));
+#else
+	UE_LOG(LogMDViewModel, Verbose, TEXT("Setting View Model to [%s] for assignment [%s (%s)] on Object [%s] (Was [%s])"),
+		*GetPathNameSafe(ViewModel),
+		*GetNameSafe(Assignment.ViewModelClass.Get()),
+		*Assignment.ViewModelName.ToString(),
+		*GetPathNameSafe(GetOwningObject()),
+		*GetPathNameSafe(GetViewModel(Assignment)));
+#endif
 	
 	if (!IsValid(ViewModel))
 	{
@@ -43,9 +55,16 @@ UMDViewModelBase* IMDViewModelRuntimeInterface::SetViewModel(UMDViewModelBase* V
 		MDViewModelUtils::SearchViewModelAssignments(GetOwningObjectClass(), Assignments, Assignment.ViewModelClass.Get(), FGameplayTag::EmptyTag, Assignment.ViewModelName);
 		if (Assignments.IsEmpty())
 		{
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 			UE_LOGFMT(LogMDViewModel, Error, "Attempting to set View Model assignment [{Assignment}] but Object Class [{ObjectClassName}] does not have a matching assignment.",
 				("Assignment", Assignment),
 				("ObjectClassName", GetPathNameSafe(GetOwningObjectClass())));
+#else
+			UE_LOG(LogMDViewModel, Error, TEXT("Attempting to set View Model assignment [%s (%s)] but Object Class [%s] does not have a matching assignment."),
+				*GetNameSafe(Assignment.ViewModelClass.Get()),
+				*Assignment.ViewModelName.ToString(),
+				*GetPathNameSafe(GetOwningObjectClass()));
+#endif
 		}
 			
 		UMDViewModelBase* OldViewModel = GetViewModels().FindRef(Assignment);
@@ -74,9 +93,16 @@ UMDViewModelBase* IMDViewModelRuntimeInterface::SetViewModelOfClass(const UObjec
 		const FName VMObjectName = NAME_None;
 #endif
 	
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 		UE_LOGFMT(LogMDViewModel, Verbose, "Creating View Model for Assignment [{Assignment}] for Object [{ObjectName}]",
 			("Assignment", Assignment),
 			("ObjectName", GetPathNameSafe(GetOwningObject())));
+#else
+		UE_LOG(LogMDViewModel, Verbose, TEXT("Creating View Model for Assignment [%s (%s)] for Object [%s]"),
+			*GetNameSafe(Assignment.ViewModelClass.Get()),
+			*Assignment.ViewModelName.ToString(),
+			*GetPathNameSafe(GetOwningObject()));
+#endif
 		UMDViewModelBase* ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), VMClass, VMObjectName);
 		if (IsValid(ViewModel))
 		{
@@ -95,10 +121,18 @@ UMDViewModelBase* IMDViewModelRuntimeInterface::GetViewModel(const FMDViewModelA
 
 void IMDViewModelRuntimeInterface::ClearViewModel(const FMDViewModelAssignmentReference& Assignment)
 {
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 	UE_LOGFMT(LogMDViewModel, Verbose, "Clearing View Model assignment [{Assignment}] for Object [{ObjectName}] (Was [{CurrentVM}])",
 		("Assignment", Assignment),
 		("ObjectName", GetPathNameSafe(GetOwningObject())),
 		("CurrentVM", GetPathNameSafe(GetViewModel(Assignment))));
+#else
+	UE_LOG(LogMDViewModel, Verbose, TEXT("Clearing View Model assignment [%s (%s)] for Object [%s] (Was [%s])"),
+		*GetNameSafe(Assignment.ViewModelClass.Get()),
+		*Assignment.ViewModelName.ToString(),
+		*GetPathNameSafe(GetOwningObject()),
+		*GetPathNameSafe(GetViewModel(Assignment)));
+#endif
 
 	if (Assignment.IsAssignmentValid())
 	{
@@ -222,7 +256,11 @@ bool IMDViewModelRuntimeInterface::IsListeningForChanges(const UObject* BoundObj
 
 void IMDViewModelRuntimeInterface::PopulateViewModels()
 {
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 	UE_LOGFMT(LogMDViewModel, Verbose, "Populating View Models for Object [{ObjectName}]", ("ObjectName", GetPathNameSafe(GetOwningObject())));
+#else
+	UE_LOG(LogMDViewModel, Verbose, TEXT("Populating View Models for Object [%s]"), *GetPathNameSafe(GetOwningObject()));
+#endif
 
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
 	MDViewModelUtils::GetViewModelAssignments(GetOwningObjectClass(), ViewModelAssignments);
@@ -243,7 +281,11 @@ void IMDViewModelRuntimeInterface::PopulateViewModels()
 
 void IMDViewModelRuntimeInterface::CleanUpViewModels()
 {
-	UE_LOGFMT(LogMDViewModel, Verbose, "Cleaning up View Models for  Object [{ObjectName}]", ("ObjectName", GetPathNameSafe(GetOwningObject())));
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
+	UE_LOGFMT(LogMDViewModel, Verbose, "Cleaning up View Models for Object [{ObjectName}]", ("ObjectName", GetPathNameSafe(GetOwningObject())));
+#else
+	UE_LOG(LogMDViewModel, Verbose, TEXT("Cleaning up View Models for Object [%s]"), *GetPathNameSafe(GetOwningObject()));
+#endif
 	
 	// Broadcast out that we're null-ing out view models
 	{

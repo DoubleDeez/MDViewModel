@@ -401,7 +401,7 @@ void SMDViewModelAssignmentReferenceGraphPin::ValidateDefaultValue() const
 
 		for (const auto& Pair : ViewModelAssignments)
 		{
-			if (Pair.Key.ViewModelClass == AssignmentReference.ViewModelClass
+			if (Pair.Key.ViewModelClass == AssignmentReference.ViewModelClass.Get()
 				&& Pair.Key.ViewModelName == AssignmentReference.ViewModelName)
 			{
 				// If a view model has been tagged for validation, check that it's class is compatible with the assignment

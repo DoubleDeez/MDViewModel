@@ -1,7 +1,10 @@
 #include "ViewModelProviders/MDViewModelProvider_Unique.h"
 
 #include "Engine/Blueprint.h"
+#include "Launch/Resources/Version.h"
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 #include "Logging/StructuredLog.h"
+#endif
 #include "Util/MDViewModelAssignment.h"
 #include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelFunctionLibrary.h"
@@ -16,9 +19,17 @@ UMDViewModelBase* UMDViewModelProvider_Unique::SetViewModel(IMDViewModelRuntimeI
 	if (IsValid(Assignment.ViewModelClass))
 	{
 		UObject* OwningObject = Object.GetOwningObject();
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 		UE_LOGFMT(LogMDViewModel, Verbose, "Creating Unique View Model with Assignment [{Assignment}] for Object [{ObjectName}]",
 			("ObjectName", GetPathNameSafe(OwningObject)),
 			("Assignment", Assignment));
+#else
+		UE_LOG(LogMDViewModel, Verbose, TEXT("Creating Unique View Model with Assignment [%s (%s)] for Object [%s]"),
+			*GetNameSafe(Assignment.ViewModelClass.Get()),
+			*Assignment.ViewModelName.ToString(),
+			*GetPathNameSafe(OwningObject)
+		);
+#endif
 		return Object.SetViewModelOfClass(OwningObject, OwningObject, FMDViewModelAssignmentReference(Assignment), Data.ViewModelSettings);
 	}
 

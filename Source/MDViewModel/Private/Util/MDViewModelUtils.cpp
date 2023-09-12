@@ -8,8 +8,10 @@
 #include "Engine/SCS_Node.h"
 #include "Engine/SimpleConstructionScript.h"
 #include "Interfaces/MDViewModelRuntimeInterface.h"
+#include "Launch/Resources/Version.h"
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 #include "Logging/StructuredLog.h"
-#include "Runtime/Launch/Resources/Version.h"
+#endif
 #include "UObject/Class.h"
 #include "UObject/Object.h"
 #include "Util/MDViewModelLog.h"
@@ -123,11 +125,17 @@ namespace MDViewModelUtils
 			IMDViewModelRuntimeInterface* Interface = Actor->FindComponentByClass<UMDViewModelAssignmentComponent>();
 			if (Interface == nullptr)
 			{
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 				UE_LOGFMT(LogMDViewModel, Warning,
 					"Calling GetOrCreateViewModelRuntimeInterface on an actor [{ActorName}] that does not have a view model component is not valid since actors are given their components at compile time.\n"
 					"Do you expect this actor to have a view models assigned or should you use GetViewModelRuntimeInterface instead?",
 					("ActorName", Actor->GetPathName())
 				);
+#else
+				UE_LOG(LogMDViewModel, Warning, TEXT("Calling GetOrCreateViewModelRuntimeInterface on an actor [%s] that does not have a view model component is not valid since actors are given their components at compile time.\nDo you expect this actor to have a view models assigned or should you use GetViewModelRuntimeInterface instead?"),
+					*Actor->GetPathName()
+				);
+#endif
 			}
 			return Interface;
 		}

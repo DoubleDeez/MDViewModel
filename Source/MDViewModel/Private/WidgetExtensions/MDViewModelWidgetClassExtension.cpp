@@ -2,7 +2,9 @@
 
 #include "Blueprint/UserWidget.h"
 #include "Launch/Resources/Version.h"
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 #include "Logging/StructuredLog.h"
+#endif
 #include "Util/MDViewModelLog.h"
 #include "WidgetExtensions/MDViewModelWidgetExtension.h"
 
@@ -10,7 +12,11 @@ void UMDViewModelWidgetClassExtension::Initialize(UUserWidget* UserWidget)
 {
 	Super::Initialize(UserWidget);
 
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 	UE_LOGFMT(LogMDViewModel, Verbose, "Initializing View Model Extension for Widget [{WidgetName}]", UserWidget->GetPathName());
+#else
+	UE_LOG(LogMDViewModel, Verbose, TEXT("Initializing View Model Extension for Widget [%s]"), *UserWidget->GetPathName());
+#endif
 
 	// ensure that we add the extension to the widget
 	UMDViewModelWidgetExtension* Extension = UMDViewModelWidgetExtension::GetOrCreate(UserWidget);

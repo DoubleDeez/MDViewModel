@@ -5,6 +5,7 @@
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
 #include "IDetailChildrenBuilder.h"
+#include "Launch/Resources/Version.h"
 #include "Util/MDVMEditorUtils.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/MDViewModelTab.h"
@@ -97,6 +98,7 @@ public:
 		UMDViewModelBase* ViewModel = GetViewModel();
 		if (IsValid(ViewModel) && Assignment.IsValid())
 		{
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 			const FAddPropertyParams Params = FAddPropertyParams()
 				.ForceShowProperty()
 				.AllowChildren(true)
@@ -129,6 +131,24 @@ public:
 					}
 				}
 			}
+#else
+			for (TFieldIterator<FProperty> It(ViewModel->GetClass()); It; ++It)
+			{
+				const FProperty* Prop = *It;
+				if (Prop != nullptr && !Prop->HasMetaData(MDVMEditorUtils::VMHiddenMeta))
+				{
+					const FAddPropertyParams Params = FAddPropertyParams()
+						.ForceShowProperty()
+						.AllowChildren(true)
+						.CreateCategoryNodes(false);
+					if (IDetailPropertyRow* ChildRow = ChildrenBuilder.AddExternalObjectProperty({ ViewModel }, Prop->GetFName(), Params))
+					{
+						const bool bCanEdit = Prop->HasAnyPropertyFlags(CPF_Edit);
+						ChildRow->IsEnabled(bCanEdit).EditCondition(bCanEdit, {});
+					}
+				}
+			}
+#endif
 		}
 	}
 	

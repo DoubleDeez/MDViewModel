@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Launch/Resources/Version.h"
 #include "UObject/Interface.h"
 #include "UObject/WeakInterfacePtr.h"
 #include "Util/MDViewModelAssignmentReference.h"
@@ -74,7 +75,14 @@ private:
 	TMap<FMDViewModelAssignmentReference, TArray<FMDVMOnViewModelSetDynamic>> OnViewModelSetDynamicDelegates;
 };
 
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 1
+FORCEINLINE uint32 GetTypeHash(const TWeakInterfacePtr<IMDViewModelRuntimeInterface>& WeakInterfacePtr)
+{
+	return GetTypeHash(WeakInterfacePtr.GetWeakObjectPtr());
+}
+#else
 FORCEINLINE uint32 GetTypeHash(const TWeakInterfacePtr<IMDViewModelRuntimeInterface>& WeakInterfacePtr)
 {
 	return WeakInterfacePtr.GetWeakObjectPtr().GetWeakPtrTypeHash();
 }
+#endif

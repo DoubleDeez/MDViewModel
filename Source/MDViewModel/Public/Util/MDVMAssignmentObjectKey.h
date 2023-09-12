@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Launch/Resources/Version.h"
 #include "MDViewModelAssignment.h"
 #include "UObject/WeakInterfacePtr.h"
 
@@ -21,9 +22,16 @@ struct MDVIEWMODEL_API FMDVMAssignmentObjectKey
 	}
 };
 
-inline uint32 GetTypeHash(const FMDVMAssignmentObjectKey& Key)
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 1
+FORCEINLINE uint32 GetTypeHash(const FMDVMAssignmentObjectKey& Key)
+{
+	return HashCombine(GetTypeHash(Key.Assignment), GetTypeHash(Key.ObjectPtr.GetWeakObjectPtr()));
+}
+#else
+FORCEINLINE uint32 GetTypeHash(const FMDVMAssignmentObjectKey& Key)
 {
 	return HashCombine(GetTypeHash(Key.Assignment), Key.ObjectPtr.GetWeakObjectPtr().GetWeakPtrTypeHash());
 }
+#endif
 
 MDVIEWMODEL_API FCbWriter& operator<<(FCbWriter& Writer, const FMDVMAssignmentObjectKey& Key);

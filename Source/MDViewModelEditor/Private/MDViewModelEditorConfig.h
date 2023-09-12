@@ -44,9 +44,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, Config, Category = "View Model Dialog", meta = (EditCondition = "bUseGameplayTagsForViewModelNaming", EditConditionHides))
 	FGameplayTag ViewModelNameRootTag;
 
-	// If true, the view model editor will be enabled in actor blueprints. Any existing view model assignments will continue to work.
+	// If true, the view model editor will be enabled in actor blueprints.
+	// Any existing view model assignments will continue to work even if the editor is disabled.
 	UPROPERTY(EditDefaultsOnly, Config, Category = "Actor View Models")
-	bool bEnableViewModelsInActorBlueprints = false;
+	bool bEnableViewModelsInActorBlueprints = true;
 
 	EClassViewerNameTypeToDisplay GetNameTypeToDisplay() const;
 };

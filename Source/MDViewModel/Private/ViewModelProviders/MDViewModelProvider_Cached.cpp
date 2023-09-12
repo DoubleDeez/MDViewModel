@@ -14,7 +14,10 @@
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerState.h"
 #include "GameplayTagAssetInterface.h"
+#include "Launch/Resources/Version.h"
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 #include "Logging/StructuredLog.h"
+#endif
 #include "Subsystems/MDGlobalViewModelCache.h"
 #include "Subsystems/MDLocalPlayerViewModelCache.h"
 #include "Subsystems/MDObjectViewModelCache.h"
@@ -29,6 +32,10 @@
 #endif
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_MDVMProvider_Cached, "MDVM.Provider.Cached");
+
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 1
+#define UE_DEFINE_GAMEPLAY_TAG_COMMENT(TagName, Tag, Comment) FNativeGameplayTag TagName(UE_PLUGIN_NAME, UE_MODULE_NAME, Tag, TEXT(Comment), ENativeGameplayTagToken::PRIVATE_USE_MACRO_INSTEAD); static_assert(UE::GameplayTags::Private::HasFileExtension(__FILE__, ".cpp"), "UE_DEFINE_GAMEPLAY_TAG can only be used in .cpp files, if you're trying to share tags across modules, use UE_DECLARE_GAMEPLAY_TAG_EXTERN in the public header, and UE_DEFINE_GAMEPLAY_TAG in the private .cpp");
+#endif
 
 UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_Global, "MDVM.Provider.Cached.Lifetimes.Global",
 	"View model lifetime will be tied to the game instance");
@@ -60,6 +67,10 @@ UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_WorldActor, "MD
 	"View model lifetime will be tied to the first actor found in the world that passes the specified filter.");
 UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_MDVMProvider_Cached_Lifetimes_Self, "MDVM.Provider.Cached.Lifetimes.Self",
 	"View model lifetime will be tied to this object.");
+
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 1
+#undef UE_DEFINE_GAMEPLAY_TAG_COMMENT
+#endif
 
 namespace MDVMCachedProvider_Private
 {
@@ -148,10 +159,19 @@ UMDViewModelBase* UMDViewModelProvider_Cached::SetViewModel(IMDViewModelRuntimeI
 	const FMDViewModelProvider_Cached_Settings* Settings = Data.ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
 	if (ensure(Settings != nullptr))
 	{
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 		UE_LOGFMT(LogMDViewModel, Verbose, "Setting Cached View Model with Assignment [{Assignment}] with Lifetime [{Lifetime}] for Object [{ObjectName}]",
 			("ObjectName", GetPathNameSafe(Object.GetOwningObject())),
 			("Lifetime", Settings->GetLifetimeTag().GetTagName()),
 			("Assignment", Assignment));
+#else
+		UE_LOG(LogMDViewModel, Verbose, TEXT("Setting Cached View Model with Assignment [%s (%s)] with Lifetime [%s] for Object [%s]"),
+			*GetNameSafe(Assignment.ViewModelClass),
+			*Assignment.ViewModelName.ToString(),
+			*Settings->GetLifetimeTag().GetTagName().ToString(),
+			*GetPathNameSafe(Object.GetOwningObject())
+		);
+#endif
 		IMDViewModelCacheInterface* ViewModelCache = ResolveAndBindViewModelCache(Object, Assignment, Data, *Settings);
 		return SetViewModelFromCache(Object.ResolveWorld(), ViewModelCache, Object, Assignment, Data);
 	}
@@ -644,12 +664,22 @@ void UMDViewModelProvider_Cached::OnViewModelCacheShuttingDown(TWeakInterfacePtr
 
 				if (RemovedCachePtr != CachePtr)
 				{
-					UE_LOGFMT(LogMDViewModel, Error, "BoundCaches had {ObjectName}'s assignment {Assignment} bound to {BoundCacheName} but BoundAssignments had {BoundAssignmentName}",
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
+					UE_LOGFMT(LogMDViewModel, Error, "BoundCaches had [{ObjectName}]'s assignment [{Assignment}] bound to [{BoundCacheName}] but BoundAssignments had [{BoundAssignmentName}]",
 						("ObjectName", GetNameSafe(Cast<UObject>(Object))),
 						("Assignment", Assignment),
 						("BoundCacheName", GetNameSafe(Cast<UObject>(CachePtr.Get()))),
 						("BoundAssignmentName", GetNameSafe(Cast<UObject>(RemovedCachePtr.Get())))
 					);
+#else
+					UE_LOG(LogMDViewModel, Error, TEXT("BoundCaches had [%s]'s assignment [%s (%s)] bound to [%s] but BoundAssignments had [%s]"),
+						*GetNameSafe(Cast<UObject>(Object)),
+						*GetNameSafe(Assignment.ViewModelClass.Get()),
+						*Assignment.ViewModelName.ToString(),
+						*GetNameSafe(Cast<UObject>(CachePtr.Get())),
+						*GetNameSafe(Cast<UObject>(RemovedCachePtr.Get()))
+					);
+#endif
 				}
 			}
 		}
@@ -1047,12 +1077,16 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheA
 IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheAndBindDelegates(AActor* Actor, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
 	UWorld* World = Object.ResolveWorld();
-
+	
 	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
 	UnbindDelegateIfNewOwner<UWorld>(BindingKey, World, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
 	{
 		OldOwner.RemoveOnActorSpawnedHandler(Handle);
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 		OldOwner.RemoveOnActorRemovedFromWorldHandler(Handle);
+#else
+		OldOwner.RemoveOnActorDestroyededHandler(Handle);
+#endif
 	});
 	
 	if (IsValid(Actor))
@@ -1066,8 +1100,18 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheA
 		// Bind to when the actor is removed from the world so we can find a new actor that meets our criteria
 		BindDelegateIfUnbound<UWorld>(MoveTemp(BindingKey), World, MDVMDI_Default, [&](auto& Owner)
 		{
-			auto Delegate = FOnActorRemovedFromWorld::FDelegate::CreateUObject(this, &UMDViewModelProvider_Cached::OnActorRemoved, MakeWeakObjectPtr(Actor), Object.MakeWeak(), Assignment, Data);
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
+			using DelegateType = FOnActorRemovedFromWorld;
+#else
+			using DelegateType = FOnActorDestroyed;
+#endif
+			auto Delegate =	DelegateType::FDelegate::CreateUObject(this, &UMDViewModelProvider_Cached::OnActorRemoved, MakeWeakObjectPtr(Actor), Object.MakeWeak(), Assignment, Data);
+
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 			return Owner.AddOnActorRemovedFromWorldHandler(MoveTemp(Delegate));
+#else
+			return Owner.AddOnActorDestroyedHandler(MoveTemp(Delegate));
+#endif
 		});
 		
 		return ResolveActorCache(Actor);
@@ -1076,7 +1120,11 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheA
 	{
 		UnbindDelegate<UWorld>(BindingKey, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
 		{
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 			OldOwner.RemoveOnActorRemovedFromWorldHandler(Handle);
+#else
+			OldOwner.RemoveOnActorDestroyededHandler(Handle);
+#endif
 		});
 		
 		BindDelegateIfUnbound<UWorld>(MoveTemp(BindingKey), World, MDVMDI_Default, [&](auto& Owner)

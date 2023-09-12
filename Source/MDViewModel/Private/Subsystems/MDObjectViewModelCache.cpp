@@ -1,12 +1,18 @@
 #include "Subsystems/MDObjectViewModelCache.h"
+
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
+#include "Launch/Resources/Version.h"
 #include "Serialization/CompactBinaryWriter.h"
 #include "ViewModel/MDViewModelBase.h"
 
 void FMDObjectViewModelCache::AddReferencedObjects(FReferenceCollector& Collector)
 {
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 	Collector.AddStableReferenceMap(CachedViewModels);
+#else
+	Collector.AddReferencedObjects(CachedViewModels);
+#endif
 }
 
 void FMDObjectViewModelCache::HandleObjectDestroyed()

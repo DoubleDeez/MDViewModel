@@ -8,12 +8,15 @@
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "HAL/PlatformApplicationMisc.h"
 #include "Launch/Resources/Version.h"
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 #include "Logging/StructuredLog.h"
+#endif
 #include "ScopedTransaction.h"
 #include "Subsystems/MDViewModelGraphSubsystem.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "Util/MDViewModelGraphStatics.h"
 #include "Util/MDViewModelLog.h"
+#include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/MDViewModelAssignmentDialog.h"
 #include "ViewModelTab/MDViewModelListItem.h"
 #include "Widgets/Input/SButton.h"
@@ -218,11 +221,21 @@ void SMDViewModelList::PopulateAssignments()
 					if (AssignmentOwner == GeneratedClass)
 					{
 						OverridenAssignments.Add(EditorAssignment);
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 						UE_LOGFMT(LogMDViewModel, Warning, "Blueprint {BPName} has a view model assignment {Assignment} that is being overridden by a matching assignment from its ancestor {SuperName}",
 							("BPName", GetPathNameSafe(GetBlueprint())),
 							("Assignment", EditorAssignment.Assignment),
 							("SuperName", GetPathNameSafe(ExistingAssignment->SuperAssignmentOwner))
 						);
+#else
+						UE_LOG(LogMDViewModel, Warning, TEXT("Blueprint [%s] has a view model assignment [%s (%s)] that is being overridden by a matching assignment from its ancestor [%s]"),
+							*GetPathNameSafe(GetBlueprint()),
+							*GetNameSafe(EditorAssignment.Assignment.ViewModelClass),
+							*EditorAssignment.Assignment.ViewModelName.ToString(),
+							*GetPathNameSafe(ExistingAssignment->SuperAssignmentOwner)
+						);
+#endif
+							
 					}
 				}
 				else
@@ -255,29 +268,51 @@ void SMDViewModelList::PopulateAssignments()
 		const TArray<FMDViewModelEditorAssignment>* AssignmentsPtr = AllAssignments.Find(AssignmentOwner);
 		if (AssignmentsPtr == nullptr)
 		{
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 			UE_LOGFMT(LogMDViewModel, Error, "Failed to sort assignments for ViewModelList. Class [{ClassName}] was not in AllAssignments map",
 				("ClassName", GetNameSafe(AssignmentOwner))
 			);
+#else
+			UE_LOG(LogMDViewModel, Error, TEXT("Failed to sort assignments for ViewModelList. Class [%s] was not in AllAssignments map"),
+				*GetNameSafe(AssignmentOwner)
+			);
+#endif
 			return true;
 		}
 
 		const int32 AIndex = AssignmentsPtr->IndexOfByKey(A);
 		if (AIndex < 0)
 		{
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 			UE_LOGFMT(LogMDViewModel, Error, "Failed to sort assignments for ViewModelList. Assignment [{Assignment}] was not in Class's [{ClassName}] assignments list",
 				("Assignment", A.Assignment),
 				("ClassName", GetNameSafe(AssignmentOwner))
 			);
+#else
+			UE_LOG(LogMDViewModel, Error, TEXT("Failed to sort assignments for ViewModelList. Assignment [%s (%s)] was not in Class's [%s] assignments list"),
+				*GetNameSafe(A.Assignment.ViewModelClass),
+				*A.Assignment.ViewModelName.ToString(),
+				*GetNameSafe(AssignmentOwner)
+			);
+#endif
 			return false;
 		}
 		
 		const int32 BIndex = AssignmentsPtr->IndexOfByKey(B);
 		if (BIndex < 0)
 		{
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 			UE_LOGFMT(LogMDViewModel, Error, "Failed to sort assignments for ViewModelList. Assignment [{Assignment}] was not in Class's [{ClassName}] assignments list",
 				("Assignment", B.Assignment),
 				("ClassName", GetNameSafe(AssignmentOwner))
 			);
+#else
+			UE_LOG(LogMDViewModel, Error, TEXT("Failed to sort assignments for ViewModelList. Assignment [%s (%s)] was not in Class's [%s] assignments list"),
+				*GetNameSafe(B.Assignment.ViewModelClass),
+				*B.Assignment.ViewModelName.ToString(),
+				*GetNameSafe(AssignmentOwner)
+			);
+#endif
 			return true;
 		}
 
