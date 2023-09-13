@@ -47,7 +47,10 @@ void FMDViewModelEditorModule::StartupModule()
 	PropertyEditorModule.RegisterCustomClassLayout(UMDViewModelAssignmentComponent::StaticClass()->GetFName(), FOnGetDetailCustomizationInstance::CreateStatic(&FMDViewModelAssignmentComponentCustomization::MakeInstance));
 	
 	ISettingsModule& SettingsModule = FModuleManager::LoadModuleChecked<ISettingsModule>("Settings");
-	SettingsModule.RegisterSettings(TEXT("Project"), TEXT("Game"), TEXT("ViewModelConfig"), INVTEXT("View Model Config Properties"), INVTEXT("Set the values of Config properties on view model classes"), SAssignNew(ViewModelConfigEditor, SMDVMConfigEditor));
+	if (FSlateApplication::IsInitialized())
+	{
+		SettingsModule.RegisterSettings(TEXT("Project"), TEXT("Game"), TEXT("ViewModelConfig"), INVTEXT("View Model Config Properties"), INVTEXT("Set the values of Config properties on view model classes"), SAssignNew(ViewModelConfigEditor, SMDVMConfigEditor));	
+	}
 	
 	GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OnAssetEditorOpened().AddRaw(this, &FMDViewModelEditorModule::RegisterBlueprintEditorDrawer);
 	
