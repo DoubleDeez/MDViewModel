@@ -175,9 +175,12 @@ UMDViewModelBase* UMDViewModelBase::CreateSubViewModel(TSubclassOf<UMDViewModelB
 #else
 	const FName VMObjectName = NAME_None;
 #endif
+
+	// Use the provided WorldContextObject if set, otherwise try the Context Object, then fallback to whatever this view model uses as its context object
+	const bool bDoesContextHaveValidWorld = IsValid(InContextObject) && IsValid(GEngine) && IsValid(GEngine->GetWorldFromContextObject(InContextObject, EGetWorldErrorMode::ReturnNull));
+	const UObject* WorldContext = IsValid(WorldContextObject) ? WorldContextObject : (bDoesContextHaveValidWorld ? InContextObject : GetEffectiveWorldContextObject());
 	
 	UMDViewModelBase* ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), ViewModelClass, VMObjectName);
-	const UObject* WorldContext = IsValid(WorldContextObject) ? WorldContextObject : GetEffectiveWorldContextObject();
 	ViewModel->InitializeViewModelWithContext(ViewModelSettings, InContextObject, WorldContext);
 	return ViewModel;
 }
