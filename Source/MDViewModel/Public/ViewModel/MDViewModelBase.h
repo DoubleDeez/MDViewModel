@@ -167,9 +167,12 @@ protected:
 	virtual void ShutdownViewModel() {}
 
 	// Creates and initializes a view model instance that is intended to be owned by this view model. Passes along this view model's World Context Object
-	UMDViewModelBase* CreateSubViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, UObject* InContextObject, const FInstancedStruct& ViewModelSettings = FInstancedStruct()) const;
+	UMDViewModelBase* CreateSubViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, UObject* InContextObject, const FInstancedStruct& ViewModelSettings = FInstancedStruct(), const UObject* WorldContextObject = nullptr) const;
+	UMDViewModelBase* CreateSubViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, const UObject* InContextObject, const FInstancedStruct& ViewModelSettings = FInstancedStruct(), const UObject* WorldContextObject = nullptr) const;
 	template<typename T>
-	T* CreateSubViewModel(UObject* InContextObject, const FInstancedStruct& ViewModelSettings = FInstancedStruct()) const;
+	T* CreateSubViewModel(UObject* InContextObject, const FInstancedStruct& ViewModelSettings = FInstancedStruct(), TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), const UObject* WorldContextObject = nullptr) const;
+	template<typename T>
+	T* CreateSubViewModel(const UObject* InContextObject, const FInstancedStruct& ViewModelSettings = FInstancedStruct(), TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), const UObject* WorldContextObject = nullptr) const;
 	
 	// Iterates an array of View Models, shuts them down and resets the array
 	template<typename T>
@@ -266,10 +269,17 @@ bool UMDViewModelBase::GetFieldValue(UE::FieldNotification::FFieldId FieldId, T&
 }
 
 template <typename T>
-T* UMDViewModelBase::CreateSubViewModel(UObject* InContextObject, const FInstancedStruct& ViewModelSettings) const
+T* UMDViewModelBase::CreateSubViewModel(UObject* InContextObject, const FInstancedStruct& ViewModelSettings, TSubclassOf<UMDViewModelBase> ViewModelClass, const UObject* WorldContextObject) const
 {
 	static_assert(TIsDerivedFrom<T, UMDViewModelBase>::Value, "ViewModels must derive from UMDViewModelBase");
-	return Cast<T>(CreateSubViewModel(T::StaticClass(), InContextObject, ViewModelSettings));
+	return Cast<T>(CreateSubViewModel(ViewModelClass, InContextObject, ViewModelSettings, WorldContextObject));
+}
+
+template <typename T>
+T* UMDViewModelBase::CreateSubViewModel(const UObject* InContextObject, const FInstancedStruct& ViewModelSettings, TSubclassOf<UMDViewModelBase> ViewModelClass, const UObject* WorldContextObject) const
+{
+	static_assert(TIsDerivedFrom<T, UMDViewModelBase>::Value, "ViewModels must derive from UMDViewModelBase");
+	return Cast<T>(CreateSubViewModel(ViewModelClass, InContextObject, ViewModelSettings, WorldContextObject));
 }
 
 template <typename T>

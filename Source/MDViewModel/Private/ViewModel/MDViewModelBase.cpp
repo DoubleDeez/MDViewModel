@@ -165,7 +165,7 @@ UObject* UMDViewModelBase::GetContextObject() const
 	return GetContextObject<UObject>();
 }
 
-UMDViewModelBase* UMDViewModelBase::CreateSubViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, UObject* InContextObject, const FInstancedStruct& ViewModelSettings) const
+UMDViewModelBase* UMDViewModelBase::CreateSubViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, UObject* InContextObject, const FInstancedStruct& ViewModelSettings, const UObject* WorldContextObject) const
 {
 	checkf(IsValid(ViewModelClass), TEXT("UMDViewModelBase::CreateSubViewModel required a valid ViewModelClass"));
 
@@ -177,8 +177,14 @@ UMDViewModelBase* UMDViewModelBase::CreateSubViewModel(TSubclassOf<UMDViewModelB
 #endif
 	
 	UMDViewModelBase* ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), ViewModelClass, VMObjectName);
-	ViewModel->InitializeViewModelWithContext(ViewModelSettings, InContextObject, GetEffectiveWorldContextObject());
+	const UObject* WorldContext = IsValid(WorldContextObject) ? WorldContextObject : GetEffectiveWorldContextObject();
+	ViewModel->InitializeViewModelWithContext(ViewModelSettings, InContextObject, WorldContext);
 	return ViewModel;
+}
+
+UMDViewModelBase* UMDViewModelBase::CreateSubViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, const UObject* InContextObject, const FInstancedStruct& ViewModelSettings, const UObject* WorldContextObject) const
+{
+	return CreateSubViewModel(ViewModelClass, const_cast<UObject*>(InContextObject), ViewModelSettings, WorldContextObject);
 }
 
 void UMDViewModelBase::BroadcastFieldValueChanged(UE::FieldNotification::FFieldId InFieldId)
