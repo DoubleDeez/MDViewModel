@@ -2,7 +2,6 @@
 
 The MDViewModel plugin is an Unreal-ified implementation of the [Model-View-ViewModel pattern](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel) supporting UMG Widgets and Actor Blueprints as Views.
 
-Notable Features:
 - Bind UMG Widgets and Actor Blueprints to View Models
 - Caches View Model objects for the life time of their model data source
 - Automatically fetch/create View Models and bind them to Views based on tuning set in each View
