@@ -50,6 +50,15 @@ void FMDViewModelEditorModule::StartupModule()
 	if (FSlateApplication::IsInitialized())
 	{
 		SettingsModule.RegisterSettings(TEXT("Project"), TEXT("Game"), TEXT("ViewModelConfig"), INVTEXT("View Model Config Properties"), INVTEXT("Set the values of Config properties on view model classes"), SAssignNew(ViewModelConfigEditor, SMDVMConfigEditor));	
+
+		FCoreDelegates::OnPreExit.AddLambda([]()
+		{
+			// Must unregister before other modules shutdown so dependent widgets (eg. gameplay tag customization) can clean up properly
+			if (FMDViewModelEditorModule* ThisModule = FModuleManager::GetModulePtr<FMDViewModelEditorModule>("MDViewModelEditor"))
+			{
+				ThisModule->UnregisterConfigEditor();
+			}
+		});
 	}
 	
 	GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OnAssetEditorOpened().AddRaw(this, &FMDViewModelEditorModule::RegisterBlueprintEditorDrawer);
@@ -89,7 +98,10 @@ void FMDViewModelEditorModule::ShutdownModule()
 		PropertyEditorModule->UnregisterCustomPropertyTypeLayout(FMDViewModelAssignmentReference::StaticStruct()->GetFName());
 		PropertyEditorModule->UnregisterCustomPropertyTypeLayout(UMDViewModelAssignmentComponent::StaticClass()->GetFName());
 	}
-	
+}
+
+void FMDViewModelEditorModule::UnregisterConfigEditor()
+{
 	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
 	{
 		SettingsModule->UnregisterSettings(TEXT("Project"), TEXT("Game"), TEXT("ViewModelConfig"));

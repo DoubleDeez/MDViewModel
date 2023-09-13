@@ -18,6 +18,8 @@ public:
     virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
 
+	void UnregisterConfigEditor();
+
 private:
 	void HandleRegisterBlueprintEditorTab(const FWidgetBlueprintApplicationMode& InApplicationMode, FWorkflowAllowedTabSet& TabFactories);
 
