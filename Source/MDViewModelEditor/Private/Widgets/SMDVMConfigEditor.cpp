@@ -47,7 +47,7 @@ public:
 			for (const TSharedRef<IPropertyHandle>& Property : Properties)
 			{
 				const FProperty* Prop = Property->GetProperty();
-				if (!Property->HasMetaData(MDVMEditorUtils::VMHiddenMeta) && Prop->HasAnyPropertyFlags(CPF_Config))
+				if (Prop != nullptr && !Property->HasMetaData(MDVMEditorUtils::VMHiddenMeta) && Prop->HasAnyPropertyFlags(CPF_Config))
 				{
 					IDetailPropertyRow& Row = ConfigCategory.AddProperty(Property);
 					if (Prop->HasAnyPropertyFlags(CPF_GlobalConfig) && Prop->GetOwnerClass() != Objects[0].Get())
