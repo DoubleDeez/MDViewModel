@@ -108,6 +108,7 @@ void UMDViewModelBlueprintCompilerExtension::HandleWidgetBlueprintCompiled(IMDVi
 				);
 
 				UMDViewModelWidgetClassExtension* ClassExtension = NewObject<UMDViewModelWidgetClassExtension>(WidgetClass);
+				ClassExtension->SetAssignments(ParentViewModelAssignments);
 				WidgetCompilationContext.AddExtension(WidgetClass, ClassExtension);
 			}
 		}
