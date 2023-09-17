@@ -31,7 +31,7 @@ namespace MDViewModelAssignmentEditorObjectCustomization_Private
 
 		return false;
 	}
-	
+
 	bool DoesViewModelHaveConfigProperties(const TSubclassOf<UMDViewModelBase>& VMClass)
 	{
 		for (TFieldIterator<const FProperty> It(VMClass); It; ++It)
@@ -97,7 +97,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 		const TSharedRef<IPropertyHandle> ViewModelTagHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ViewModelInstanceTag), UMDViewModelAssignmentEditorObject::StaticClass());
 		DetailBuilder.EditDefaultProperty(ViewModelNameHandle)->Visibility(TAttribute<EVisibility>::CreateSP(this, &FMDViewModelAssignmentEditorObjectCustomization::GetViewModelNameVisibility));
 		DetailBuilder.EditDefaultProperty(ViewModelTagHandle)->Visibility(TAttribute<EVisibility>::CreateSP(this, &FMDViewModelAssignmentEditorObjectCustomization::GetViewModelTagVisibility));
-		
+
 		const TSharedRef<IPropertyHandle> ViewModelSettingsHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UMDViewModelAssignmentEditorObject, ViewModelSettings), UMDViewModelAssignmentEditorObject::StaticClass());
 		if (IsValid(Provider) && EditorObject->ViewModelSettings.IsValid() && MDViewModelAssignmentEditorObjectCustomization_Private::DoesStructHaveEditableProperties(EditorObject->ViewModelSettings.GetScriptStruct()))
 		{
@@ -106,7 +106,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 				ViewModelSettingsHandle->SetOnChildPropertyValueChanged(FSimpleDelegate::CreateSP(this, &FMDViewModelAssignmentEditorObjectCustomization::OnViewModelPropertyChanged));
 				DetailBuilder.EditDefaultProperty(ViewModelSettingsHandle)->ShouldAutoExpand(true).OverrideResetToDefault(HideResetToDefault);
 			}
-			else if (Provider->DoesCreateViewModels())
+			else if (!Provider->DoesCreateViewModels())
 			{
 				// Provider doesn't initialize view models so we don't need to warn here.
 				DetailBuilder.HideProperty(ViewModelSettingsHandle);
@@ -136,7 +136,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 			Provider->OnProviderSettingsInitializedInEditor(EditorObject->ProviderSettings, Dialog->GetBlueprint(), Assignment);
 
 			const FComboButtonStyle& ComboButtonStyle = FAppStyle::Get().GetWidgetStyle<FComboButtonStyle>("ComboButton");
-			
+
 			DetailBuilder.EditDefaultProperty(ViewModelClassHandle)->CustomWidget()
 			.NameContent()
 			[
@@ -236,7 +236,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 				TArray<TSubclassOf<UObject>> ProviderExpectedContextObjectClasses;
 				Provider->GetExpectedContextObjectTypes(EditorObject->ProviderSettings, EditorObject->ViewModelSettings, Blueprint, ProviderExpectedContextObjectClasses);
 				ProviderExpectedContextObjectClasses = ProviderExpectedContextObjectClasses.FilterByPredicate([](const TSubclassOf<UObject>& Class) { return Class != nullptr; });
-				
+
 				TArray<TSubclassOf<UObject>> ViewModelSupportedContextObjectClasses;
 				ViewModelCDO->GetSupportedContextObjectTypes(EditorObject->ViewModelSettings, Blueprint, ViewModelSupportedContextObjectClasses);
 				ViewModelSupportedContextObjectClasses = ViewModelSupportedContextObjectClasses.FilterByPredicate([](const TSubclassOf<UObject>& Class) { return Class != nullptr; });
@@ -268,7 +268,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 						}
 					}
 				}
-				
+
 				IDetailCategoryBuilder& ContextObjectTypeCheckCategory = DetailBuilder.EditCategory(TEXT("Context Object Type Check"));
 				ContextObjectTypeCheckCategory.SetSortOrder(++CustomSortOrder);
 
@@ -303,7 +303,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 
 					return A->GetDisplayNameText().CompareTo(B->GetDisplayNameText()) < 0;
 				};
-				
+
 				ProviderExpectedContextObjectClasses.StableSort(SortingFunc);
 				ViewModelSupportedContextObjectClasses.StableSort(SortingFunc);
 
@@ -321,7 +321,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 					const TSubclassOf<UObject> VMContextClass = ViewModelSupportedContextObjectClasses.IsValidIndex(i) ? ViewModelSupportedContextObjectClasses[i] : nullptr;
 					const bool bIsProvidedClassInMatches = ExactMatches.Contains(ProvidedContextClass) || PossibleMatches.Contains(VMContextClass);
 					const bool bIsVMClassInMatches = ExactMatches.Contains(VMContextClass) || PossibleMatches.Contains(VMContextClass);
-					
+
 					Group.AddWidgetRow()
 					.NameContent()
 					[
@@ -342,19 +342,19 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 							: SNew(STextBlock)
 					];
 				}
-				
+
 				const TTuple<FText, FSlateColor> ContextObjectHint = [&]() -> TTuple<FText, FSlateColor>
 				{
 					if (ProviderExpectedContextObjectClasses.IsEmpty())
 					{
 						return { INVTEXT("This Provider does not specify its supplied context objects for the current settings."), NoMatchColor };
 					}
-					
+
 					if (ViewModelSupportedContextObjectClasses.IsEmpty())
 					{
 						return { INVTEXT("This view model does not specify its supported context objects for the current settings. Override GetSupportedContextObjectTypes to specify them."), NoMatchColor };
 					}
-					
+
 					if (PossibleMatches.IsEmpty() && ExactMatches.IsEmpty())
 					{
 						return { INVTEXT("This view model does not support any of the provided context objects."), NoMatchColor };
@@ -364,7 +364,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 					{
 						return { INVTEXT("This view model might support the provided context object, compatibility can only be determined at runtime"), PossibleMatchColor };
 					}
-					
+
 					bool bAllClassesHaveExactMatch = true;
 					for (const TSubclassOf<UObject>& ProvidedContextClass : ProviderExpectedContextObjectClasses)
 					{
@@ -389,7 +389,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 
 					return { INVTEXT("The selected view model only supports some of the potentially provided context objects, compatibility can only be determined at runtime."), PossibleMatchColor };
 				}();
-				
+
 				ContextObjectTypeCheckCategory.AddCustomRow(ContextObjectHint.Key).WholeRowContent()
 				[
 					SNew(SBox)
