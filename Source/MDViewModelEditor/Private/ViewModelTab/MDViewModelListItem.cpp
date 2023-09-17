@@ -7,10 +7,15 @@
 #include "EdGraphSchema_K2_Actions.h"
 #include "Editor.h"
 #include "Editor/EditorEngine.h"
+#include "Editor/UnrealEdEngine.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Framework/Commands/GenericCommands.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "HAL/FileManager.h"
 #include "Nodes/MDVMNode_GetViewModel.h"
+#include "Preferences/UnrealEdOptions.h"
+#include "SourceCodeNavigation.h"
+#include "UnrealEdGlobals.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
@@ -218,60 +223,75 @@ FReply SMDViewModelListItem::OnMouseButtonDoubleClick(const FGeometry& InMyGeome
 void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder)
 {
 	ContextMenuBuilder.BeginSection(TEXT("ViewModel"), INVTEXT("View Model"));
+	{
 
-	ContextMenuBuilder.AddMenuEntry(
-		INVTEXT("Edit Assignment"),
-		INVTEXT("Opens the view model assignment dialog to edit this assignment."),
-		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Edit")),
-		FUIAction(
-			FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnEditClicked),
-			FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanEdit)
-		)
-	);
-
-	ContextMenuBuilder.AddMenuEntry(
-		FGenericCommands::Get().Copy,
-		NAME_None,
-		INVTEXT("Copy Assignment"),
-		INVTEXT("Copy this view model assignment to the clipboard to be pasted in another blueprint."),
-		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("GenericCommands.Copy"))
-	);
-
-	ContextMenuBuilder.AddMenuEntry(
-		INVTEXT("Find References"),
-		INVTEXT("Search for references to this view model in this blueprint."),
-		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Find")),
-		FUIAction(
-			FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnFindReferencesClicked)
-		)
+		ContextMenuBuilder.AddMenuEntry(
+			INVTEXT("Edit Assignment"),
+			INVTEXT("Opens the view model assignment dialog to edit this assignment."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Edit")),
+			FUIAction(
+				FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnEditClicked),
+				FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanEdit)
+			)
 		);
 
-	ContextMenuBuilder.AddMenuEntry(
-		INVTEXT("Open Source Asset"),
-		INVTEXT("Opens the blueprint where the view model assignment was created."),
-		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Edit")),
-		FUIAction(
-			FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnOpenOwnerAssetClicked),
-			FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanOpenOwnerAsset)
-		)
-	);
+		ContextMenuBuilder.AddMenuEntry(
+			FGenericCommands::Get().Copy,
+			NAME_None,
+			INVTEXT("Copy Assignment"),
+			INVTEXT("Copy this view model assignment to the clipboard to be pasted in another blueprint."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("GenericCommands.Copy"))
+			);
 
-	ContextMenuBuilder.AddMenuEntry(
-		FGenericCommands::Get().Duplicate,
-		NAME_None,
-		INVTEXT("Duplicate Assignment"),
-		INVTEXT("Opens the view model assignment dialog prepropulated with this assignment's settings."),
-		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Duplicate"))
-	);
+		ContextMenuBuilder.AddMenuEntry(
+			FGenericCommands::Get().Duplicate,
+			NAME_None,
+			INVTEXT("Duplicate Assignment"),
+			INVTEXT("Opens the view model assignment dialog prepropulated with this assignment's settings."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Duplicate"))
+		);
 
-	ContextMenuBuilder.AddMenuEntry(
-		FGenericCommands::Get().Delete,
-		NAME_None,
-		INVTEXT("Delete Assignment"),
-		INVTEXT("Remove this view model assignment."),
-		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("GenericCommands.Delete"))
-	);
+		ContextMenuBuilder.AddMenuEntry(
+			FGenericCommands::Get().Delete,
+			NAME_None,
+			INVTEXT("Delete Assignment"),
+			INVTEXT("Remove this view model assignment."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("GenericCommands.Delete"))
+		);
+	}
+	ContextMenuBuilder.EndSection();
 
+	ContextMenuBuilder.BeginSection(TEXT("ViewModelTools"), INVTEXT("View Model Tools"));
+	{
+		ContextMenuBuilder.AddMenuEntry(
+			INVTEXT("Find References"),
+			INVTEXT("Search for references to this view model in this blueprint."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Find")),
+			FUIAction(
+				FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnFindReferencesClicked)
+			)
+		);
+
+		ContextMenuBuilder.AddMenuEntry(
+			INVTEXT("Go to Definition"),
+			INVTEXT("Opens the C++ file or Blueprint where the view model is defined."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.FolderOpen")),
+			FUIAction(
+				FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnOpenDefinitionClicked),
+				FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanOpenDefinition)
+			)
+		);
+
+		ContextMenuBuilder.AddMenuEntry(
+			INVTEXT("Open Source Asset"),
+			INVTEXT("Opens the blueprint where the view model assignment was created, if not in the current blueprint."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Edit")),
+			FUIAction(
+				FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnOpenOwnerAssetClicked),
+				FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanOpenOwnerAsset)
+			)
+		);
+	}
 	ContextMenuBuilder.EndSection();
 }
 
@@ -323,6 +343,47 @@ void SMDViewModelListItem::OnEditClicked() const
 bool SMDViewModelListItem::CanEdit() const
 {
 	return Assignment.IsValid() && Assignment->SuperAssignmentOwner == nullptr && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
+}
+
+void SMDViewModelListItem::OnOpenDefinitionClicked() const
+{
+	if (Assignment->Assignment.ViewModelClass->IsNative())
+	{
+		if (FSourceCodeNavigation::CanNavigateToClass(Assignment->Assignment.ViewModelClass))
+		{
+			if (FSourceCodeNavigation::NavigateToClass(Assignment->Assignment.ViewModelClass))
+			{
+				return;
+			}
+		}
+
+		// Failing that, fall back to the older method which will still get the file open assuming it exists
+		FString NativeVMClassHeaderPath;
+		if (FSourceCodeNavigation::FindClassHeaderPath(Assignment->Assignment.ViewModelClass, NativeVMClassHeaderPath) && (IFileManager::Get().FileSize(*NativeVMClassHeaderPath) != INDEX_NONE))
+		{
+			const FString AbsNativeVMClassHeaderPath = FPaths::ConvertRelativePathToFull(NativeVMClassHeaderPath);
+			FSourceCodeNavigation::OpenSourceFile(AbsNativeVMClassHeaderPath);
+		}
+	}
+	else
+	{
+		GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(Assignment->Assignment.ViewModelClass->ClassGeneratedBy);
+	}
+}
+
+bool SMDViewModelListItem::CanOpenDefinition() const
+{
+	if (!Assignment.IsValid() || !Assignment->Assignment.IsValid())
+	{
+		return false;
+	}
+
+	if (Assignment->Assignment.ViewModelClass->IsNative())
+	{
+		return GUnrealEd->GetUnrealEdOptions()->IsCPPAllowed();
+	}
+
+	return IsValid(GEditor) && GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->IsAssetEditable(Assignment->Assignment.ViewModelClass->ClassGeneratedBy);
 }
 
 void SMDViewModelListItem::OnOpenOwnerAssetClicked() const

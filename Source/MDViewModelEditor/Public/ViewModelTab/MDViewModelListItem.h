@@ -53,6 +53,8 @@ private:
 	void OnFindReferencesClicked() const;
 	void OnEditClicked() const;
 	bool CanEdit() const;
+	void OnOpenDefinitionClicked() const;
+	bool CanOpenDefinition() const;
 	void OnOpenOwnerAssetClicked() const;
 	bool CanOpenOwnerAsset() const;
 
