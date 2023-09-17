@@ -20,6 +20,7 @@
 #include "Util/MDViewModelLog.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/MDViewModelAssignmentDialog.h"
+#include "ViewModelTab/MDViewModelEditorCommands.h"
 #include "ViewModelTab/MDViewModelListItem.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Views/SListView.h"
@@ -81,6 +82,7 @@ void SMDViewModelList::Construct(const FArguments& InArgs, const TSharedPtr<FBlu
 			.OnGenerateRow(this, &SMDViewModelList::OnGenerateRow)
 			.OnSelectionChanged(this, &SMDViewModelList::OnItemSelected)
 			.OnContextMenuOpening(this, &SMDViewModelList::OnContextMenuOpening)
+			.OnMouseButtonDoubleClick(this, &SMDViewModelList::OnItemDoubleClicked)
 			.AllowOverscroll(EAllowOverscroll::No)
 		]
 		+SVerticalBox::Slot()
@@ -138,7 +140,14 @@ FReply SMDViewModelList::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent&
 
 void SMDViewModelList::SetupCommands()
 {
+	FMDViewModelEditorCommands::Register();
+
 	CommandList = MakeShared<FUICommandList>();
+
+	CommandList->MapAction(FMDViewModelEditorCommands::Get().Edit,
+		FExecuteAction::CreateSP(this, &SMDViewModelList::EditSelectedAssignment),
+		FCanExecuteAction::CreateSP(this, &SMDViewModelList::IsSelectedAssignmentValidAndNotPIE)
+	);
 
 	CommandList->MapAction(FGenericCommands::Get().Copy,
 		FExecuteAction::CreateSP(this, &SMDViewModelList::CopySelectedAssignment),
@@ -169,17 +178,12 @@ void SMDViewModelList::OnItemSelected(TSharedPtr<FMDViewModelEditorAssignment> I
 TSharedRef<ITableRow> SMDViewModelList::OnGenerateRow(TSharedPtr<FMDViewModelEditorAssignment> Item, const TSharedRef<STableViewBase>& OwningTable)
 {
 	return SNew(SMDViewModelListItem, OwningTable, Item, BlueprintEditorPtr)
-		.OnEditItemRequested(this, &SMDViewModelList::OnEditItem, Item);
+		.CommandList(CommandList);
 }
 
 TSharedPtr<SWidget> SMDViewModelList::OnContextMenuOpening()
 {
-	FMenuBuilder ContextMenuBuilder(true, nullptr);
-
-	if (CommandList.IsValid())
-	{
-		ContextMenuBuilder.PushCommandList(CommandList.ToSharedRef());
-	}
+	FMenuBuilder ContextMenuBuilder(true, CommandList);
 
 	TArray<TSharedPtr<FMDViewModelEditorAssignment>> SelectedItems = AssignmentList->GetSelectedItems();
 	if (SelectedItems.Num() == 1 && SelectedItems[0].IsValid())
@@ -447,6 +451,14 @@ bool SMDViewModelList::IsSelectedAssignmentValidAndNotPIE() const
 	return IsSelectedAssignmentValid() && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
 }
 
+void SMDViewModelList::EditSelectedAssignment()
+{
+	if (const TSharedPtr<FMDViewModelEditorAssignment> Assignment = GetSelectedAssignment())
+	{
+		SMDViewModelAssignmentDialog::OpenEditDialog(GetBlueprint(), Assignment);
+	}
+}
+
 void SMDViewModelList::CopySelectedAssignment()
 {
 	if (const TSharedPtr<FMDViewModelEditorAssignment> Assignment = GetSelectedAssignment())
@@ -548,9 +560,12 @@ void SMDViewModelList::DeleteSelectedAssignment()
 	}
 }
 
-void SMDViewModelList::OnEditItem(TSharedPtr<FMDViewModelEditorAssignment> Item)
+void SMDViewModelList::OnItemDoubleClicked(TSharedPtr<FMDViewModelEditorAssignment> Item)
 {
-	SMDViewModelAssignmentDialog::OpenEditDialog(GetBlueprint(), Item);
+	if (Item.IsValid() && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr)
+	{
+		SMDViewModelAssignmentDialog::OpenEditDialog(GetBlueprint(), Item);
+	}
 }
 
 UBlueprint* SMDViewModelList::GetBlueprint() const

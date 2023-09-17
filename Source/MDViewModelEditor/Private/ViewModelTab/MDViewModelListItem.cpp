@@ -19,6 +19,7 @@
 #include "Util/MDViewModelEditorAssignment.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
+#include "ViewModelTab/MDViewModelEditorCommands.h"
 #include "WidgetBlueprint.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
@@ -57,10 +58,8 @@ FText FMDVMDragAndDropViewModel::GetNodeTitle() const
 
 void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwningTable, const TSharedPtr<FMDViewModelEditorAssignment>& Item, TWeakPtr<FBlueprintEditor> InBlueprintEditor)
 {
+	CommandList = InArgs._CommandList;
 	BlueprintEditor = InBlueprintEditor;
-
-	OnEditItemRequested = InArgs._OnEditItemRequested;
-
 	Assignment = Item;
 
 	BackgroundBrush = static_cast<FSlateBrush>(FSlateColorBrush(FLinearColor::Transparent));
@@ -210,29 +209,16 @@ FReply SMDViewModelListItem::OnDragDetected(const FGeometry& MyGeometry, const F
 	return Reply;
 }
 
-FReply SMDViewModelListItem::OnMouseButtonDoubleClick(const FGeometry& InMyGeometry, const FPointerEvent& InMouseEvent)
-{
-	if (CanEdit())
-	{
-		OnEditClicked();
-	}
-
-	return FReply::Handled();
-}
-
 void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder)
 {
 	ContextMenuBuilder.BeginSection(TEXT("ViewModel"), INVTEXT("View Model"));
 	{
-
 		ContextMenuBuilder.AddMenuEntry(
-			INVTEXT("Edit Assignment"),
-			INVTEXT("Opens the view model assignment dialog to edit this assignment."),
-			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Edit")),
-			FUIAction(
-				FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnEditClicked),
-				FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanEdit)
-			)
+			FMDViewModelEditorCommands::Get().Edit,
+			NAME_None,
+			{},
+			{},
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Edit"))
 		);
 
 		ContextMenuBuilder.AddMenuEntry(
@@ -241,7 +227,7 @@ void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder
 			INVTEXT("Copy Assignment"),
 			INVTEXT("Copy this view model assignment to the clipboard to be pasted in another blueprint."),
 			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("GenericCommands.Copy"))
-			);
+		);
 
 		ContextMenuBuilder.AddMenuEntry(
 			FGenericCommands::Get().Duplicate,
@@ -307,7 +293,9 @@ EVisibility SMDViewModelListItem::GetSourceTextVisibility() const
 
 FReply SMDViewModelListItem::OnContextButtonClicked()
 {
-	FMenuBuilder ContextMenuBuilder(true, nullptr);
+	OwnerTablePtr.Pin()->Private_SetItemSelection(Assignment, true);
+
+	FMenuBuilder ContextMenuBuilder(true, CommandList);
 	OnContextMenuOpening(ContextMenuBuilder);
 
 	TSharedPtr<IMenu> Menu = FSlateApplication::Get().PushMenu(
@@ -333,16 +321,6 @@ void SMDViewModelListItem::OnFindReferencesClicked() const
 
 		BPEditor->SummonSearchUI(true, GenerateSearchString());
 	}
-}
-
-void SMDViewModelListItem::OnEditClicked() const
-{
-	OnEditItemRequested.ExecuteIfBound();
-}
-
-bool SMDViewModelListItem::CanEdit() const
-{
-	return Assignment.IsValid() && Assignment->SuperAssignmentOwner == nullptr && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
 }
 
 void SMDViewModelListItem::OnOpenDefinitionClicked() const

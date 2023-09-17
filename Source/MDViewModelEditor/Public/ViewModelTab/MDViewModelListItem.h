@@ -9,6 +9,7 @@
 class FBlueprintEditor;
 struct FMDViewModelEditorAssignment;
 class FMenuBuilder;
+class FUICommandList;
 
 class FMDVMDragAndDropViewModel : public FMDVMInspectorDragAndDropActionBase
 {
@@ -26,10 +27,9 @@ class SMDViewModelListItem : public STableRow<TSharedPtr<FMDViewModelEditorAssig
 {
 public:
 	SLATE_BEGIN_ARGS(SMDViewModelListItem)
-		{
-		}
+		{}
 
-		SLATE_EVENT(FSimpleDelegate, OnEditItemRequested)
+		SLATE_ARGUMENT(TSharedPtr<FUICommandList>, CommandList)
 
 	SLATE_END_ARGS()
 
@@ -41,8 +41,6 @@ public:
 
 	virtual FReply OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 
-	virtual FReply OnMouseButtonDoubleClick(const FGeometry& InMyGeometry, const FPointerEvent& InMouseEvent) override;
-
 	void OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder);
 
 private:
@@ -51,8 +49,6 @@ private:
 	FReply OnContextButtonClicked();
 
 	void OnFindReferencesClicked() const;
-	void OnEditClicked() const;
-	bool CanEdit() const;
 	void OnOpenDefinitionClicked() const;
 	bool CanOpenDefinition() const;
 	void OnOpenOwnerAssetClicked() const;
@@ -64,9 +60,8 @@ private:
 
 	TSharedPtr<FMDViewModelEditorAssignment> Assignment;
 	TWeakPtr<FBlueprintEditor> BlueprintEditor;
+	TSharedPtr<FUICommandList> CommandList;
 
 	FSlateBrush BackgroundBrush;
 	FButtonStyle ButtonStyle;
-
-	FSimpleDelegate OnEditItemRequested;
 };

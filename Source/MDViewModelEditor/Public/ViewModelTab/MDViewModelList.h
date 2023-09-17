@@ -47,16 +47,14 @@ private:
 	bool IsSelectedAssignmentValid() const;
 	bool IsSelectedAssignmentValidAndNotPIE() const;
 
+	void EditSelectedAssignment();
 	void CopySelectedAssignment();
-
 	void PasteAssignment();
 	bool CanPasteAssignment() const;
-
 	void DuplicateSelectedAssignment();
-
 	void DeleteSelectedAssignment();
 
-	void OnEditItem(TSharedPtr<FMDViewModelEditorAssignment> Item);
+	void OnItemDoubleClicked(TSharedPtr<FMDViewModelEditorAssignment> Item);
 
 	UBlueprint* GetBlueprint() const;
 	UClass* GetGeneratedClass() const;
