@@ -15,9 +15,9 @@ void SMDViewModelEditor::Construct(const FArguments& InArgs, const TSharedPtr<FB
 	UBlueprint* Blueprint = BlueprintEditor->GetBlueprintObj();
 	if (!ensureMsgf(IsValid(Blueprint), TEXT("Attempting to edit an invalid blueprint")))
 	{
-		return;	
+		return;
 	}
-	
+
 	Blueprint->OnSetObjectBeingDebugged().AddSP(this, &SMDViewModelEditor::OnSetObjectBeingDebugged);
 	
 	TArray<UBlueprint*> Hierarchy;

@@ -17,7 +17,7 @@
 void UMDVMNode_CallFunctionBase::BeginDestroy()
 {
 	UnbindAssignmentChanges();
-	
+
 	Super::BeginDestroy();
 }
 
@@ -42,7 +42,7 @@ void UMDVMNode_CallFunctionBase::GetMenuActions(FBlueprintActionDatabaseRegistra
 				{
 					continue;
 				}
-				
+
 				if (IsFunctionValidForNode(*Func))
 				{
 					if (InActionRegistrar.IsOpenForRegistration(WidgetBP))
@@ -71,10 +71,10 @@ bool UMDVMNode_CallFunctionBase::IsActionFilteredOut(const FBlueprintActionFilte
 		{
 			return true;
 		}
-		
+
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
 		FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(WidgetBP, Assignments);
-		
+
 		bool bWidgetHasAssignment = false;
 		for (const auto& Pair : Assignments)
 		{
@@ -90,7 +90,7 @@ bool UMDVMNode_CallFunctionBase::IsActionFilteredOut(const FBlueprintActionFilte
 			return true;
 		}
 	}
-	
+
 	return Super::IsActionFilteredOut(Filter);
 }
 
@@ -118,7 +118,7 @@ void UMDVMNode_CallFunctionBase::GetNodeContextMenuActions(UToolMenu* Menu, UGra
 void UMDVMNode_CallFunctionBase::AllocateDefaultPins()
 {
 	BindAssignmentChanges();
-	
+
 	EFunctionFlags OriginalFlags = FUNC_None;
 	UFunction* Func = GetTargetFunction();
 	if (Func != nullptr)
@@ -126,7 +126,7 @@ void UMDVMNode_CallFunctionBase::AllocateDefaultPins()
 		OriginalFlags = Func->FunctionFlags;
 		bIsSetPure ? (Func->FunctionFlags |= FUNC_BlueprintPure) : (Func->FunctionFlags &= ~FUNC_BlueprintPure);
 	}
-	
+
 	Super::AllocateDefaultPins();
 
 	if (!IsNodePure())
@@ -140,9 +140,9 @@ void UMDVMNode_CallFunctionBase::AllocateDefaultPins()
 	const UEdGraphSchema_K2* Schema = GetDefault<UEdGraphSchema_K2>();
 	if (UEdGraphPin* SelfPin = Schema->FindSelfPin(*this, EGPD_Input))
 	{
-		SelfPin->bHidden = true;	
+		SelfPin->bHidden = true;
 	}
-	
+
 	if (Func != nullptr)
 	{
 		Func->FunctionFlags = OriginalFlags;
@@ -197,7 +197,7 @@ FString UMDVMNode_CallFunctionBase::GetFindReferenceSearchString() const
 		{
 			Result += TEXT(" && ");
 		}
-		
+
 		const FString& Line = Lines[i];
 		Result += TEXT("\"") + Line + TEXT("\"");
 	}
@@ -226,10 +226,10 @@ void UMDVMNode_CallFunctionBase::ExpandNode(FKismetCompilerContext& CompilerCont
 		GetViewModelNode->SetIsPureGet(IsNodePure());
 		GetViewModelNode->AllocateDefaultPins();
 		GetViewModelNode->SetDefaultAssignment(Assignment);
-		
+
 		const EFunctionFlags OriginalFlags = Function->FunctionFlags;
 		bIsSetPure ? (Function->FunctionFlags |= FUNC_BlueprintPure) : (Function->FunctionFlags &= ~FUNC_BlueprintPure);
-		
+
 		// CallFunction
 		UK2Node_CallFunction* CallFuncNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
 		CallFuncNode->SetFromFunction(Function);
@@ -271,18 +271,18 @@ void UMDVMNode_CallFunctionBase::ExpandNode(FKismetCompilerContext& CompilerCont
 				{
 					return GetViewModelNode->GetFalsePin();
 				}
-				
+
 				return CallFuncNode->FindPin(SrcPin->PinName);
 			}();
-			
+
 			if (DestPin != nullptr)
 			{
 				CompilerContext.MovePinLinksToIntermediate(*SrcPin, *DestPin);
 			}
 		}
-		
+
 		BreakAllNodeLinks();
-	
+
 		if (Function != nullptr)
 		{
 			Function->FunctionFlags = OriginalFlags;
@@ -301,13 +301,13 @@ void UMDVMNode_CallFunctionBase::ValidateNodeDuringCompilation(FCompilerResultsL
 			static constexpr TCHAR ErrorFormat[] = TEXT("Node [@@] has incompatible function (%s) and must be deleted.");
 			MessageLog.Error(*FString::Printf(ErrorFormat, *Func->GetName()), this);
 		}
-		
+
 		OriginalFlags = Func->FunctionFlags;
 		bIsSetPure ? (Func->FunctionFlags |= FUNC_BlueprintPure) : (Func->FunctionFlags &= ~FUNC_BlueprintPure);
 	}
-	
+
 	Super::ValidateNodeDuringCompilation(MessageLog);
-	
+
 	if (Func != nullptr)
 	{
 		Func->FunctionFlags = OriginalFlags;
@@ -364,14 +364,14 @@ void UMDVMNode_CallFunctionBase::BindAssignmentChanges()
 	}
 }
 
-void UMDVMNode_CallFunctionBase::OnAssignmentChanged(const FName& OldName, const FName& NewName, TSubclassOf<UMDViewModelBase> OldClass, TSubclassOf<UMDViewModelBase> NewClass)
+void UMDVMNode_CallFunctionBase::OnAssignmentChanged(const FMDViewModelAssignmentReference& Old, const FMDViewModelAssignmentReference& New)
 {
-	if (Assignment.ViewModelClass.Get() == OldClass && Assignment.ViewModelName == OldName)
+	if (Assignment == Old)
 	{
 		Modify();
-		Assignment.ViewModelName = NewName;
-		Assignment.ViewModelClass = NewClass;
-		const UFunction* NewFunc = NewClass->FindFunctionByName(FunctionReference.GetMemberName());
+		Assignment = New;
+		const UClass* NewClass = New.ViewModelClass.LoadSynchronous();
+		const UFunction* NewFunc = IsValid(NewClass) ? NewClass->FindFunctionByName(FunctionReference.GetMemberName()) : nullptr;
 		if (IsValid(NewFunc))
 		{
 			SetFromFunction(NewFunc);
@@ -388,10 +388,7 @@ void UMDVMNode_CallFunctionBase::UnbindAssignmentChanges()
 	const UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNode(this);
 	if (IMDViewModelAssignableInterface* Assignments = FMDViewModelGraphStatics::GetAssignableInterface(Blueprint))
 	{
-		if (!Assignments->OnAssignmentChanged.IsBoundToObject(this))
-		{
-			Assignments->OnAssignmentChanged.RemoveAll(this);
-		}
+		Assignments->OnAssignmentChanged.RemoveAll(this);
 	}
 }
 
@@ -400,7 +397,7 @@ void UMDVMNode_CallFunctionBase::TogglePurity()
 	const FScopedTransaction Transaction(bIsSetPure ? INVTEXT("Convert to Validated Node") : INVTEXT("Convert to Pure Node"));
 	Modify();
 
-	
+
 	bIsSetPure = !bIsSetPure;
 
 	if (Pins.Num() > 0)

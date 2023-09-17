@@ -27,7 +27,7 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GetNameIcon()
 
 			ToolTipText = UEdGraphSchema_K2::TypeToText(ReturnProperty);
 		}
-		
+
 		return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFunctionDebugLineItem>(AsShared()))
 			.bCanDrag(bIsCommand || bIsGetter)
 			[
@@ -35,7 +35,7 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GetNameIcon()
 				.Image(FAppStyle::Get().GetBrush(TEXT("GraphEditor.Function_16x")))
 				.ColorAndOpacity(ReturnValueColor)
 				.ToolTipText(ToolTipText)
-			];	
+			];
 	}
 
 	return FDebugLineItem::GetNameIcon();
@@ -88,7 +88,7 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GenerateValueWidget(TShar
 				.Text(this, &FMDViewModelFunctionDebugLineItem::GetDescription)
 				.ToolTipText(this, &FMDViewModelFunctionDebugLineItem::GetDescription)
 			]
-		];	
+		];
 }
 
 TSharedRef<FMDVMInspectorDragAndDropActionBase> FMDViewModelFunctionDebugLineItem::CreateDragAndDropAction() const
@@ -154,7 +154,7 @@ FString FMDViewModelFunctionDebugLineItem::GenerateSearchString() const
 
 	if (bIsFieldNotify && FunctionPtr.IsValid())
 	{
-		const UMDVMNode_ViewModelFieldNotify* Node = FMDViewModelGraphStatics::FindExistingViewModelFieldNotifyNode(BlueprintPtr.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName);
+		const UMDVMNode_ViewModelFieldNotify* Node = FMDViewModelGraphStatics::FindExistingViewModelFieldNotifyNode(BlueprintPtr.Get(), FunctionPtr->GetFName(), { ViewModelClass, ViewModelName });
 		if (IsValid(Node))
 		{
 			Result += Node->GetFindReferenceSearchString();
@@ -168,7 +168,7 @@ FString FMDViewModelFunctionDebugLineItem::GenerateSearchString() const
 		FString FunctionString = TEXT("(\"") + FunctionName + TEXT("\" && (")
 		+ FString::Printf(TEXT("\"%s - %s\""), *ViewModelClassName, *ViewModelName.ToString()) += TEXT(" || ")
 		+ FString::Printf(TEXT("\"%s (%s)\""), *ViewModelClassName, *ViewModelName.ToString()) += TEXT("))");
-		
+
 		if (Result.IsEmpty())
 		{
 			Result = FunctionString;
@@ -178,7 +178,7 @@ FString FMDViewModelFunctionDebugLineItem::GenerateSearchString() const
 			Result += TEXT(" || ") + FunctionString;
 		}
 	}
-	
+
 	return Result;
 }
 
@@ -193,7 +193,7 @@ FReply FMDViewModelFunctionDebugLineItem::OnAddOrViewBoundFieldNotifyFunctionCli
 
 	if (FunctionPtr.IsValid())
 	{
-		FMDViewModelGraphStatics::OnViewModelFieldNotifyRequestedForBlueprint(BlueprintPtr.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName);
+		FMDViewModelGraphStatics::OnViewModelFieldNotifyRequestedForBlueprint(BlueprintPtr.Get(), FunctionPtr->GetFName(), { ViewModelClass, ViewModelName });
 	}
 
 	return FReply::Handled();
@@ -203,6 +203,6 @@ int32 FMDViewModelFunctionDebugLineItem::GetAddOrViewBoundFieldNotifyFunctionInd
 {
 	check(bIsFieldNotify);
 
-	return (!FunctionPtr.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelFieldNotify(BlueprintPtr.Get(), FunctionPtr->GetFName(), ViewModelClass, ViewModelName))
+	return (!FunctionPtr.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelFieldNotify(BlueprintPtr.Get(), FunctionPtr->GetFName(), { ViewModelClass, ViewModelName }))
 		? 0 : 1;
 }

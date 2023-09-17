@@ -21,7 +21,7 @@ void UMDVMNode_GetProperty::AllocateDefaultPins()
 	{
 		CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Exec, UEdGraphSchema_K2::PN_Execute);
 		CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, UEdGraphSchema_K2::PN_Then);
-	
+
 		UEdGraphPin* InvalidVMPin = CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, TEXT("InvalidVM"));
 		InvalidVMPin->PinFriendlyName = INVTEXT("Invalid View Model");
 		InvalidVMPin->PinToolTip = TEXT("Use this pin to handle trying to get the property when the view model is null.");
@@ -33,7 +33,7 @@ void UMDVMNode_GetProperty::AllocateDefaultPins()
 	{
 		CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Boolean, TEXT("IsViewModelValid"));
 	}
-	
+
 	UK2Node_Variable::AllocateDefaultPins();
 
 	BindAssignmentChanges();
@@ -47,7 +47,7 @@ void UMDVMNode_GetProperty::ReallocatePinsDuringReconstruction(TArray<UEdGraphPi
 void UMDVMNode_GetProperty::BeginDestroy()
 {
 	UnbindAssignmentChanges();
-	
+
 	Super::BeginDestroy();
 }
 
@@ -72,7 +72,7 @@ void UMDVMNode_GetProperty::GetMenuActions(FBlueprintActionDatabaseRegistrar& In
 				{
 					continue;
 				}
-				
+
 				if (IsPropertyValidForNode(Prop))
 				{
 					if (InActionRegistrar.IsOpenForRegistration(Blueprint))
@@ -100,10 +100,10 @@ bool UMDVMNode_GetProperty::IsActionFilteredOut(const FBlueprintActionFilter& Fi
 		{
 			return true;
 		}
-		
+
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
 		FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(Blueprint, Assignments);
-		
+
 		bool bWidgetHasAssignment = false;
 		for (const auto& Pair : Assignments)
 		{
@@ -119,7 +119,7 @@ bool UMDVMNode_GetProperty::IsActionFilteredOut(const FBlueprintActionFilter& Fi
 			return true;
 		}
 	}
-	
+
 	return Super::IsActionFilteredOut(Filter);
 }
 
@@ -187,12 +187,12 @@ void UMDVMNode_GetProperty::ExpandNode(FKismetCompilerContext& CompilerContext, 
 	UK2Node_VariableGet* VariableGetNode = CompilerContext.SpawnIntermediateNode<UK2Node_VariableGet>(this, SourceGraph);
 	VariableGetNode->VariableReference = VariableReference;
 	VariableGetNode->AllocateDefaultPins();
-	
+
 	// Connect GetViewModel return value to VariableGetNode self pin
 	UEdGraphPin* GetViewModelReturnValuePin = GetViewModelNode->GetReturnValuePin();
 	UEdGraphPin* VariableGetNodeSelfPin = Schema->FindSelfPin(*VariableGetNode, EGPD_Input);
 	GetViewModelReturnValuePin->MakeLinkTo(VariableGetNodeSelfPin);
-	
+
 	const UEdGraphPin* ExecInPin = Schema->FindExecutionPin(*this, EGPD_Input);
 	const UEdGraphPin* ThenPin = Schema->FindExecutionPin(*this, EGPD_Output);
 	for(int32 SrcPinIdx = 0; SrcPinIdx < Pins.Num(); SrcPinIdx++)
@@ -224,16 +224,16 @@ void UMDVMNode_GetProperty::ExpandNode(FKismetCompilerContext& CompilerContext, 
 			{
 				return GetViewModelNode->GetFalsePin();
 			}
-			
+
 			return VariableGetNode->FindPin(SrcPin->PinName);
 		}();
-		
+
 		if (DestPin != nullptr)
 		{
 			CompilerContext.MovePinLinksToIntermediate(*SrcPin, *DestPin);
 		}
 	}
-	
+
 	BreakAllNodeLinks();
 }
 
@@ -286,14 +286,14 @@ void UMDVMNode_GetProperty::BindAssignmentChanges()
 	}
 }
 
-void UMDVMNode_GetProperty::OnAssignmentChanged(const FName& OldName, const FName& NewName, TSubclassOf<UMDViewModelBase> OldClass, TSubclassOf<UMDViewModelBase> NewClass)
+void UMDVMNode_GetProperty::OnAssignmentChanged(const FMDViewModelAssignmentReference& Old, const FMDViewModelAssignmentReference& New)
 {
-	if (Assignment.ViewModelClass.Get() == OldClass && Assignment.ViewModelName == OldName)
+	if (Assignment == Old)
 	{
 		Modify();
-		Assignment.ViewModelName = NewName;
-		Assignment.ViewModelClass = NewClass;
-		const FProperty* NewProp = NewClass->FindPropertyByName(VariableReference.GetMemberName());
+		Assignment = New;
+		UClass* NewClass = New.ViewModelClass.LoadSynchronous();
+		const FProperty* NewProp = IsValid(NewClass) ? NewClass->FindPropertyByName(VariableReference.GetMemberName()) : nullptr;
 		SetFromProperty(NewProp, false, NewClass);
 		TitleCache.MarkDirty();
 	}
@@ -304,10 +304,7 @@ void UMDVMNode_GetProperty::UnbindAssignmentChanges()
 	const UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNode(this);
 	if (IMDViewModelAssignableInterface* Assignments = FMDViewModelGraphStatics::GetAssignableInterface(Blueprint))
 	{
-		if (!Assignments->OnAssignmentChanged.IsBoundToObject(this))
-		{
-			Assignments->OnAssignmentChanged.RemoveAll(this);
-		}
+		Assignments->OnAssignmentChanged.RemoveAll(this);
 	}
 }
 
@@ -327,7 +324,7 @@ void UMDVMNode_GetProperty::ToggleValidation()
 	{
 		TransactionTitle = INVTEXT("Convert to Impure Get");
 	}
-	
+
 	const FScopedTransaction Transaction(TransactionTitle);
 	Modify();
 

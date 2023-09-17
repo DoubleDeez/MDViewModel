@@ -4,9 +4,10 @@
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/Views/SListView.h"
 
-class IMDViewModelAssignableInterface;
 class FBlueprintEditor;
 struct FMDViewModelEditorAssignment;
+class FUICommandList;
+class IMDViewModelAssignableInterface;
 
 class SMDViewModelList : public SCompoundWidget
 {
@@ -27,7 +28,11 @@ public:
 
 	void RefreshList();
 
+	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
+
 private:
+	void SetupCommands();
+
 	void OnItemSelected(TSharedPtr<FMDViewModelEditorAssignment> Item, ESelectInfo::Type SelectInfo);
 	TSharedRef<ITableRow> OnGenerateRow(TSharedPtr<FMDViewModelEditorAssignment> Item, const TSharedRef<STableViewBase>& OwningTable);
 	TSharedPtr<SWidget> OnContextMenuOpening();
@@ -39,18 +44,28 @@ private:
 	bool CanAddViewModel() const;
 	void OnAssignmentAdded(const FMDViewModelEditorAssignment& Assignment);
 
-	void OnPasteClicked();
-	bool CanPaste() const;
+	bool IsSelectedAssignmentValid() const;
+	bool IsSelectedAssignmentValidAndNotPIE() const;
 
-	void OnDuplicateItem(TSharedPtr<FMDViewModelEditorAssignment> Item);
+	void CopySelectedAssignment();
+
+	void PasteAssignment();
+	bool CanPasteAssignment() const;
+
+	void DuplicateSelectedAssignment();
+
+	void DeleteSelectedAssignment();
+
 	void OnEditItem(TSharedPtr<FMDViewModelEditorAssignment> Item);
-	void OnDeleteItem(TSharedPtr<FMDViewModelEditorAssignment> Item);
 
 	UBlueprint* GetBlueprint() const;
 	UClass* GetGeneratedClass() const;
+
+	TSharedPtr<FMDViewModelEditorAssignment> GetSelectedAssignment() const;
 
 	TSharedPtr<SListView<TSharedPtr<FMDViewModelEditorAssignment>>> AssignmentList;
 	TArray<TSharedPtr<FMDViewModelEditorAssignment>> Assignments;
 	FOnViewModelSelected OnViewModelSelected;
 	TWeakPtr<FBlueprintEditor> BlueprintEditorPtr;
+	TSharedPtr<FUICommandList> CommandList;
 };

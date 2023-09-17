@@ -48,13 +48,13 @@ FString FMDViewModelEventDebugLineItem::GenerateSearchString() const
 
 	if (WeakDelegateProp.IsValid())
 	{
-		const UMDVMNode_ViewModelEvent* Node = FMDViewModelGraphStatics::FindExistingViewModelEventNode(BlueprintPtr.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName);
+		const UMDVMNode_ViewModelEvent* Node = FMDViewModelGraphStatics::FindExistingViewModelEventNode(BlueprintPtr.Get(), WeakDelegateProp->GetFName(), { ViewModelClass, ViewModelName });
 		if (IsValid(Node))
 		{
 			Result += Node->GetFindReferenceSearchString();
 		}
 	}
-	
+
 	return Result;
 }
 
@@ -62,7 +62,7 @@ FReply FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 {
 	if (WeakDelegateProp.IsValid())
 	{
-		FMDViewModelGraphStatics::OnViewModelEventRequestedForBlueprint(BlueprintPtr.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName);
+		FMDViewModelGraphStatics::OnViewModelEventRequestedForBlueprint(BlueprintPtr.Get(), WeakDelegateProp->GetFName(), { ViewModelClass, ViewModelName });
 	}
 
 	return FReply::Handled();
@@ -70,6 +70,6 @@ FReply FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 
 int32 FMDViewModelEventDebugLineItem::GetAddOrViewBoundFunctionIndex() const
 {
-	return (!WeakDelegateProp.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelEvent(BlueprintPtr.Get(), WeakDelegateProp->GetFName(), ViewModelClass, ViewModelName))
+	return (!WeakDelegateProp.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelEvent(BlueprintPtr.Get(), WeakDelegateProp->GetFName(), { ViewModelClass, ViewModelName }))
 		? 0 : 1;
 }

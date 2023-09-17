@@ -55,8 +55,8 @@ FText UMDVMNode_ViewModelChanged::GetNodeTitle(ENodeTitleType::Type TitleType) c
 	if (CachedNodeTitle.IsOutOfDate(this))
 	{
 		FFormatNamedArguments Args;
-		Args.Add(TEXT("ViewModelClass"), ViewModelClass != nullptr ? ViewModelClass->GetDisplayNameText() : INVTEXT("NULL"));
-		Args.Add(TEXT("ViewModelName"), FText::FromString(ViewModelName.ToString()));
+		Args.Add(TEXT("ViewModelClass"), GetViewModelClassName());
+		Args.Add(TEXT("ViewModelName"), FText::FromString(Assignment.ViewModelName.ToString()));
 
 		CachedNodeTitle.SetCachedText(FText::Format(INVTEXT("On View Model Changed ({ViewModelClass} - {ViewModelName})"), Args), this);
 	}
@@ -73,7 +73,7 @@ void UMDVMNode_ViewModelChanged::AllocateDefaultPins()
 {
 	Super::AllocateDefaultPins();
 
-	MDVMNode_ViewModelChanged_Private::AllocatePins(this, ViewModelClass);
+	MDVMNode_ViewModelChanged_Private::AllocatePins(this, Assignment.ViewModelClass.LoadSynchronous());
 }
 
 UClass* UMDVMNode_ViewModelChanged::GetDynamicBindingClass() const
@@ -86,8 +86,8 @@ void UMDVMNode_ViewModelChanged::RegisterDynamicBinding(UDynamicBlueprintBinding
 	UMDViewModelChangedBinding* ComponentBindingObject = CastChecked<UMDViewModelChangedBinding>(BindingObject);
 
 	FMDViewModelChangedBindingEntry Binding;
-	Binding.ViewModelClass = ViewModelClass;
-	Binding.ViewModelName = ViewModelName;
+	Binding.ViewModelClass = Assignment.ViewModelClass.LoadSynchronous();
+	Binding.ViewModelName = Assignment.ViewModelName;
 	Binding.FunctionNameToBind = CustomFunctionName;
 
 	CachedNodeTitle.MarkDirty();
@@ -101,18 +101,18 @@ void UMDVMNode_ViewModelChanged::ValidateNodeDuringCompilation(FCompilerResultsL
 	{
 		MessageLog.Error(TEXT("@@ cannot find a valid Blueprint."), this);
 	}
-	else if (!ViewModelClass)
+	else if (!Assignment.IsAssignmentValid())
 	{
 		MessageLog.Error(TEXT("@@ does not have a valid View Model reference! Delete and recreate the event."), this);
 	}
 	else
 	{
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
-		FMDViewModelGraphStatics::SearchViewModelAssignmentsForBlueprint(BP, ViewModelAssignments, ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
+		FMDViewModelGraphStatics::SearchViewModelAssignmentsForBlueprint(BP, ViewModelAssignments, Assignment.ViewModelClass.LoadSynchronous(), FGameplayTag::EmptyTag, Assignment.ViewModelName);
 
 		if (ViewModelAssignments.IsEmpty())
 		{
-			MessageLog.Error(*FString::Printf(TEXT("@@ is bound to a view model named [%s] of class [%s] but the view model is not assigned to this widget."), *ViewModelName.ToString(), *ViewModelClass->GetDisplayNameText().ToString()), this);
+			MessageLog.Error(*FString::Printf(TEXT("@@ is bound to a view model named [%s] of class [%s] but the view model is not assigned to this widget."), *Assignment.ViewModelName.ToString(), *GetViewModelClassName().ToString()), this);
 		}
 	}
 
@@ -123,17 +123,16 @@ bool UMDVMNode_ViewModelChanged::IsFunctionEntryCompatible(const UK2Node_Functio
 {
 	// Since K2Node_CustomEvent can't be extended, we have to do this const_cast to inject our pins into the entry node
 	UK2Node_FunctionEntry* MutableEntryNode = const_cast<UK2Node_FunctionEntry*>(EntryNode);
-	MDVMNode_ViewModelChanged_Private::AllocatePins(MutableEntryNode, ViewModelClass);
+	MDVMNode_ViewModelChanged_Private::AllocatePins(MutableEntryNode, Assignment.ViewModelClass.LoadSynchronous());
 
 	return Super::IsFunctionEntryCompatible(EntryNode);
 }
 
-void UMDVMNode_ViewModelChanged::InitializeViewModelChangedParams(TSubclassOf<UMDViewModelBase> InViewModelClass, const FName& InViewModelName)
+void UMDVMNode_ViewModelChanged::InitializeViewModelChangedParams(const FMDViewModelAssignmentReference& InAssignment)
 {
-	if (InViewModelClass != nullptr)
+	if (InAssignment.IsAssignmentValid())
 	{
-		ViewModelClass = InViewModelClass;
-		ViewModelName = InViewModelName;
+		Assignment = InAssignment;
 
 		bOverrideFunction = false;
 		bInternalEvent = true;
@@ -145,6 +144,6 @@ void UMDVMNode_ViewModelChanged::InitializeViewModelChangedParams(TSubclassOf<UM
 void UMDVMNode_ViewModelChanged::OnAssignmentChanged()
 {
 	Super::OnAssignmentChanged();
-	
-	CustomFunctionName = FName(*FString::Printf(TEXT("BndEvt__%s_%s_%s_Changed"), *GetBlueprint()->GetName(), *ViewModelClass->GetName(), *GetName()));
+
+	CustomFunctionName = FName(*FString::Printf(TEXT("BndEvt__%s_%s_%s_Changed"), *GetBlueprint()->GetName(), *GetNameSafe(Assignment.ViewModelClass.LoadSynchronous()), *GetName()));
 }

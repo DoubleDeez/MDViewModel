@@ -1,16 +1,14 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "EditorUndoClient.h"
 #include "Templates/SubclassOf.h"
 #include "Widgets/SCompoundWidget.h"
 
-class SMDViewModelList;
-class UMDViewModelBase;
+class FBlueprintEditor;
 struct FMDViewModelEditorAssignment;
 class SMDViewModelDetails;
-class FBlueprintEditor;
+class SMDViewModelList;
+class UMDViewModelBase;
 
 /**
  *

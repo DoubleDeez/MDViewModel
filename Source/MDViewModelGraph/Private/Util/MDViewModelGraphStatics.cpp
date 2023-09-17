@@ -74,19 +74,19 @@ bool FMDViewModelGraphStatics::DoesBlueprintContainViewModelAssignments(const UB
 	return !ViewModelAssignments.IsEmpty();
 }
 
-bool FMDViewModelGraphStatics::DoesBlueprintBindToViewModelEvent(const UBlueprint* BP, const FName& EventName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+bool FMDViewModelGraphStatics::DoesBlueprintBindToViewModelEvent(const UBlueprint* BP, const FName& EventName, const FMDViewModelAssignmentReference& Assignment)
 {
-	return FindExistingViewModelEventNode(BP, EventName, ViewModelClass, ViewModelName) != nullptr;
+	return FindExistingViewModelEventNode(BP, EventName, Assignment) != nullptr;
 }
 
-void FMDViewModelGraphStatics::OnViewModelEventRequestedForBlueprint(const UBlueprint* BP, const FName& EventName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+void FMDViewModelGraphStatics::OnViewModelEventRequestedForBlueprint(const UBlueprint* BP, const FName& EventName, const FMDViewModelAssignmentReference& Assignment)
 {
 	if (BP == nullptr)
 	{
 		return;
 	}
 
-	const UMDVMNode_ViewModelEvent* Node = FindExistingViewModelEventNode(BP, EventName, ViewModelClass, ViewModelName);
+	const UMDVMNode_ViewModelEvent* Node = FindExistingViewModelEventNode(BP, EventName, Assignment);
 	if (Node == nullptr)
 	{
 		if (UEdGraph* TargetGraph = BP->GetLastEditedUberGraph())
@@ -99,7 +99,7 @@ void FMDViewModelGraphStatics::OnViewModelEventRequestedForBlueprint(const UBlue
 				EK2NewNodeFlags::SelectNewNode,
 				[&](UMDVMNode_ViewModelEvent* NewInstance)
 				{
-					NewInstance->InitializeViewModelEventParams(ViewModelClass, ViewModelName, EventName);
+					NewInstance->InitializeViewModelEventParams(Assignment, EventName);
 				}
 			);
 		}
@@ -108,7 +108,7 @@ void FMDViewModelGraphStatics::OnViewModelEventRequestedForBlueprint(const UBlue
 	FKismetEditorUtilities::BringKismetToFocusAttentionOnObject(Node);
 }
 
-UMDVMNode_ViewModelEvent* FMDViewModelGraphStatics::FindExistingViewModelEventNode(const UBlueprint* BP, const FName& EventName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+UMDVMNode_ViewModelEvent* FMDViewModelGraphStatics::FindExistingViewModelEventNode(const UBlueprint* BP, const FName& EventName, const FMDViewModelAssignmentReference& Assignment)
 {
 	if (BP == nullptr)
 	{
@@ -120,7 +120,7 @@ UMDVMNode_ViewModelEvent* FMDViewModelGraphStatics::FindExistingViewModelEventNo
 	for (auto NodeIter = EventNodes.CreateIterator(); NodeIter; ++NodeIter)
 	{
 		UMDVMNode_ViewModelEvent* BoundEvent = *NodeIter;
-		if (BoundEvent->ViewModelClass == ViewModelClass && BoundEvent->ViewModelName == ViewModelName && BoundEvent->DelegatePropertyName == EventName)
+		if (BoundEvent->Assignment == Assignment && BoundEvent->DelegatePropertyName == EventName)
 		{
 			return BoundEvent;
 		}
@@ -129,19 +129,19 @@ UMDVMNode_ViewModelEvent* FMDViewModelGraphStatics::FindExistingViewModelEventNo
 	return nullptr;
 }
 
-bool FMDViewModelGraphStatics::DoesBlueprintBindToViewModelFieldNotify(const UBlueprint* BP, const FName& FieldNotifyName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+bool FMDViewModelGraphStatics::DoesBlueprintBindToViewModelFieldNotify(const UBlueprint* BP, const FName& FieldNotifyName, const FMDViewModelAssignmentReference& Assignment)
 {
-	return FindExistingViewModelFieldNotifyNode(BP, FieldNotifyName, ViewModelClass, ViewModelName) != nullptr;
+	return FindExistingViewModelFieldNotifyNode(BP, FieldNotifyName, Assignment) != nullptr;
 }
 
-void FMDViewModelGraphStatics::OnViewModelFieldNotifyRequestedForBlueprint(const UBlueprint* BP, const FName& FieldNotifyName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+void FMDViewModelGraphStatics::OnViewModelFieldNotifyRequestedForBlueprint(const UBlueprint* BP, const FName& FieldNotifyName, const FMDViewModelAssignmentReference& Assignment)
 {
 	if (BP == nullptr)
 	{
 		return;
 	}
 
-	const UMDVMNode_ViewModelFieldNotify* Node = FindExistingViewModelFieldNotifyNode(BP, FieldNotifyName, ViewModelClass, ViewModelName);
+	const UMDVMNode_ViewModelFieldNotify* Node = FindExistingViewModelFieldNotifyNode(BP, FieldNotifyName, Assignment);
 	if (Node == nullptr)
 	{
 		if (UEdGraph* TargetGraph = BP->GetLastEditedUberGraph())
@@ -154,7 +154,7 @@ void FMDViewModelGraphStatics::OnViewModelFieldNotifyRequestedForBlueprint(const
 				EK2NewNodeFlags::SelectNewNode,
 				[&](UMDVMNode_ViewModelFieldNotify* NewInstance)
 				{
-					NewInstance->InitializeViewModelFieldNotifyParams(ViewModelClass, ViewModelName, FieldNotifyName);
+					NewInstance->InitializeViewModelFieldNotifyParams(Assignment, FieldNotifyName);
 				}
 			);
 		}
@@ -163,7 +163,7 @@ void FMDViewModelGraphStatics::OnViewModelFieldNotifyRequestedForBlueprint(const
 	FKismetEditorUtilities::BringKismetToFocusAttentionOnObject(Node);
 }
 
-UMDVMNode_ViewModelFieldNotify* FMDViewModelGraphStatics::FindExistingViewModelFieldNotifyNode(const UBlueprint* BP, const FName& FieldNotifyName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+UMDVMNode_ViewModelFieldNotify* FMDViewModelGraphStatics::FindExistingViewModelFieldNotifyNode(const UBlueprint* BP, const FName& FieldNotifyName, const FMDViewModelAssignmentReference& Assignment)
 {
 	if (BP == nullptr)
 	{
@@ -175,7 +175,7 @@ UMDVMNode_ViewModelFieldNotify* FMDViewModelGraphStatics::FindExistingViewModelF
 	for (auto NodeIter = EventNodes.CreateIterator(); NodeIter; ++NodeIter)
 	{
 		UMDVMNode_ViewModelFieldNotify* BoundEvent = *NodeIter;
-		if (BoundEvent->ViewModelClass == ViewModelClass && BoundEvent->ViewModelName == ViewModelName && BoundEvent->FieldNotifyName == FieldNotifyName)
+		if (BoundEvent->Assignment == Assignment && BoundEvent->FieldNotifyName == FieldNotifyName)
 		{
 			return BoundEvent;
 		}
@@ -184,19 +184,19 @@ UMDVMNode_ViewModelFieldNotify* FMDViewModelGraphStatics::FindExistingViewModelF
 	return nullptr;
 }
 
-bool FMDViewModelGraphStatics::DoesBlueprintBindToViewModelChanged(const UBlueprint* BP, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+bool FMDViewModelGraphStatics::DoesBlueprintBindToViewModelChanged(const UBlueprint* BP, const FMDViewModelAssignmentReference& Assignment)
 {
-	return FindExistingViewModelChangedNode(BP, ViewModelClass, ViewModelName) != nullptr;
+	return FindExistingViewModelChangedNode(BP, Assignment) != nullptr;
 }
 
-void FMDViewModelGraphStatics::OnViewModelChangedRequestedForBlueprint(const UBlueprint* BP, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+void FMDViewModelGraphStatics::OnViewModelChangedRequestedForBlueprint(const UBlueprint* BP, const FMDViewModelAssignmentReference& Assignment)
 {
 	if (BP == nullptr)
 	{
 		return;
 	}
 
-	const UMDVMNode_ViewModelChanged* Node = FindExistingViewModelChangedNode(BP, ViewModelClass, ViewModelName);
+	const UMDVMNode_ViewModelChanged* Node = FindExistingViewModelChangedNode(BP, Assignment);
 	if (Node == nullptr)
 	{
 		if (UEdGraph* TargetGraph = BP->GetLastEditedUberGraph())
@@ -209,7 +209,7 @@ void FMDViewModelGraphStatics::OnViewModelChangedRequestedForBlueprint(const UBl
 				EK2NewNodeFlags::SelectNewNode,
 				[&](UMDVMNode_ViewModelChanged* NewInstance)
 				{
-					NewInstance->InitializeViewModelChangedParams(ViewModelClass, ViewModelName);
+					NewInstance->InitializeViewModelChangedParams(Assignment);
 				}
 			);
 		}
@@ -218,7 +218,7 @@ void FMDViewModelGraphStatics::OnViewModelChangedRequestedForBlueprint(const UBl
 	FKismetEditorUtilities::BringKismetToFocusAttentionOnObject(Node);
 }
 
-UMDVMNode_ViewModelChanged* FMDViewModelGraphStatics::FindExistingViewModelChangedNode(const UBlueprint* BP, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+UMDVMNode_ViewModelChanged* FMDViewModelGraphStatics::FindExistingViewModelChangedNode(const UBlueprint* BP, const FMDViewModelAssignmentReference& Assignment)
 {
 	if (BP == nullptr)
 	{
@@ -230,13 +230,110 @@ UMDVMNode_ViewModelChanged* FMDViewModelGraphStatics::FindExistingViewModelChang
 	for (auto NodeIter = EventNodes.CreateIterator(); NodeIter; ++NodeIter)
 	{
 		UMDVMNode_ViewModelChanged* BoundEvent = *NodeIter;
-		if (BoundEvent->ViewModelClass == ViewModelClass && BoundEvent->ViewModelName == ViewModelName)
+		if (BoundEvent->Assignment == Assignment)
 		{
 			return BoundEvent;
 		}
 	}
 
 	return nullptr;
+}
+
+bool FMDViewModelGraphStatics::DoesBlueprintUseAssignment(UBlueprint* BP, const FMDViewModelAssignmentReference& Assignment)
+{
+	TArray<UBlueprint*> DependentBlueprints;
+	FBlueprintEditorUtils::FindDependentBlueprints(BP, DependentBlueprints);
+	DependentBlueprints.Add(BP);
+
+	for (const UBlueprint* Blueprint : DependentBlueprints)
+	{
+		if (!IsValid(Blueprint))
+		{
+			continue;
+		}
+
+		TArray<UEdGraphNode*> GraphNodes;
+		FBlueprintEditorUtils::GetAllNodesOfClass(BP, GraphNodes);
+
+		for (const UEdGraphNode* Node : GraphNodes)
+		{
+			if (!IsValid(Node))
+			{
+				continue;
+			}
+
+			// Check for FMDViewModelAssignmentReference or FMDViewModelAssignment Properties whose value reference the assignment
+			for (TFieldIterator<const FStructProperty> It(Node->GetClass()); It; ++It)
+			{
+				const FStructProperty* Prop = *It;
+				if (Prop == nullptr)
+				{
+					continue;
+				}
+
+				if (Prop->Struct == FMDViewModelAssignmentReference::StaticStruct())
+				{
+					FMDViewModelAssignmentReference PropAssignment;
+					Prop->GetValue_InContainer(Node, &PropAssignment);
+					if (PropAssignment == Assignment)
+					{
+						return true;
+					}
+				}
+				else if (Prop->Struct == FMDViewModelAssignment::StaticStruct())
+				{
+					FMDViewModelAssignment PropAssignment;
+					Prop->GetValue_InContainer(Node, &PropAssignment);
+					if (FMDViewModelAssignmentReference(PropAssignment) == Assignment)
+					{
+						return true;
+					}
+				}
+			}
+
+			// Check for FMDViewModelAssignmentReference or FMDViewModelAssignment Pins whose default value references the assignment
+			for (const UEdGraphPin* Pin : Node->Pins)
+			{
+				if (Pin == nullptr || Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Struct || Pin->Direction != EGPD_Input || !Pin->LinkedTo.IsEmpty())
+				{
+					continue;
+				}
+
+				if (Pin->PinType.PinSubCategoryObject == FMDViewModelAssignmentReference::StaticStruct())
+				{
+					FMDViewModelAssignmentReference PinAssignment;
+					const FString DefaultString = Pin->GetDefaultAsString();
+					if (!DefaultString.IsEmpty())
+					{
+						UScriptStruct* PinLiteralStructType = FMDViewModelAssignmentReference::StaticStruct();
+						PinLiteralStructType->ImportText(*DefaultString, &PinAssignment, nullptr, PPF_SerializedAsImportText, GError, PinLiteralStructType->GetName());
+					}
+
+					if (PinAssignment == Assignment)
+					{
+						return true;
+					}
+				}
+				else if (Pin->PinType.PinSubCategoryObject == FMDViewModelAssignment::StaticStruct())
+				{
+					FMDViewModelAssignment PinAssignment;
+					const FString DefaultString = Pin->GetDefaultAsString();
+					if (!DefaultString.IsEmpty())
+					{
+						UScriptStruct* PinLiteralStructType = FMDViewModelAssignment::StaticStruct();
+						PinLiteralStructType->ImportText(*DefaultString, &PinAssignment, nullptr, PPF_SerializedAsImportText, GError, PinLiteralStructType->GetName());
+					}
+
+					if (FMDViewModelAssignmentReference(PinAssignment) == Assignment)
+					{
+						return true;
+					}
+				}
+			}
+		}
+	}
+
+	return false;
 }
 
 IMDViewModelAssignableInterface* FMDViewModelGraphStatics::GetOrCreateAssignableInterface(UBlueprint* BP)
@@ -292,7 +389,7 @@ IMDViewModelAssignableInterface* FMDViewModelGraphStatics::GetAssignableInterfac
 		{
 			ExtensionObject->SetFlags(RF_Transactional);
 		}
-		
+
 		return Extension;
 	}
 
@@ -302,10 +399,10 @@ IMDViewModelAssignableInterface* FMDViewModelGraphStatics::GetAssignableInterfac
 UMDViewModelAssignmentComponent* FMDViewModelGraphStatics::GetOrCreateAssignmentComponentTemplate(UBlueprintGeneratedClass* BPClass)
 {
 	check(IsValid(BPClass) && BPClass->IsChildOf<AActor>());
-	
+
 	TArray<UBlueprintGeneratedClass*> Hierarchy;
 	UBlueprint::GetBlueprintHierarchyFromClass(BPClass, Hierarchy);
-		
+
 	// Find the most authoritative assignment component (our nearest parent)
 	USCS_Node* ComponentNode = nullptr;
 	for (UBlueprintGeneratedClass* Class : Hierarchy)
@@ -314,13 +411,13 @@ UMDViewModelAssignmentComponent* FMDViewModelGraphStatics::GetOrCreateAssignment
 		{
 			continue;
 		}
-		
+
 		USCS_Node* const* CurrentComponentNodePtr = Class->SimpleConstructionScript->GetAllNodes().FindByPredicate([](const USCS_Node* Node)
 		{
 			return IsValid(Node) && IsValid(Node->ComponentTemplate) && Node->ComponentTemplate->IsA<UMDViewModelAssignmentComponent>();
 		});
 		USCS_Node* CurrentComponentNode = (CurrentComponentNodePtr != nullptr) ? *CurrentComponentNodePtr : nullptr;
-		
+
 		if (Class != BPClass && CurrentComponentNode != nullptr)
 		{
 			constexpr bool bCreateIfNecessary = true;
@@ -345,7 +442,7 @@ UMDViewModelAssignmentComponent* FMDViewModelGraphStatics::GetOrCreateAssignment
 					}
 				}
 			}
-				
+
 			return Cast<UMDViewModelAssignmentComponent>(Component);
 		}
 		else if (Class == BPClass)

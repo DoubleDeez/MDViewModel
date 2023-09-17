@@ -8,9 +8,8 @@
 #include "Editor.h"
 #include "Editor/EditorEngine.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Framework/Commands/GenericCommands.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
-#include "HAL/PlatformApplicationMisc.h"
-#include "Misc/MessageDialog.h"
 #include "Nodes/MDVMNode_GetViewModel.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "ViewModel/MDViewModelBase.h"
@@ -54,10 +53,8 @@ FText FMDVMDragAndDropViewModel::GetNodeTitle() const
 void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwningTable, const TSharedPtr<FMDViewModelEditorAssignment>& Item, TWeakPtr<FBlueprintEditor> InBlueprintEditor)
 {
 	BlueprintEditor = InBlueprintEditor;
-	
-	OnDuplicateItemRequested = InArgs._OnDuplicateItemRequested;
+
 	OnEditItemRequested = InArgs._OnEditItemRequested;
-	OnDeleteItemConfirmed = InArgs._OnDeleteItemConfirmed;
 
 	Assignment = Item;
 
@@ -76,7 +73,7 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<
 		{
 			TArray<TSubclassOf<UObject>> SupportedContextObjects;
 			Item->Assignment.ViewModelClass.GetDefaultObject()->GetStoredContextObjectTypes(Assignment->Data.ViewModelSettings, GetBlueprint(), SupportedContextObjects);
-			
+
 			FText VMToolTip = Item->Assignment.ViewModelClass->GetToolTipText();
 
 			if (!SupportedContextObjects.IsEmpty())
@@ -197,7 +194,7 @@ FReply SMDViewModelListItem::OnMouseButtonDown(const FGeometry& MyGeometry, cons
 FReply SMDViewModelListItem::OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
 	FReply Reply = STableRow<TSharedPtr<FMDViewModelEditorAssignment>>::OnDragDetected(MyGeometry, MouseEvent);
-	
+
 	if (Assignment.IsValid())
 	{
 		const FMDViewModelAssignmentReference AssignmentRef = { Assignment->Assignment.ViewModelClass.Get(), Assignment->Assignment.ViewModelName };
@@ -214,7 +211,7 @@ FReply SMDViewModelListItem::OnMouseButtonDoubleClick(const FGeometry& InMyGeome
 	{
 		OnEditClicked();
 	}
-	
+
 	return FReply::Handled();
 }
 
@@ -231,16 +228,15 @@ void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder
 			FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanEdit)
 		)
 	);
-	
+
 	ContextMenuBuilder.AddMenuEntry(
+		FGenericCommands::Get().Copy,
+		NAME_None,
 		INVTEXT("Copy Assignment"),
 		INVTEXT("Copy this view model assignment to the clipboard to be pasted in another blueprint."),
-		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("GenericCommands.Copy")),
-		FUIAction(
-			FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnCopyClicked)
-		)
+		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("GenericCommands.Copy"))
 	);
-	
+
 	ContextMenuBuilder.AddMenuEntry(
 		INVTEXT("Find References"),
 		INVTEXT("Search for references to this view model in this blueprint."),
@@ -249,7 +245,7 @@ void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder
 			FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnFindReferencesClicked)
 		)
 		);
-	
+
 	ContextMenuBuilder.AddMenuEntry(
 		INVTEXT("Open Source Asset"),
 		INVTEXT("Opens the blueprint where the view model assignment was created."),
@@ -261,25 +257,21 @@ void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder
 	);
 
 	ContextMenuBuilder.AddMenuEntry(
+		FGenericCommands::Get().Duplicate,
+		NAME_None,
 		INVTEXT("Duplicate Assignment"),
 		INVTEXT("Opens the view model assignment dialog prepropulated with this assignment's settings."),
-		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Duplicate")),
-		FUIAction(
-			FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnDuplicateClicked),
-			FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanDuplicate)
-		)
+		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Duplicate"))
 	);
 
 	ContextMenuBuilder.AddMenuEntry(
+		FGenericCommands::Get().Delete,
+		NAME_None,
 		INVTEXT("Delete Assignment"),
 		INVTEXT("Remove this view model assignment."),
-		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("GenericCommands.Delete")),
-		FUIAction(
-			FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnDeleteClicked),
-			FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanDelete)
-		)
+		FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("GenericCommands.Delete"))
 	);
-	
+
 	ContextMenuBuilder.EndSection();
 }
 
@@ -323,14 +315,6 @@ void SMDViewModelListItem::OnFindReferencesClicked() const
 	}
 }
 
-void SMDViewModelListItem::OnCopyClicked() const
-{
-	FString AssignmentString;
-	FMDViewModelEditorAssignment::StaticStruct()->ExportText(AssignmentString, Assignment.Get(), Assignment.Get(), nullptr, PPF_Copy, nullptr);
-
-	FPlatformApplicationMisc::ClipboardCopy(*AssignmentString);
-}
-
 void SMDViewModelListItem::OnEditClicked() const
 {
 	OnEditItemRequested.ExecuteIfBound();
@@ -355,30 +339,6 @@ void SMDViewModelListItem::OnOpenOwnerAssetClicked() const
 bool SMDViewModelListItem::CanOpenOwnerAsset() const
 {
 	return GEditor != nullptr && Assignment.IsValid() && IsValid(Assignment->SuperAssignmentOwner) && IsValid(Assignment->SuperAssignmentOwner->ClassGeneratedBy);
-}
-
-void SMDViewModelListItem::OnDuplicateClicked() const
-{
-	OnDuplicateItemRequested.ExecuteIfBound();
-}
-
-bool SMDViewModelListItem::CanDuplicate() const
-{
-	return Assignment.IsValid() && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
-}
-
-void SMDViewModelListItem::OnDeleteClicked() const
-{
-	const EAppReturnType::Type ReturnType = FMessageDialog::Open(EAppMsgType::YesNo, INVTEXT("Are you sure you want to delete this view model assignment?"));
-	if (ReturnType == EAppReturnType::Yes)
-	{
-		OnDeleteItemConfirmed.ExecuteIfBound();
-	}
-}
-
-bool SMDViewModelListItem::CanDelete() const
-{
-	return Assignment.IsValid() && Assignment->SuperAssignmentOwner == nullptr && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
 }
 
 FString SMDViewModelListItem::GenerateSearchString() const

@@ -92,7 +92,7 @@ TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GenerateValueWidget(TSharedP
 				.Text(this, &FMDViewModelFieldDebugLineItem::GetDisplayValue)
 				.ToolTipText(this, &FMDViewModelFieldDebugLineItem::GetDisplayValue)
 			]
-		];	
+		];
 }
 
 TSharedRef<FMDVMInspectorDragAndDropActionBase> FMDViewModelFieldDebugLineItem::CreateDragAndDropAction() const
@@ -354,7 +354,7 @@ FString FMDViewModelFieldDebugLineItem::GenerateSearchString() const
 
 	if (bIsFieldNotify && PropertyPtr.IsValid())
 	{
-		const UMDVMNode_ViewModelFieldNotify* Node = FMDViewModelGraphStatics::FindExistingViewModelFieldNotifyNode(BlueprintPtr.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName);
+		const UMDVMNode_ViewModelFieldNotify* Node = FMDViewModelGraphStatics::FindExistingViewModelFieldNotifyNode(BlueprintPtr.Get(), PropertyPtr->GetFName(), { ViewModelClass, ViewModelName });
 		if (IsValid(Node))
 		{
 			Result += Node->GetFindReferenceSearchString();
@@ -374,13 +374,13 @@ FString FMDViewModelFieldDebugLineItem::GenerateSearchString() const
 			Result += TEXT(" || ") + VariableString;
 		}
 	}
-	
+
 	return Result;
 }
 
 int32 FMDViewModelFieldDebugLineItem::GetShouldDisplayFieldNotifyIndex() const
 {
-	const bool bHasFieldNotifyValue = !DebugViewModel.IsValid() && ValuePtr == nullptr && bIsFieldNotify; 
+	const bool bHasFieldNotifyValue = !DebugViewModel.IsValid() && ValuePtr == nullptr && bIsFieldNotify;
 	return bHasFieldNotifyValue ? 0 : 1;
 }
 
@@ -390,7 +390,7 @@ FReply FMDViewModelFieldDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 
 	if (PropertyPtr.IsValid())
 	{
-		FMDViewModelGraphStatics::OnViewModelFieldNotifyRequestedForBlueprint(BlueprintPtr.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName);
+		FMDViewModelGraphStatics::OnViewModelFieldNotifyRequestedForBlueprint(BlueprintPtr.Get(), PropertyPtr->GetFName(), { ViewModelClass, ViewModelName });
 	}
 
 	return FReply::Handled();
@@ -400,7 +400,7 @@ int32 FMDViewModelFieldDebugLineItem::GetAddOrViewBoundFunctionIndex() const
 {
 	check(bIsFieldNotify);
 
-	return (!PropertyPtr.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelFieldNotify(BlueprintPtr.Get(), PropertyPtr->GetFName(), ViewModelClass, ViewModelName))
+	return (!PropertyPtr.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelFieldNotify(BlueprintPtr.Get(), PropertyPtr->GetFName(), { ViewModelClass, ViewModelName }))
 		? 0 : 1;
 }
 

@@ -21,11 +21,11 @@ void UMDVMNode_ViewModelFieldNotify::ReconstructNode()
 	FFieldVariant Field = GetTargetFieldNotify();
 	if (!Field.IsValid())
 	{
-		if (const FProperty* NewProp = FMemberReference::FindRemappedField<FProperty>(ViewModelClass, FieldNotifyName))
+		if (const FProperty* NewProp = FMemberReference::FindRemappedField<FProperty>(Assignment.ViewModelClass.LoadSynchronous(), FieldNotifyName))
 		{
 			FieldNotifyName = NewProp->GetFName();
 		}
-		else if (const UFunction* NewFunc = FMemberReference::FindRemappedField<UFunction>(ViewModelClass, FieldNotifyName))
+		else if (const UFunction* NewFunc = FMemberReference::FindRemappedField<UFunction>(Assignment.ViewModelClass.LoadSynchronous(), FieldNotifyName))
 		{
 			FieldNotifyName = NewFunc->GetFName();
 		}
@@ -54,8 +54,8 @@ FText UMDVMNode_ViewModelFieldNotify::GetNodeTitle(ENodeTitleType::Type TitleTyp
 	{
 		FFormatNamedArguments Args;
 		Args.Add(TEXT("FieldNotifyName"), GetTargetFieldNotifyDisplayName());
-		Args.Add(TEXT("ViewModelClass"), ViewModelClass != nullptr ? ViewModelClass->GetDisplayNameText() : INVTEXT("NULL"));
-		Args.Add(TEXT("ViewModelName"), FText::FromString(ViewModelName.ToString()));
+		Args.Add(TEXT("ViewModelClass"), GetViewModelClassName());
+		Args.Add(TEXT("ViewModelName"), FText::FromString(Assignment.ViewModelName.ToString()));
 
 		CachedNodeTitle.SetCachedText(FText::Format(INVTEXT("{FieldNotifyName} ({ViewModelClass} - {ViewModelName})"), Args), this);
 	}
@@ -143,8 +143,8 @@ void UMDVMNode_ViewModelFieldNotify::RegisterDynamicBinding(UDynamicBlueprintBin
 	UMDViewModelFieldNotifyBinding* ComponentBindingObject = CastChecked<UMDViewModelFieldNotifyBinding>(BindingObject);
 
 	FMDViewModelFieldNotifyBindingEntry Binding;
-	Binding.ViewModelClass = ViewModelClass;
-	Binding.ViewModelName = ViewModelName;
+	Binding.ViewModelClass = Assignment.ViewModelClass.LoadSynchronous();
+	Binding.ViewModelName = Assignment.ViewModelName;
 	Binding.FieldNotifyName = FieldNotifyName;
 	Binding.FunctionNameToBind = CustomFunctionName;
 
@@ -155,7 +155,7 @@ void UMDVMNode_ViewModelFieldNotify::RegisterDynamicBinding(UDynamicBlueprintBin
 void UMDVMNode_ViewModelFieldNotify::HandleVariableRenamed(UBlueprint* InBlueprint, UClass* InVariableClass, UEdGraph* InGraph, const FName& InOldVarName,
 	const FName& InNewVarName)
 {
-	if (InVariableClass && InVariableClass->IsChildOf(ViewModelClass))
+	if (InVariableClass && InVariableClass->IsChildOf(Assignment.ViewModelClass.Get()))
 	{
 		if (InOldVarName == FieldNotifyName)
 		{
@@ -172,26 +172,26 @@ void UMDVMNode_ViewModelFieldNotify::ValidateNodeDuringCompilation(FCompilerResu
 	{
 		MessageLog.Error(TEXT("@@ cannot find a valid Blueprint."), this);
 	}
-	else if (!ViewModelClass)
+	else if (!Assignment.IsAssignmentValid())
 	{
 		MessageLog.Error(TEXT("@@ does not have a valid View Model reference! Delete and recreate the event."), this);
 	}
 	else
 	{
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
-		FMDViewModelGraphStatics::SearchViewModelAssignmentsForBlueprint(BP, ViewModelAssignments, ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
+		FMDViewModelGraphStatics::SearchViewModelAssignmentsForBlueprint(BP, ViewModelAssignments, Assignment.ViewModelClass.LoadSynchronous(), FGameplayTag::EmptyTag, Assignment.ViewModelName);
 
 		if (ViewModelAssignments.IsEmpty())
 		{
-			MessageLog.Error(*FString::Printf(TEXT("@@ is bound to a view model named [%s] of class [%s] but the view model is not assigned to this widget."), *ViewModelName.ToString(), *ViewModelClass->GetDisplayNameText().ToString()), this);
+			MessageLog.Error(*FString::Printf(TEXT("@@ is bound to a view model named [%s] of class [%s] but the view model is not assigned to this widget."), *Assignment.ViewModelName.ToString(), *GetViewModelClassName().ToString()), this);
 		}
 
 		if (!GetTargetFieldNotify().IsValid())
 		{
-			if (!FMemberReference::FindRemappedField<FProperty>(ViewModelClass, FieldNotifyName)
-				&& !FMemberReference::FindRemappedField<UFunction>(ViewModelClass, FieldNotifyName))
+			if (!FMemberReference::FindRemappedField<FProperty>(Assignment.ViewModelClass.LoadSynchronous(), FieldNotifyName)
+				&& !FMemberReference::FindRemappedField<UFunction>(Assignment.ViewModelClass.LoadSynchronous(), FieldNotifyName))
 			{
-				MessageLog.Error(*FString::Printf(TEXT("@@ is attempting to bind to a non-existent field notify [%s] on View Model of class [%s]"), *FieldNotifyName.ToString(), *ViewModelClass->GetDisplayNameText().ToString()), this);
+				MessageLog.Error(*FString::Printf(TEXT("@@ is attempting to bind to a non-existent field notify [%s] on View Model of class [%s]"), *FieldNotifyName.ToString(), *GetViewModelClassName().ToString()), this);
 			}
 		}
 	}
@@ -248,12 +248,11 @@ FText UMDVMNode_ViewModelFieldNotify::GetTargetFieldNotifyDisplayName() const
 	return FText::FromName(FieldNotifyName);
 }
 
-void UMDVMNode_ViewModelFieldNotify::InitializeViewModelFieldNotifyParams(TSubclassOf<UMDViewModelBase> InViewModelClass, const FName& InViewModelName, const FName& InFieldNotifyName)
+void UMDVMNode_ViewModelFieldNotify::InitializeViewModelFieldNotifyParams(const FMDViewModelAssignmentReference& InAssignment, const FName& InFieldNotifyName)
 {
-	if (InViewModelClass != nullptr)
+	if (InAssignment.IsAssignmentValid())
 	{
-		ViewModelClass = InViewModelClass;
-		ViewModelName = InViewModelName;
+		Assignment = InAssignment;
 		FieldNotifyName = InFieldNotifyName;
 
 		bOverrideFunction = false;
@@ -276,13 +275,13 @@ void UMDVMNode_ViewModelFieldNotify::OnAssignmentChanged()
 	{
 		FieldNotifyReference.SetFromField<UFunction>(Function, bIsConsideredSelfContext);
 	}
-	
-	CustomFunctionName = FName(*FString::Printf(TEXT("BndEvt__%s_%s_%s_%s"), *GetBlueprint()->GetName(), *ViewModelClass->GetName(), *GetName(), *FieldNotifyReference.GetMemberName().ToString()));
+
+	CustomFunctionName = FName(*FString::Printf(TEXT("BndEvt__%s_%s_%s_%s"), *GetBlueprint()->GetName(), *GetNameSafe(Assignment.ViewModelClass.LoadSynchronous()), *GetName(), *FieldNotifyReference.GetMemberName().ToString()));
 }
 
 FFieldVariant UMDVMNode_ViewModelFieldNotify::GetTargetFieldNotify() const
 {
-	return FindUFieldOrFProperty(ViewModelClass, FieldNotifyName);
+	return FindUFieldOrFProperty(Assignment.ViewModelClass.LoadSynchronous(), FieldNotifyName);
 }
 
 const FProperty* UMDVMNode_ViewModelFieldNotify::ResolveFieldNotifyPropertyType() const

@@ -49,7 +49,7 @@ public:
 	// Gets the proper display name for the property
 	FText GetTargetDelegateDisplayName() const;
 
-	void InitializeViewModelEventParams(TSubclassOf<UMDViewModelBase> InViewModelClass, const FName& InViewModelName, const FName& InDelegatePropertyName);
+	void InitializeViewModelEventParams(const FMDViewModelAssignmentReference& InAssignment, const FName& InDelegatePropertyName);
 
 protected:
 	virtual void OnAssignmentChanged() override;

@@ -15,7 +15,7 @@ public:
 	// Name of the function that we're binding to
 	UPROPERTY()
 	FName FunctionNameToBind = NAME_None;
-	
+
 	//~ Begin UObject Interface
 	virtual bool Modify(bool bAlwaysMarkDirty = true) override;
 	//~ End UObject Interface
@@ -36,7 +36,7 @@ public:
 	virtual bool IsFunctionEntryCompatible(const class UK2Node_FunctionEntry* EntryNode) const override;
 	//~ End K2Node Interface
 
-	void InitializeViewModelChangedParams(TSubclassOf<UMDViewModelBase> InViewModelClass, const FName& InViewModelName);
+	void InitializeViewModelChangedParams(const FMDViewModelAssignmentReference& InAssignment);
 
 protected:
 	virtual void OnAssignmentChanged() override;

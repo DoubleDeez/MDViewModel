@@ -57,12 +57,12 @@ bool FMDViewModelChangedDebugLineItem::CanCreateNodes() const
 
 FReply FMDViewModelChangedDebugLineItem::OnAddOrViewBoundVMChangedFunctionClicked() const
 {
-	FMDViewModelGraphStatics::OnViewModelChangedRequestedForBlueprint(BlueprintPtr.Get(), ViewModelClass, ViewModelName);
+	FMDViewModelGraphStatics::OnViewModelChangedRequestedForBlueprint(BlueprintPtr.Get(), { ViewModelClass, ViewModelName });
 	return FReply::Handled();
 }
 
 int32 FMDViewModelChangedDebugLineItem::GetAddOrViewBoundVMChangedFunctionIndex() const
 {
-	return FMDViewModelGraphStatics::DoesBlueprintBindToViewModelChanged(BlueprintPtr.Get(), ViewModelClass, ViewModelName)
+	return FMDViewModelGraphStatics::DoesBlueprintBindToViewModelChanged(BlueprintPtr.Get(), { ViewModelClass, ViewModelName })
 		? 0 : 1;
 }

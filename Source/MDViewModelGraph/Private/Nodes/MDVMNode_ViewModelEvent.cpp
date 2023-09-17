@@ -23,7 +23,7 @@ void UMDVMNode_ViewModelEvent::ReconstructNode()
 	// If we couldn't find the target delegate, then try to find it in the property remap table
 	if (!TargetDelegateProp)
 	{
-		if (const FMulticastDelegateProperty* NewProperty = FMemberReference::FindRemappedField<FMulticastDelegateProperty>(ViewModelClass, DelegatePropertyName))
+		if (const FMulticastDelegateProperty* NewProperty = FMemberReference::FindRemappedField<FMulticastDelegateProperty>(Assignment.ViewModelClass.LoadSynchronous(), DelegatePropertyName))
 		{
 			// Found a remapped property, update the node
 			TargetDelegateProp = NewProperty;
@@ -47,8 +47,8 @@ FText UMDVMNode_ViewModelEvent::GetNodeTitle(ENodeTitleType::Type TitleType) con
 	{
 		FFormatNamedArguments Args;
 		Args.Add(TEXT("DelegatePropertyName"), GetTargetDelegateDisplayName());
-		Args.Add(TEXT("ViewModelClass"), ViewModelClass->GetDisplayNameText());
-		Args.Add(TEXT("ViewModelName"), FText::FromString(ViewModelName.ToString()));
+		Args.Add(TEXT("ViewModelClass"), GetViewModelClassName());
+		Args.Add(TEXT("ViewModelName"), FText::FromString(Assignment.ViewModelName.ToString()));
 
 		CachedNodeTitle.SetCachedText(FText::Format(INVTEXT("{DelegatePropertyName} ({ViewModelClass} - {ViewModelName})"), Args), this);
 	}
@@ -105,8 +105,8 @@ void UMDVMNode_ViewModelEvent::RegisterDynamicBinding(UDynamicBlueprintBinding* 
 	UMDViewModelDelegateBinding* ComponentBindingObject = CastChecked<UMDViewModelDelegateBinding>(BindingObject);
 
 	FMDViewModelDelegateBindingEntry Binding;
-	Binding.ViewModelClass = ViewModelClass;
-	Binding.ViewModelName = ViewModelName;
+	Binding.ViewModelClass = Assignment.ViewModelClass.LoadSynchronous();
+	Binding.ViewModelName = Assignment.ViewModelName;
 	Binding.DelegatePropertyName = DelegatePropertyName;
 	Binding.FunctionNameToBind = CustomFunctionName;
 
@@ -116,7 +116,7 @@ void UMDVMNode_ViewModelEvent::RegisterDynamicBinding(UDynamicBlueprintBinding* 
 
 void UMDVMNode_ViewModelEvent::HandleVariableRenamed(UBlueprint* InBlueprint, UClass* InVariableClass, UEdGraph* InGraph, const FName& InOldVarName, const FName& InNewVarName)
 {
-	if (InVariableClass && InVariableClass->IsChildOf(ViewModelClass))
+	if (InVariableClass && InVariableClass->IsChildOf(Assignment.ViewModelClass.Get()))
 	{
 		if (InOldVarName == DelegatePropertyName)
 		{
@@ -133,23 +133,23 @@ void UMDVMNode_ViewModelEvent::ValidateNodeDuringCompilation(FCompilerResultsLog
 	{
 		MessageLog.Error(TEXT("@@ cannot find a valid Blueprint."), this);
 	}
-	else if (!ViewModelClass)
+	else if (!Assignment.IsAssignmentValid())
 	{
 		MessageLog.Error(TEXT("@@ does not have a valid View Model reference! Delete and recreate the event."), this);
 	}
 	else
 	{
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
-		FMDViewModelGraphStatics::SearchViewModelAssignmentsForBlueprint(BP, ViewModelAssignments, ViewModelClass, FGameplayTag::EmptyTag, ViewModelName);
+		FMDViewModelGraphStatics::SearchViewModelAssignmentsForBlueprint(BP, ViewModelAssignments, Assignment.ViewModelClass.LoadSynchronous(), FGameplayTag::EmptyTag, Assignment.ViewModelName);
 
 		if (ViewModelAssignments.IsEmpty())
 		{
-			MessageLog.Error(*FString::Printf(TEXT("@@ is bound to a view model named [%s] of class [%s] but the view model is not assigned to this widget."), *ViewModelName.ToString(), *ViewModelClass->GetDisplayNameText().ToString()), this);
+			MessageLog.Error(*FString::Printf(TEXT("@@ is bound to a view model named [%s] of class [%s] but the view model is not assigned to this widget."), *Assignment.ViewModelName.ToString(), *GetViewModelClassName().ToString()), this);
 		}
 
-		if (!GetTargetDelegateProperty() && !FMemberReference::FindRemappedField<FMulticastDelegateProperty>(ViewModelClass, DelegatePropertyName))
+		if (!GetTargetDelegateProperty() && !FMemberReference::FindRemappedField<FMulticastDelegateProperty>(Assignment.ViewModelClass.LoadSynchronous(), DelegatePropertyName))
 		{
-			MessageLog.Error(*FString::Printf(TEXT("@@ is attempting to bind to a non-existent delegate [%s] on View Model of class [%s]"), *DelegatePropertyName.ToString(), *ViewModelClass->GetDisplayNameText().ToString()), this);
+			MessageLog.Error(*FString::Printf(TEXT("@@ is attempting to bind to a non-existent delegate [%s] on View Model of class [%s]"), *DelegatePropertyName.ToString(), *GetViewModelClassName().ToString()), this);
 		}
 	}
 
@@ -164,7 +164,7 @@ bool UMDVMNode_ViewModelEvent::IsUsedByAuthorityOnlyDelegate() const
 
 FMulticastDelegateProperty* UMDVMNode_ViewModelEvent::GetTargetDelegateProperty() const
 {
-	return FindFProperty<FMulticastDelegateProperty>(ViewModelClass, DelegatePropertyName);
+	return FindFProperty<FMulticastDelegateProperty>(Assignment.ViewModelClass.LoadSynchronous(), DelegatePropertyName);
 }
 
 FText UMDVMNode_ViewModelEvent::GetTargetDelegateDisplayName() const
@@ -173,12 +173,11 @@ FText UMDVMNode_ViewModelEvent::GetTargetDelegateDisplayName() const
 	return Prop ? Prop->GetDisplayNameText() : FText::FromName(DelegatePropertyName);
 }
 
-void UMDVMNode_ViewModelEvent::InitializeViewModelEventParams(TSubclassOf<UMDViewModelBase> InViewModelClass, const FName& InViewModelName, const FName& InDelegatePropertyName)
+void UMDVMNode_ViewModelEvent::InitializeViewModelEventParams(const FMDViewModelAssignmentReference& InAssignment, const FName& InDelegatePropertyName)
 {
-	if (InViewModelClass != nullptr)
+	if (Assignment.IsAssignmentValid())
 	{
-		ViewModelClass = InViewModelClass;
-		ViewModelName = InViewModelName;
+		Assignment = InAssignment;
 		DelegatePropertyName = InDelegatePropertyName;
 
 		bOverrideFunction = false;
@@ -194,6 +193,6 @@ void UMDVMNode_ViewModelEvent::OnAssignmentChanged()
 	constexpr bool bIsConsideredSelfContext = false;
 	const FMulticastDelegateProperty* Prop = GetTargetDelegateProperty();
 	EventReference.SetFromField<UFunction>(Prop->SignatureFunction, bIsConsideredSelfContext);
-	
-	CustomFunctionName = FName(*FString::Printf(TEXT("BndEvt__%s_%s_%s_%s"), *GetBlueprint()->GetName(), *ViewModelClass->GetName(), *GetName(), *EventReference.GetMemberName().ToString()));
+
+	CustomFunctionName = FName(*FString::Printf(TEXT("BndEvt__%s_%s_%s_%s"), *GetBlueprint()->GetName(), *GetNameSafe(Assignment.ViewModelClass.LoadSynchronous()), *GetName(), *EventReference.GetMemberName().ToString()));
 }

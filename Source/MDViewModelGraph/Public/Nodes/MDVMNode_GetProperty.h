@@ -17,10 +17,10 @@ public:
 	virtual void AllocateDefaultPins() override;
 	virtual void ReallocatePinsDuringReconstruction(TArray<UEdGraphPin*>& OldPins) override;
 	virtual void BeginDestroy() override;
-	
+
 	virtual void GetMenuActions(FBlueprintActionDatabaseRegistrar& InActionRegistrar) const override;
 	virtual bool IsActionFilteredOut(const FBlueprintActionFilter& Filter) override;
-	
+
 	virtual bool DrawNodeAsVariable() const override { return false; }
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 	virtual void GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const override;
@@ -32,16 +32,16 @@ public:
 
 protected:
 	UBlueprintNodeSpawner* CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const FProperty* Property, const UBlueprint* Blueprint) const;
-	
+
 private:
 	void BindAssignmentChanges();
-	void OnAssignmentChanged(const FName& OldName, const FName& NewName, TSubclassOf<UMDViewModelBase> OldClass, TSubclassOf<UMDViewModelBase> NewClass);
+	void OnAssignmentChanged(const FMDViewModelAssignmentReference& Old, const FMDViewModelAssignmentReference& New);
 	void UnbindAssignmentChanges();
 
 	bool IsPropertyValidForNode(const FProperty* Property) const;
 
 	void ToggleValidation();
-	
+
 	UPROPERTY()
 	FMDViewModelAssignmentReference Assignment;
 

@@ -51,11 +51,11 @@ public:
 	// Gets the proper display name for the property
 	FText GetTargetFieldNotifyDisplayName() const;
 
-	void InitializeViewModelFieldNotifyParams(TSubclassOf<UMDViewModelBase> InViewModelClass, const FName& InViewModelName, const FName& InFieldNotifyName);
+	void InitializeViewModelFieldNotifyParams(const FMDViewModelAssignmentReference& InAssignment, const FName& InFieldNotifyName);
 
 protected:
 	virtual void OnAssignmentChanged() override;
-	
+
 private:
 	UPROPERTY()
 	FMemberReference FieldNotifyReference;

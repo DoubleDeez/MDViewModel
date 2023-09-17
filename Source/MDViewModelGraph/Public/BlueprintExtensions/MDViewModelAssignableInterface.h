@@ -5,6 +5,7 @@
 #include "UObject/Interface.h"
 #include "MDViewModelAssignableInterface.generated.h"
 
+struct FMDViewModelAssignmentReference;
 class UMDViewModelBase;
 struct FMDViewModelAssignmentData;
 struct FMDViewModelAssignment;
@@ -23,11 +24,11 @@ class MDVIEWMODELGRAPH_API IMDViewModelAssignableInterface
 
 public:
 	virtual TArray<FMDViewModelEditorAssignment>& GetAssignments() = 0;
-	
+
 	virtual UBlueprint* GetBlueprint() const;
 
 	void ModifyObject();
-	
+
 	const TArray<FMDViewModelEditorAssignment>& GetAssignments() const;
 	void GetAllAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments) const;
 
@@ -38,7 +39,7 @@ public:
 	bool DoesContainViewModelAssignment(TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FGameplayTag& ProviderTag = FGameplayTag::EmptyTag, const FName& ViewModelName = NAME_None) const;
 	bool HasAssignments() const;
 
-	DECLARE_MULTICAST_DELEGATE_FourParams(FOnViewModelAssignmentChanged, const FName& /*OldName*/, const FName& /*NewName*/, TSubclassOf<UMDViewModelBase> /*OldClass*/, TSubclassOf<UMDViewModelBase> /*NewClass*/);
+	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnViewModelAssignmentChanged, const FMDViewModelAssignmentReference& /*OldAssignment*/, const FMDViewModelAssignmentReference& /*NewAssignment*/);
 	FOnViewModelAssignmentChanged OnAssignmentChanged;
 
 protected:

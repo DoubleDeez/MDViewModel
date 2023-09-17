@@ -5,8 +5,10 @@
 #include "Editor.h"
 #include "Editor/EditorEngine.h"
 #include "Engine/BlueprintGeneratedClass.h"
+#include "Framework/Commands/GenericCommands.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "HAL/PlatformApplicationMisc.h"
+#include "Misc/MessageDialog.h"
 #include "Runtime/Launch/Resources/Version.h"
 #if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 #include "Logging/StructuredLog.h"
@@ -39,6 +41,8 @@ void SMDViewModelList::Construct(const FArguments& InArgs, const TSharedPtr<FBlu
 	check(InBlueprintEditor.IsValid());
 	OnViewModelSelected = InArgs._OnViewModelSelected;
 	BlueprintEditorPtr = InBlueprintEditor;
+
+	SetupCommands();
 
 	if (IsValid(GEngine))
 	{
@@ -119,6 +123,44 @@ void SMDViewModelList::RefreshList()
 	}
 }
 
+FReply SMDViewModelList::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (CommandList.IsValid())
+	{
+		if (CommandList->ProcessCommandBindings(InKeyEvent))
+		{
+			return FReply::Handled();
+		}
+	}
+
+	return SCompoundWidget::OnKeyDown(MyGeometry, InKeyEvent);
+}
+
+void SMDViewModelList::SetupCommands()
+{
+	CommandList = MakeShared<FUICommandList>();
+
+	CommandList->MapAction(FGenericCommands::Get().Copy,
+		FExecuteAction::CreateSP(this, &SMDViewModelList::CopySelectedAssignment),
+		FCanExecuteAction::CreateSP(this, &SMDViewModelList::IsSelectedAssignmentValid)
+	);
+
+	CommandList->MapAction(FGenericCommands::Get().Paste,
+		FExecuteAction::CreateSP(this, &SMDViewModelList::PasteAssignment),
+		FCanExecuteAction::CreateSP(this, &SMDViewModelList::CanPasteAssignment)
+	);
+
+	CommandList->MapAction(FGenericCommands::Get().Duplicate,
+		FExecuteAction::CreateSP(this, &SMDViewModelList::DuplicateSelectedAssignment),
+		FCanExecuteAction::CreateSP(this, &SMDViewModelList::IsSelectedAssignmentValidAndNotPIE)
+	);
+
+	CommandList->MapAction(FGenericCommands::Get().Delete,
+		FExecuteAction::CreateSP(this, &SMDViewModelList::DeleteSelectedAssignment),
+		FCanExecuteAction::CreateSP(this, &SMDViewModelList::IsSelectedAssignmentValidAndNotPIE)
+	);
+}
+
 void SMDViewModelList::OnItemSelected(TSharedPtr<FMDViewModelEditorAssignment> Item, ESelectInfo::Type SelectInfo)
 {
 	OnViewModelSelected.ExecuteIfBound(Item.Get());
@@ -127,14 +169,17 @@ void SMDViewModelList::OnItemSelected(TSharedPtr<FMDViewModelEditorAssignment> I
 TSharedRef<ITableRow> SMDViewModelList::OnGenerateRow(TSharedPtr<FMDViewModelEditorAssignment> Item, const TSharedRef<STableViewBase>& OwningTable)
 {
 	return SNew(SMDViewModelListItem, OwningTable, Item, BlueprintEditorPtr)
-		.OnDuplicateItemRequested(this, &SMDViewModelList::OnDuplicateItem, Item)
-		.OnEditItemRequested(this, &SMDViewModelList::OnEditItem, Item)
-		.OnDeleteItemConfirmed(this, &SMDViewModelList::OnDeleteItem, Item);
+		.OnEditItemRequested(this, &SMDViewModelList::OnEditItem, Item);
 }
 
 TSharedPtr<SWidget> SMDViewModelList::OnContextMenuOpening()
 {
 	FMenuBuilder ContextMenuBuilder(true, nullptr);
+
+	if (CommandList.IsValid())
+	{
+		ContextMenuBuilder.PushCommandList(CommandList.ToSharedRef());
+	}
 
 	TArray<TSharedPtr<FMDViewModelEditorAssignment>> SelectedItems = AssignmentList->GetSelectedItems();
 	if (SelectedItems.Num() == 1 && SelectedItems[0].IsValid())
@@ -145,17 +190,15 @@ TSharedPtr<SWidget> SMDViewModelList::OnContextMenuOpening()
 			ListItem->OnContextMenuOpening(ContextMenuBuilder);
 		}
 	}
-	
+
 	ContextMenuBuilder.BeginSection("ViewModelList", INVTEXT("View Model List"));
 	{
 		ContextMenuBuilder.AddMenuEntry(
+			FGenericCommands::Get().Paste,
+			NAME_None,
 			INVTEXT("Paste Assignment"),
 			INVTEXT("Paste a view model assignment from the clipboard."),
-			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("GenericCommands.Paste")),
-			FUIAction(
-				FExecuteAction::CreateSP(this, &SMDViewModelList::OnPasteClicked),
-				FCanExecuteAction::CreateSP(this, &SMDViewModelList::CanPaste)
-			)
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("GenericCommands.Paste"))
 		);
 	}
 	ContextMenuBuilder.EndSection();
@@ -170,9 +213,9 @@ void SMDViewModelList::PopulateAssignments()
 	{
 		return;
 	}
-	
+
 	IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetAssignableInterface(GetBlueprint());
-	
+
 	TArray<UBlueprintGeneratedClass*> Hierarchy;
 	UBlueprint::GetBlueprintHierarchyFromClass(GeneratedClass, Hierarchy);
 
@@ -188,10 +231,10 @@ void SMDViewModelList::PopulateAssignments()
 		if (UBlueprintGeneratedClass* SuperClass = Hierarchy[i])
 		{
 			ChildFirstSortedAncestry.Add(SuperClass);
-			
+
 			TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> SuperAssignments;
 			MDViewModelUtils::GetViewModelAssignments(SuperClass, SuperAssignments);
-		
+
 			TArray<FMDViewModelEditorAssignment>& SuperEditorAssignments = AllAssignments.Add(SuperClass);
 			for (const auto& Pair : SuperAssignments)
 			{
@@ -235,7 +278,7 @@ void SMDViewModelList::PopulateAssignments()
 							*GetPathNameSafe(ExistingAssignment->SuperAssignmentOwner)
 						);
 #endif
-							
+
 					}
 				}
 				else
@@ -250,8 +293,8 @@ void SMDViewModelList::PopulateAssignments()
 	ActiveAssignments.Sort([&](const FMDViewModelEditorAssignment& A, const FMDViewModelEditorAssignment& B)
 	{
 		// Non-Super first
-		const bool bAIsSuper = IsValid(A.SuperAssignmentOwner); 
-		const bool bBIsSuper = IsValid(B.SuperAssignmentOwner); 
+		const bool bAIsSuper = IsValid(A.SuperAssignmentOwner);
+		const bool bBIsSuper = IsValid(B.SuperAssignmentOwner);
 		if (bAIsSuper != bBIsSuper)
 		{
 			return bBIsSuper;
@@ -297,7 +340,7 @@ void SMDViewModelList::PopulateAssignments()
 #endif
 			return false;
 		}
-		
+
 		const int32 BIndex = AssignmentsPtr->IndexOfByKey(B);
 		if (BIndex < 0)
 		{
@@ -381,7 +424,7 @@ void SMDViewModelList::OnAssignmentAdded(const FMDViewModelEditorAssignment& Ass
 				return AssignmentPtr.IsValid() && *AssignmentPtr == Assignment;
 			}
 		);
-		
+
 		if (AssignmentPtr != nullptr)
 		{
 			AssignmentList->SetSelection(*AssignmentPtr);
@@ -389,15 +432,41 @@ void SMDViewModelList::OnAssignmentAdded(const FMDViewModelEditorAssignment& Ass
 	}
 }
 
-void SMDViewModelList::OnPasteClicked()
+bool SMDViewModelList::IsSelectedAssignmentValid() const
+{
+	if (const TSharedPtr<FMDViewModelEditorAssignment> Assignment = GetSelectedAssignment())
+	{
+		return Assignment->Assignment.IsValid();
+	}
+
+	return false;
+}
+
+bool SMDViewModelList::IsSelectedAssignmentValidAndNotPIE() const
+{
+	return IsSelectedAssignmentValid() && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
+}
+
+void SMDViewModelList::CopySelectedAssignment()
+{
+	if (const TSharedPtr<FMDViewModelEditorAssignment> Assignment = GetSelectedAssignment())
+	{
+		FString AssignmentString;
+		FMDViewModelEditorAssignment::StaticStruct()->ExportText(AssignmentString, Assignment.Get(), Assignment.Get(), nullptr, PPF_Copy, nullptr);
+
+		FPlatformApplicationMisc::ClipboardCopy(*AssignmentString);
+	}
+}
+
+void SMDViewModelList::PasteAssignment()
 {
 	FString AssignmentString;
 	FPlatformApplicationMisc::ClipboardPaste(AssignmentString);
-	
+
 	FMDViewModelEditorAssignment Assignment;
 	UScriptStruct* AssignmentStruct = FMDViewModelEditorAssignment::StaticStruct();
 	AssignmentStruct->ImportText(*AssignmentString, &Assignment, nullptr, PPF_Copy, GError, AssignmentStruct->GetName());
-	
+
 	Assignment.SuperAssignmentOwner = nullptr;
 
 	if (IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetOrCreateAssignableInterface(GetBlueprint()))
@@ -422,19 +491,19 @@ void SMDViewModelList::OnPasteClicked()
 				}
 			}
 		}
-		
+
 		FScopedTransaction Transaction = FScopedTransaction(INVTEXT("Pasted View Model Assignment"));
 		Extension->AddAssignment(MoveTemp(Assignment));
 	}
 }
 
-bool SMDViewModelList::CanPaste() const
+bool SMDViewModelList::CanPasteAssignment() const
 {
 	if (GEditor->bIsSimulatingInEditor || GEditor->PlayWorld != nullptr)
 	{
 		return false;
 	}
-	
+
 	FString AssignmentString;
 	FPlatformApplicationMisc::ClipboardPaste(AssignmentString);
 
@@ -450,26 +519,38 @@ bool SMDViewModelList::CanPaste() const
 	return Assignment.Assignment.IsValid();
 }
 
-void SMDViewModelList::OnDuplicateItem(TSharedPtr<FMDViewModelEditorAssignment> Item)
+void SMDViewModelList::DuplicateSelectedAssignment()
 {
-	SMDViewModelAssignmentDialog::OpenDuplicateDialog(GetBlueprint(), Item);
+	if (const TSharedPtr<FMDViewModelEditorAssignment> Assignment = GetSelectedAssignment())
+	{
+		SMDViewModelAssignmentDialog::OpenDuplicateDialog(GetBlueprint(), Assignment);
+	}
+}
+
+void SMDViewModelList::DeleteSelectedAssignment()
+{
+	if (const TSharedPtr<FMDViewModelEditorAssignment> Assignment = GetSelectedAssignment())
+	{
+		if (FMDViewModelGraphStatics::DoesBlueprintUseAssignment(GetBlueprint(), FMDViewModelAssignmentReference(Assignment->Assignment)))
+		{
+			const EAppReturnType::Type ReturnType = FMessageDialog::Open(EAppMsgType::YesNo, INVTEXT("This view model is referenced in either this Blueprint or a dependent Blueprint.\nAre you sure you want to delete this view model assignment?"));
+			if (ReturnType != EAppReturnType::Yes)
+			{
+				return;
+			}
+		}
+
+		if (IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetAssignableInterface(GetBlueprint()))
+		{
+			FScopedTransaction Transaction = FScopedTransaction(INVTEXT("Removed View Model Assignment"));
+			Extension->RemoveAssignment(*Assignment);
+		}
+	}
 }
 
 void SMDViewModelList::OnEditItem(TSharedPtr<FMDViewModelEditorAssignment> Item)
 {
 	SMDViewModelAssignmentDialog::OpenEditDialog(GetBlueprint(), Item);
-}
-
-void SMDViewModelList::OnDeleteItem(TSharedPtr<FMDViewModelEditorAssignment> Item)
-{
-	if (Item.IsValid())
-	{
-		if (IMDViewModelAssignableInterface* Extension = FMDViewModelGraphStatics::GetAssignableInterface(GetBlueprint()))
-		{
-			FScopedTransaction Transaction = FScopedTransaction(INVTEXT("Removed View Model Assignment"));
-			Extension->RemoveAssignment(*Item.Get());
-		}
-	}
 }
 
 UBlueprint* SMDViewModelList::GetBlueprint() const
@@ -487,6 +568,16 @@ UClass* SMDViewModelList::GetGeneratedClass() const
 	if (const UBlueprint* Blueprint = GetBlueprint())
 	{
 		return Blueprint->GeneratedClass;
+	}
+
+	return nullptr;
+}
+
+TSharedPtr<FMDViewModelEditorAssignment> SMDViewModelList::GetSelectedAssignment() const
+{
+	if (AssignmentList.IsValid() && AssignmentList->GetNumItemsSelected() > 0)
+	{
+		return AssignmentList->GetSelectedItems()[0];
 	}
 
 	return nullptr;

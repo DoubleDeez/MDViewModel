@@ -3,6 +3,7 @@
 #include "BlueprintActionDatabase.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Subsystems/MDViewModelGraphSubsystem.h"
+#include "Util/MDViewModelAssignmentReference.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "ViewModel/MDViewModelBase.h"
 
@@ -12,7 +13,7 @@ UBlueprint* IMDViewModelAssignableInterface::GetBlueprint() const
 	{
 		return ThisObject->GetTypedOuter<UBlueprint>();
 	}
-	
+
 	return nullptr;
 }
 
@@ -48,7 +49,7 @@ void IMDViewModelAssignableInterface::AddAssignment(FMDViewModelEditorAssignment
 		UBlueprint* Blueprint = GetBlueprint();
 		ModifyObject();
 		GetAssignments().Emplace(MoveTemp(Assignment));
-		
+
 		UMDViewModelGraphSubsystem::BroadcastBlueprintViewModelAssignmentsChanged(Blueprint);
 		FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 		FBlueprintActionDatabase::Get().RefreshAssetActions(Blueprint);
@@ -61,15 +62,14 @@ void IMDViewModelAssignableInterface::UpdateAssignment(const FMDViewModelEditorA
 	if (AssignmentIndex != INDEX_NONE)
 	{
 		ModifyObject();
-		
+
 		const FMDViewModelEditorAssignment OldAssignment = GetAssignments()[AssignmentIndex];
 		GetAssignments()[AssignmentIndex] = UpdatedAssignment;
 
 		if ((OldAssignment.Assignment.ViewModelName != UpdatedAssignment.Assignment.ViewModelName)
 			|| (OldAssignment.Assignment.ViewModelClass != UpdatedAssignment.Assignment.ViewModelClass))
 		{
-			OnAssignmentChanged.Broadcast(OldAssignment.Assignment.ViewModelName, UpdatedAssignment.Assignment.ViewModelName,
-				OldAssignment.Assignment.ViewModelClass, UpdatedAssignment.Assignment.ViewModelClass);
+			OnAssignmentChanged.Broadcast(FMDViewModelAssignmentReference(OldAssignment.Assignment), FMDViewModelAssignmentReference(UpdatedAssignment.Assignment));
 		}
 
 		UBlueprint* Blueprint = GetBlueprint();
@@ -117,7 +117,7 @@ bool IMDViewModelAssignableInterface::DoesContainViewModelAssignment(TSubclassOf
 	{
 		return true;
 	}
-	
+
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
 	SearchParentAssignments(ViewModelAssignments, ViewModelClass, ProviderTag, ViewModelName);
 
