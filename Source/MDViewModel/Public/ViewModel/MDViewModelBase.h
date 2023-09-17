@@ -52,9 +52,13 @@ public:
 #if WITH_EDITOR
 	// Override this to expose properties in the view model assignment editor, called on the CDO
 	virtual UScriptStruct* GetViewModelSettingsStruct() const { return nullptr; }
+	// Gives a place to massage the properties in ViewModelSettings when the user changes them
 	virtual void OnViewModelSettingsPropertyChanged(FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, const FMDViewModelAssignment& Assignment) const {};
+	// If this view model requires anything from ViewModelSettings or elsewhere, this can be overridden to message any issues to the user
 	virtual bool ValidateViewModelSettings(const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, const FMDViewModelAssignment& Assignment, TArray<FText>& OutIssues) const { return true; }
+	// If this view model can only be initialized with specific context object types, this can be overridden to message those types to the user. The supported types is allowed to change based on the ViewModelSettings or Blueprint
 	virtual void GetSupportedContextObjectTypes(const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, TArray<TSubclassOf<UObject>>& OutClasses) const {};
+	// If the types gathered in GetSupportedContextObjectTypes differs from the type of the ContextObject being stored (due to RedirectContextObject), overridden this to report the types that will be stored
 	virtual void GetStoredContextObjectTypes(const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, TArray<TSubclassOf<UObject>>& OutClasses) const { GetSupportedContextObjectTypes(ViewModelSettings, Blueprint, OutClasses); };
 #endif
 
@@ -72,7 +76,7 @@ public:
 	FDelegateHandle AddTypedFieldValueChangedDelegate(UE::FieldNotification::FFieldId InFieldId, TDelegate<void(U)>&& Delegate);
 
 	template<typename T>
-	bool GetFieldValue(UE::FieldNotification::FFieldId FieldId, T& OutValue); 
+	bool GetFieldValue(UE::FieldNotification::FFieldId FieldId, T& OutValue);
 
 	// These feel like an anti-pattern but they're here for flexibility
 	virtual void OnSetOnObject(UObject* Object) {}
@@ -100,7 +104,7 @@ public:
 	{
 		return CastChecked<T>(ContextObject.Get());
 	}
-	
+
 	template<typename T>
 	T* GetContextObjectEnsure() const
 	{
@@ -120,13 +124,13 @@ public:
 
 			return Object != nullptr;
 		};
-		
+
 		T* Object = Cast<T>(ContextObject.Get());
 		const bool bIsValid = ensureAlwaysMsgf(IsValidObject(Object), TEXT("The context object [%s] for view model [%s] is expected to be of type [%s]"), *GetFullNameSafe(ContextObject.Get()), *GetName(), *GetTypeName<DecayedT>());
 		return bIsValid ? Object : nullptr;
 	}
 
-	
+
 	UFUNCTION(BlueprintCallable, Category = "View Model")
 	const FInstancedStruct& GetViewModelSettings() const { return CachedViewModelSettings; }
 
@@ -144,7 +148,7 @@ public:
 		checkf(SettingsPtr != nullptr, TEXT("The view model [%s] is expecting settings of type [%s] but the actual type is [%s]"), *GetName(), *T::StaticStruct()->GetName(), *GetNameSafe(Settings.GetScriptStruct()));
 		return *SettingsPtr;
 	}
-	
+
 	template<typename T>
 	const T* GetViewModelSettingsEnsure() const
 	{
@@ -173,7 +177,7 @@ protected:
 	T* CreateSubViewModel(UObject* InContextObject, const FInstancedStruct& ViewModelSettings = FInstancedStruct(), TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), const UObject* WorldContextObject = nullptr) const;
 	template<typename T>
 	T* CreateSubViewModel(const UObject* InContextObject, const FInstancedStruct& ViewModelSettings = FInstancedStruct(), TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), const UObject* WorldContextObject = nullptr) const;
-	
+
 	// Iterates an array of View Models, shuts them down and resets the array
 	template<typename T>
 	static void ShutdownSubViewModels(TArray<T>& ViewModels);
@@ -210,7 +214,7 @@ protected:
 
 private:
 	const UObject* GetEffectiveWorldContextObject() const;
-	
+
 	UPROPERTY(Transient)
 	TWeakObjectPtr<UObject> ContextObject;
 
