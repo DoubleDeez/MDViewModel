@@ -48,6 +48,8 @@ protected:
 
 	virtual FString GenerateSearchString() const override;
 
+	virtual FFieldVariant GetFieldForDefinitionNavigation() const override;
+
 private:
 	int32 GetShouldDisplayFieldNotifyIndex() const;
 	FReply OnAddOrViewBoundFunctionClicked() const;

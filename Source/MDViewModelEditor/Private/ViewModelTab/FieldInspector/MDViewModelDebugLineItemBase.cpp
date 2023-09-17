@@ -5,7 +5,10 @@
 #include "Editor.h"
 #include "Editor/EditorEngine.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "HAL/FileManager.h"
+#include "Kismet2/KismetEditorUtilities.h"
 #include "PropertyInfoViewStyle.h"
+#include "SourceCodeNavigation.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropActionBase.h"
 #include "WidgetBlueprint.h"
@@ -65,6 +68,18 @@ void FMDViewModelDebugLineItemBase::ExtendContextMenu(FMenuBuilder& MenuBuilder,
 			)
 		);
 	}
+
+	if (GetFieldForDefinitionNavigation().IsValid())
+	{
+		MenuBuilder.AddMenuEntry(
+			INVTEXT("Go To Definition"),
+			INVTEXT("Open the C++ file or Blueprint where this item is defined."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.ArrowRight")),
+			FUIAction(
+				FExecuteAction::CreateSP(this, &FMDViewModelDebugLineItemBase::NavigateToDefinitionField)
+			)
+		);
+	}
 }
 
 void FMDViewModelDebugLineItemBase::GatherChildrenBase(TArray<FDebugTreeItemPtr>& OutChildren, const FString& InSearchString, bool bRespectSearch)
@@ -118,5 +133,56 @@ void FMDViewModelDebugLineItemBase::OnFindReferencesClicked() const
 		}
 
 		BPEditor->SummonSearchUI(true, GenerateSearchString());
+	}
+}
+
+void FMDViewModelDebugLineItemBase::NavigateToDefinitionField() const
+{const FFieldVariant Field = GetFieldForDefinitionNavigation();
+	if (const UFunction* Func = Cast<UFunction>(Field.ToUObject()))
+	{
+		if (Func->IsNative())
+		{
+			// Try navigating directly to the line it's declared on
+			if (FSourceCodeNavigation::CanNavigateToFunction(Func) && FSourceCodeNavigation::NavigateToFunction(Func))
+			{
+				return;
+			}
+
+			// Failing that, fall back to the older method which will still get the file open assuming it exists
+			FString NativeParentClassHeaderPath;
+			if (FSourceCodeNavigation::FindClassHeaderPath(Func, NativeParentClassHeaderPath) && (IFileManager::Get().FileSize(*NativeParentClassHeaderPath) != INDEX_NONE))
+			{
+				const FString AbsNativeParentClassHeaderPath = FPaths::ConvertRelativePathToFull(NativeParentClassHeaderPath);
+				FSourceCodeNavigation::OpenSourceFile(AbsNativeParentClassHeaderPath);
+			}
+		}
+		else
+		{
+			// TODO - Find actual Function Graph/Event Node
+			FKismetEditorUtilities::BringKismetToFocusAttentionOnObject(Func);
+		}
+	}
+	else if (const FProperty* Prop = CastField<const FProperty>(Field.ToField()))
+	{
+		if (Prop->IsNative())
+		{
+			// Try navigating directly to the line it's declared on
+			if (FSourceCodeNavigation::CanNavigateToProperty(Prop) && FSourceCodeNavigation::NavigateToProperty(Prop))
+			{
+				return;
+			}
+
+			// Failing that, fall back to the older method which will still get the file open assuming it exists
+			FString NativeParentClassHeaderPath;
+			if (FSourceCodeNavigation::FindClassHeaderPath(Prop->GetOwnerUField(), NativeParentClassHeaderPath) && (IFileManager::Get().FileSize(*NativeParentClassHeaderPath) != INDEX_NONE))
+			{
+				const FString AbsNativeParentClassHeaderPath = FPaths::ConvertRelativePathToFull(NativeParentClassHeaderPath);
+				FSourceCodeNavigation::OpenSourceFile(AbsNativeParentClassHeaderPath);
+			}
+		}
+		else
+		{
+			FKismetEditorUtilities::BringKismetToFocusAttentionOnObject(Prop->GetOwnerUObject());
+		}
 	}
 }

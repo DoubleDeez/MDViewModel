@@ -378,6 +378,11 @@ FString FMDViewModelFieldDebugLineItem::GenerateSearchString() const
 	return Result;
 }
 
+FFieldVariant FMDViewModelFieldDebugLineItem::GetFieldForDefinitionNavigation() const
+{
+	return FFieldVariant(PropertyPtr.Get());
+}
+
 int32 FMDViewModelFieldDebugLineItem::GetShouldDisplayFieldNotifyIndex() const
 {
 	const bool bHasFieldNotifyValue = !DebugViewModel.IsValid() && ValuePtr == nullptr && bIsFieldNotify;

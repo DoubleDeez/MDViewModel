@@ -58,6 +58,11 @@ FString FMDViewModelEventDebugLineItem::GenerateSearchString() const
 	return Result;
 }
 
+FFieldVariant FMDViewModelEventDebugLineItem::GetFieldForDefinitionNavigation() const
+{
+	return FFieldVariant(WeakDelegateProp.Get());
+}
+
 FReply FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 {
 	if (WeakDelegateProp.IsValid())

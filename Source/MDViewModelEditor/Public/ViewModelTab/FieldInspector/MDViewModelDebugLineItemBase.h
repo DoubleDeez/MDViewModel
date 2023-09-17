@@ -35,7 +35,7 @@ protected:
 	virtual void UpdateCachedChildren() const {};
 
 	virtual bool HasChildren() const override;
-	
+
 	virtual void ExtendContextMenu(FMenuBuilder& MenuBuilder, bool bInDebuggerTab) override;
 
 	virtual void GatherChildrenBase(TArray<FDebugTreeItemPtr>& OutChildren, const FString& InSearchString, bool bRespectSearch) override;
@@ -49,8 +49,12 @@ protected:
 	virtual bool CanCreateNodes() const;
 
 	virtual FString GenerateSearchString() const { return {}; }
-	
+
+	virtual FFieldVariant GetFieldForDefinitionNavigation() const { return {}; }
+
 	void OnFindReferencesClicked() const;
+
+	void NavigateToDefinitionField() const;
 
 	mutable TOptional<TArray<FDebugTreeItemPtr>> CachedChildren;
 

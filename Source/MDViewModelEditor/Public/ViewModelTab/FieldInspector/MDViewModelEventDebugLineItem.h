@@ -21,6 +21,8 @@ protected:
 
 	virtual FString GenerateSearchString() const override;
 
+	virtual FFieldVariant GetFieldForDefinitionNavigation() const override;
+
 private:
 	FReply OnAddOrViewBoundFunctionClicked() const;
 	int32 GetAddOrViewBoundFunctionIndex() const;

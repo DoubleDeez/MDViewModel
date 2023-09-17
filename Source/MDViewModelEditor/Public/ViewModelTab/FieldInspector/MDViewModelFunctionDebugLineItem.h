@@ -38,7 +38,7 @@ public:
 	virtual TSharedRef<FMDVMInspectorDragAndDropActionBase> CreateDragAndDropAction() const override;
 
 	void UpdateIsDebugging(bool InIsDebugging);
-	
+
 	const UFunction* GetFunction() const { return FunctionPtr.Get(); }
 
 protected:
@@ -49,6 +49,8 @@ protected:
 	virtual bool CanCreateNodes() const override;
 
 	virtual FString GenerateSearchString() const override;
+
+	virtual FFieldVariant GetFieldForDefinitionNavigation() const override;
 
 private:
 	int32 GetShouldDisplayFieldNotifyIndex() const;

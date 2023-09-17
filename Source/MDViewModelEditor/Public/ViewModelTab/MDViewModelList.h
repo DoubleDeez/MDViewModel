@@ -53,6 +53,8 @@ private:
 	bool CanPasteAssignment() const;
 	void DuplicateSelectedAssignment();
 	void DeleteSelectedAssignment();
+	void OnGoToSelectedAssignmentDefinitionClicked() const;
+	bool CanGoToSelectedAssignmentDefinition() const;
 
 	void OnItemDoubleClicked(TSharedPtr<FMDViewModelEditorAssignment> Item);
 

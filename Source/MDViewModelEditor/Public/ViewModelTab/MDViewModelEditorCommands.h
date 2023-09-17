@@ -13,4 +13,5 @@ public:
 	virtual void RegisterCommands() override;
 
 	TSharedPtr<FUICommandInfo> Edit;
+	TSharedPtr<FUICommandInfo> GoToDefinition;
 };

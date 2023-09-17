@@ -1,7 +1,10 @@
 #include "ViewModelTab/FieldInspector/MDViewModelFunctionDebugLineItem.h"
 
 #include "EdGraphSchema_K2.h"
+#include "HAL/FileManager.h"
+#include "Kismet2/KismetEditorUtilities.h"
 #include "Nodes/MDVMNode_ViewModelFieldNotify.h"
+#include "SourceCodeNavigation.h"
 #include "Util/MDViewModelGraphStatics.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMDragAndDropWrapperButton.h"
@@ -180,6 +183,11 @@ FString FMDViewModelFunctionDebugLineItem::GenerateSearchString() const
 	}
 
 	return Result;
+}
+
+FFieldVariant FMDViewModelFunctionDebugLineItem::GetFieldForDefinitionNavigation() const
+{
+	return FFieldVariant(FunctionPtr.Get());
 }
 
 int32 FMDViewModelFunctionDebugLineItem::GetShouldDisplayFieldNotifyIndex() const

@@ -7,14 +7,19 @@
 #include "Engine/BlueprintGeneratedClass.h"
 #include "Framework/Commands/GenericCommands.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "HAL/FileManager.h"
 #include "HAL/PlatformApplicationMisc.h"
 #include "Misc/MessageDialog.h"
 #include "Runtime/Launch/Resources/Version.h"
 #if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 #include "Logging/StructuredLog.h"
 #endif
+#include "Editor/UnrealEdEngine.h"
+#include "Preferences/UnrealEdOptions.h"
 #include "ScopedTransaction.h"
+#include "SourceCodeNavigation.h"
 #include "Subsystems/MDViewModelGraphSubsystem.h"
+#include "UnrealEdGlobals.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "Util/MDViewModelGraphStatics.h"
 #include "Util/MDViewModelLog.h"
@@ -167,6 +172,11 @@ void SMDViewModelList::SetupCommands()
 	CommandList->MapAction(FGenericCommands::Get().Delete,
 		FExecuteAction::CreateSP(this, &SMDViewModelList::DeleteSelectedAssignment),
 		FCanExecuteAction::CreateSP(this, &SMDViewModelList::IsSelectedAssignmentValidAndNotPIE)
+	);
+
+	CommandList->MapAction(FMDViewModelEditorCommands::Get().GoToDefinition,
+		FExecuteAction::CreateSP(this, &SMDViewModelList::OnGoToSelectedAssignmentDefinitionClicked),
+		FCanExecuteAction::CreateSP(this, &SMDViewModelList::CanGoToSelectedAssignmentDefinition)
 	);
 }
 
@@ -558,6 +568,55 @@ void SMDViewModelList::DeleteSelectedAssignment()
 			Extension->RemoveAssignment(*Assignment);
 		}
 	}
+}
+
+void SMDViewModelList::OnGoToSelectedAssignmentDefinitionClicked() const
+{
+	if (const TSharedPtr<FMDViewModelEditorAssignment> Assignment = GetSelectedAssignment())
+	{
+		if (Assignment->Assignment.ViewModelClass->IsNative())
+		{
+			if (FSourceCodeNavigation::CanNavigateToClass(Assignment->Assignment.ViewModelClass))
+			{
+				if (FSourceCodeNavigation::NavigateToClass(Assignment->Assignment.ViewModelClass))
+				{
+					return;
+				}
+			}
+
+			// Failing that, fall back to the older method which will still get the file open assuming it exists
+			FString NativeVMClassHeaderPath;
+			if (FSourceCodeNavigation::FindClassHeaderPath(Assignment->Assignment.ViewModelClass, NativeVMClassHeaderPath) && (IFileManager::Get().FileSize(*NativeVMClassHeaderPath) != INDEX_NONE))
+			{
+				const FString AbsNativeVMClassHeaderPath = FPaths::ConvertRelativePathToFull(NativeVMClassHeaderPath);
+				FSourceCodeNavigation::OpenSourceFile(AbsNativeVMClassHeaderPath);
+			}
+		}
+		else
+		{
+			GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(Assignment->Assignment.ViewModelClass->ClassGeneratedBy);
+		}
+	}
+}
+
+bool SMDViewModelList::CanGoToSelectedAssignmentDefinition() const
+{
+	if (const TSharedPtr<FMDViewModelEditorAssignment> Assignment = GetSelectedAssignment())
+	{
+		if (!Assignment.IsValid() || !Assignment->Assignment.IsValid())
+		{
+			return false;
+		}
+
+		if (Assignment->Assignment.ViewModelClass->IsNative())
+		{
+			return GUnrealEd->GetUnrealEdOptions()->IsCPPAllowed();
+		}
+
+		return IsValid(GEditor) && GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->IsAssetEditable(Assignment->Assignment.ViewModelClass->ClassGeneratedBy);
+	}
+
+	return false;
 }
 
 void SMDViewModelList::OnItemDoubleClicked(TSharedPtr<FMDViewModelEditorAssignment> Item)

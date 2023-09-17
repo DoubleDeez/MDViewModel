@@ -49,8 +49,6 @@ private:
 	FReply OnContextButtonClicked();
 
 	void OnFindReferencesClicked() const;
-	void OnOpenDefinitionClicked() const;
-	bool CanOpenDefinition() const;
 	void OnOpenOwnerAssetClicked() const;
 	bool CanOpenOwnerAsset() const;
 
