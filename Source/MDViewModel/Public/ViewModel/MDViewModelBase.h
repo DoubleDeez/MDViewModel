@@ -177,6 +177,10 @@ protected:
 	T* CreateSubViewModel(UObject* InContextObject, const FInstancedStruct& ViewModelSettings = FInstancedStruct(), TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), const UObject* WorldContextObject = nullptr) const;
 	template<typename T>
 	T* CreateSubViewModel(const UObject* InContextObject, const FInstancedStruct& ViewModelSettings = FInstancedStruct(), TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), const UObject* WorldContextObject = nullptr) const;
+	template<typename T, typename U, typename = decltype(TBaseStructure<U>::Get())>
+	T* CreateSubViewModel(UObject* InContextObject, const U& ViewModelSettings, TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), const UObject* WorldContextObject = nullptr) const;
+	template<typename T, typename U, typename = decltype(TBaseStructure<U>::Get())>
+	T* CreateSubViewModel(const UObject* InContextObject, const U& ViewModelSettings, TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), const UObject* WorldContextObject = nullptr) const;
 
 	// Iterates an array of View Models, shuts them down and resets the array
 	template<typename T>
@@ -284,6 +288,20 @@ T* UMDViewModelBase::CreateSubViewModel(const UObject* InContextObject, const FI
 {
 	static_assert(TIsDerivedFrom<T, UMDViewModelBase>::Value, "ViewModels must derive from UMDViewModelBase");
 	return Cast<T>(CreateSubViewModel(ViewModelClass, InContextObject, ViewModelSettings, WorldContextObject));
+}
+
+template <typename T, typename U, typename>
+T* UMDViewModelBase::CreateSubViewModel(UObject* InContextObject, const U& ViewModelSettings, TSubclassOf<UMDViewModelBase> ViewModelClass, const UObject* WorldContextObject) const
+{
+	static_assert(TIsDerivedFrom<T, UMDViewModelBase>::Value, "ViewModels must derive from UMDViewModelBase");
+	return Cast<T>(CreateSubViewModel(ViewModelClass, InContextObject, FInstancedStruct::Make(ViewModelSettings), WorldContextObject));
+}
+
+template <typename T, typename U, typename>
+T* UMDViewModelBase::CreateSubViewModel(const UObject* InContextObject, const U& ViewModelSettings, TSubclassOf<UMDViewModelBase> ViewModelClass, const UObject* WorldContextObject) const
+{
+	static_assert(TIsDerivedFrom<T, UMDViewModelBase>::Value, "ViewModels must derive from UMDViewModelBase");
+	return Cast<T>(CreateSubViewModel(ViewModelClass, InContextObject, FInstancedStruct::Make(ViewModelSettings), WorldContextObject));
 }
 
 template <typename T>
