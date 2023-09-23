@@ -3,15 +3,15 @@
 #include "MDVMNode_CallFunctionBase.h"
 #include "Util/MDViewModelAssignmentReference.h"
 
-#include "MDVMNode_CallCommand.generated.h"
+#include "MDVMNode_CallHelper.generated.h"
 
 class UBlueprint;
 
 /**
- * Node to shortcut getting a view model instance and calling an impure function on it
+ * Node to shortcut getting a view model instance and calling a pure function on it
  */
 UCLASS()
-class MDVIEWMODELGRAPH_API UMDVMNode_CallCommand : public UMDVMNode_CallFunctionBase
+class MDVIEWMODELGRAPH_API UMDVMNode_CallHelper : public UMDVMNode_CallFunctionBase
 {
 	GENERATED_BODY()
 

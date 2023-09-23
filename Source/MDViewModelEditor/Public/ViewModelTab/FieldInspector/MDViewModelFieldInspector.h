@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GraphEditorDragDropAction.h"
+#include "MDViewModelFunctionDebugLineItem.h"
 #include "SPinValueInspector.h"
 #include "Templates/SubclassOf.h"
 #include "UObject/UnrealType.h"
@@ -15,6 +16,15 @@ class FMDViewModelFieldDebugLineItem;
 class UMDVMNode_ViewModelEvent;
 class UMDViewModelBase;
 
+enum class EMDViewModelFieldInspectorType : uint8
+{
+	None,
+	Properties,
+	Events,
+	Commands,
+	Helpers
+};
+
 /**
  * Widget that displays all the exposed properties of a viewmodel and their values when debugging
  */
@@ -24,13 +34,7 @@ public:
 	SLATE_BEGIN_ARGS(SMDViewModelFieldInspector)
 	{
 	}
-
-		SLATE_ARGUMENT(bool, bIncludeBlueprintVisibleProperties)
-		SLATE_ARGUMENT(bool, bIncludeBlueprintAssignableProperties)
-		SLATE_ARGUMENT(bool, bIncludeBlueprintCallable)
-		SLATE_ARGUMENT(bool, bIncludeBlueprintPure)
-		SLATE_ARGUMENT(bool, bIncludeFieldNotifyFunctions)
-
+		SLATE_ARGUMENT(EMDViewModelFieldInspectorType, InspectorType)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs, const TSharedPtr<FBlueprintEditor>& BlueprintEditor);
@@ -47,20 +51,18 @@ protected:
 	virtual EVisibility GetSearchFilterVisibility() const override { return EVisibility::Collapsed; }
 
 private:
+	void GetDragAndDropCreatorForFunction(const UFunction& Func, bool bIsFieldNotify, FMDVMDragAndDropCreatorFunc& DragAndDropCreatorFunc) const;
+
 	TMap<const FProperty*, TSharedPtr<FMDViewModelFieldDebugLineItem>> PropertyTreeItems;
 	TMap<const UFunction*, TSharedPtr<FMDViewModelFunctionDebugLineItem>> FunctionTreeItems;
 	TMap<const FMulticastDelegateProperty*, TSharedPtr<FMDViewModelEventDebugLineItem>> EventTreeItems;
 	TSharedPtr<FMDViewModelChangedDebugLineItem> VMChangedItem;
-	
+
 	TSubclassOf<UMDViewModelBase> ViewModelClass;
 	TWeakObjectPtr<UMDViewModelBase> DebugViewModel;
 	bool bIsDebugging = false;
 	TWeakPtr<FBlueprintEditor> BlueprintEditorPtr;
 	FName ViewModelName = NAME_None;
 
-	bool bIncludeBlueprintVisibleProperties = false;
-	bool bIncludeBlueprintAssignableProperties = false;
-	bool bIncludeBlueprintCallable = false;
-	bool bIncludeBlueprintPure = false;
-	bool bIncludeFieldNotifyFunctions = false;
+	EMDViewModelFieldInspectorType InspectorType = EMDViewModelFieldInspectorType::None;
 };

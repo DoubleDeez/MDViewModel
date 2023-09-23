@@ -1,10 +1,9 @@
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropCommand.h"
 
-#include "EdGraphSchema_K2_Actions.h"
 #include "Nodes/MDVMNode_CallCommand.h"
 
 
-TSharedRef<FMDVMInspectorDragAndDropCommand> FMDVMInspectorDragAndDropCommand::Create(TWeakObjectPtr<const UFunction> InFunctionPtr, const FMDViewModelAssignmentReference& InVMAssignment)
+TSharedRef<FMDVMInspectorDragAndDropActionBase> FMDVMInspectorDragAndDropCommand::Create(TWeakObjectPtr<const UFunction> InFunctionPtr, const FMDViewModelAssignmentReference& InVMAssignment)
 {
 	TSharedRef<FMDVMInspectorDragAndDropCommand> Action = MakeShared<FMDVMInspectorDragAndDropCommand>();
 	Action->FunctionPtr = InFunctionPtr;
@@ -14,32 +13,7 @@ TSharedRef<FMDVMInspectorDragAndDropCommand> FMDVMInspectorDragAndDropCommand::C
 	return Action;
 }
 
-UEdGraphNode* FMDVMInspectorDragAndDropCommand::CreateNodeOnDrop(UEdGraph& Graph, const FVector2D& GraphPosition)
+TSubclassOf<UMDVMNode_CallFunctionBase> FMDVMInspectorDragAndDropCommand::GetNodeClass() const
 {
-	if (!FunctionPtr.IsValid())
-	{
-		return nullptr;
-	}
-	
-	return FEdGraphSchemaAction_K2NewNode::SpawnNode<UMDVMNode_CallCommand>(
-		&Graph,
-		GraphPosition,
-		EK2NewNodeFlags::SelectNewNode,
-		[&](UMDVMNode_CallCommand* NewInstance)
-		{
-			NewInstance->InitializeViewModelFunctionParams(VMAssignment, FunctionPtr.Get());
-		}
-	);
-}
-
-FText FMDVMInspectorDragAndDropCommand::GetActionTitle() const
-{
-#if WITH_EDITORONLY_DATA
-	if (const UFunction* Func = FunctionPtr.Get())
-	{
-		return Func->GetDisplayNameText();
-	}
-#endif
-	
-	return FMDVMInspectorDragAndDropActionBase::GetActionTitle();
+	return UMDVMNode_CallCommand::StaticClass();
 }

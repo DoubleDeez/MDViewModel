@@ -33,4 +33,5 @@ private:
 	TSharedPtr<SMDViewModelFieldInspector> PropertyInspector;
 	TSharedPtr<SMDViewModelFieldInspector> EventInspector;
 	TSharedPtr<SMDViewModelFieldInspector> CommandInspector;
+	TSharedPtr<SMDViewModelFieldInspector> HelperInspector;
 };

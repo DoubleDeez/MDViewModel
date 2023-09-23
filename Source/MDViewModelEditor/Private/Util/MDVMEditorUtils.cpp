@@ -7,8 +7,6 @@
 #include "ViewModel/MDViewModelBase.h"
 #include "Widgets/Notifications/SNotificationList.h"
 
-const FName MDVMEditorUtils::VMHiddenMeta = TEXT("MDVMHidden");
-
 void MDVMEditorUtils::SaveViewModelConfig(UMDViewModelBase* ViewModelCDO)
 {
 	if (IsValid(ViewModelCDO) && ViewModelCDO->IsTemplate())
@@ -27,7 +25,7 @@ void MDVMEditorUtils::SaveViewModelConfig(UMDViewModelBase* ViewModelCDO)
 				FNotificationInfo Info = FNotificationInfo(FText::Format(INVTEXT("Could not check out config file {0}"), FText::FromString(FPaths::GetCleanFilename(ConfigFilePath))));
 				Info.ExpireDuration = 6.0f;
 				FSlateNotificationManager::Get().AddNotification(Info);
-				
+
 				SettingsHelpers::MakeWritable(ConfigFilePath);
 			}
 		}

@@ -9,6 +9,7 @@
 #include "Runtime/Launch/Resources/Version.h"
 #include "MDViewModelEditorConfig.h"
 #include "Util/MDViewModelClassFilter.h"
+#include "Util/MDViewModelGraphStatics.h"
 #include "Util/MDVMEditorUtils.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/MDViewModelAssignmentDialog.h"
@@ -23,7 +24,7 @@ namespace MDViewModelAssignmentEditorObjectCustomization_Private
 	{
 		for (TFieldIterator<const FProperty> It(Struct); It; ++It)
 		{
-			if (It->HasAnyPropertyFlags(CPF_Edit) && !It->HasMetaData(MDVMEditorUtils::VMHiddenMeta))
+			if (It->HasAnyPropertyFlags(CPF_Edit) && !It->HasMetaData(FMDViewModelGraphStatics::VMHiddenMeta))
 			{
 				return true;
 			}
@@ -36,7 +37,7 @@ namespace MDViewModelAssignmentEditorObjectCustomization_Private
 	{
 		for (TFieldIterator<const FProperty> It(VMClass); It; ++It)
 		{
-			if (It->HasAnyPropertyFlags(CPF_Config) && !It->HasMetaData(MDVMEditorUtils::VMHiddenMeta))
+			if (It->HasAnyPropertyFlags(CPF_Config) && !It->HasMetaData(FMDViewModelGraphStatics::VMHiddenMeta))
 			{
 				return true;
 			}
@@ -431,7 +432,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 							if (const TSharedPtr<IPropertyHandle> Child = CDOHandle->GetChildHandle(i))
 							{
 								const FProperty* Property = Child->GetProperty();
-								if (Property != nullptr && Property->HasAnyPropertyFlags(CPF_Config) && !Property->HasMetaData(MDVMEditorUtils::VMHiddenMeta))
+								if (Property != nullptr && Property->HasAnyPropertyFlags(CPF_Config) && !Property->HasMetaData(FMDViewModelGraphStatics::VMHiddenMeta))
 								{
 									Child->SetOnPropertyValueChangedWithData(TDelegate<void(const FPropertyChangedEvent&)>::CreateSP(this, &FMDViewModelAssignmentEditorObjectCustomization::OnConfigPropertyChanged));
 									Child->SetOnChildPropertyValueChangedWithData(TDelegate<void(const FPropertyChangedEvent&)>::CreateSP(this, &FMDViewModelAssignmentEditorObjectCustomization::OnConfigPropertyChanged));

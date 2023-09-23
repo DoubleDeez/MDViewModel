@@ -38,7 +38,7 @@ public:
 	void InitializeViewModelFunctionParams(const FMDViewModelAssignmentReference& VMAssignment, const UFunction* Function, const UBlueprint* Blueprint = nullptr);
 
 protected:
-	virtual bool IsFunctionValidForNode(const UFunction& Func) const { return false; }
+	virtual bool IsFunctionValidForNode(const UFunction& Func) const;
 	virtual bool CanTogglePurity() const;
 
 	virtual UBlueprintNodeSpawner* CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const UFunction* Function, const UBlueprint* Blueprint) const { return nullptr;}

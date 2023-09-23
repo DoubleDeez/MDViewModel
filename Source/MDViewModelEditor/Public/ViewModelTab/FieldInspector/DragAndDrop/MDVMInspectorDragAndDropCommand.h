@@ -1,19 +1,15 @@
 #pragma once
 
-#include "MDVMInspectorDragAndDropActionBase.h"
+#include "MDVMInspectorDragAndDropFunctionBase.h"
 
 
-class FMDVMInspectorDragAndDropCommand : public FMDVMInspectorDragAndDropActionBase
+class FMDVMInspectorDragAndDropCommand : public FMDVMInspectorDragAndDropFunctionBase
 {
 public:
-	DRAG_DROP_OPERATOR_TYPE(FMDVMInspectorDragAndDropCommand, FMDVMInspectorDragAndDropActionBase)
-	
-	static TSharedRef<FMDVMInspectorDragAndDropCommand> Create(TWeakObjectPtr<const UFunction> InFunctionPtr, const FMDViewModelAssignmentReference& InVMAssignment);
+	DRAG_DROP_OPERATOR_TYPE(FMDVMInspectorDragAndDropCommand, FMDVMInspectorDragAndDropFunctionBase)
 
-	virtual UEdGraphNode* CreateNodeOnDrop(UEdGraph& Graph, const FVector2D& GraphPosition) override;
-	
-	virtual FText GetActionTitle() const override;
-	
+	static TSharedRef<FMDVMInspectorDragAndDropActionBase> Create(TWeakObjectPtr<const UFunction> InFunctionPtr, const FMDViewModelAssignmentReference& InVMAssignment);
+
 protected:
-	TWeakObjectPtr<const UFunction> FunctionPtr;
+	virtual TSubclassOf<UMDVMNode_CallFunctionBase> GetNodeClass() const override;
 };

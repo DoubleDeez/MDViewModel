@@ -9,7 +9,7 @@ FText UMDVMNode_CallCommand::GetFunctionContextFormat() const
 
 bool UMDVMNode_CallCommand::IsFunctionValidForNode(const UFunction& Func) const
 {
-	return Func.HasAllFunctionFlags(FUNC_BlueprintCallable) && !Func.HasAnyFunctionFlags(FUNC_BlueprintPure | FUNC_Static);
+	return Super::IsFunctionValidForNode(Func) && Func.HasAllFunctionFlags(FUNC_BlueprintCallable) && !Func.HasAnyFunctionFlags(FUNC_BlueprintPure | FUNC_Static);
 }
 
 UBlueprintNodeSpawner* UMDVMNode_CallCommand::CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const UFunction* Function, const UBlueprint* Blueprint) const

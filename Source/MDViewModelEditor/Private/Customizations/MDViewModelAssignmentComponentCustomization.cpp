@@ -6,6 +6,7 @@
 #include "DetailWidgetRow.h"
 #include "IDetailChildrenBuilder.h"
 #include "Runtime/Launch/Resources/Version.h"
+#include "Util/MDViewModelGraphStatics.h"
 #include "Util/MDVMEditorUtils.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/MDViewModelTab.h"
@@ -38,7 +39,7 @@ public:
 		, Assignment(Assignment)
 		, AssignmentData(AssignmentData)
 	{}
-	
+
 	virtual FName GetName() const override
 	{
 		const TSubclassOf<UMDViewModelBase> VMClass = Assignment.ViewModelClass;
@@ -46,21 +47,21 @@ public:
 		const FString AssignmentName = FString::Printf(TEXT("%s (%s)"), *VMClassName.ToString(), *Assignment.ViewModelName.ToString());
 		return *AssignmentName;
 	}
-	
+
 	virtual bool InitiallyCollapsed() const override { return true; }
 
 	virtual TSharedPtr<IPropertyHandle> GetPropertyHandle() const override
 	{
 		return VMHandle;
 	}
-	
+
 	virtual void GenerateHeaderRowContent(FDetailWidgetRow& NodeRow) override
 	{
 		const TSubclassOf<UMDViewModelBase> VMClass = Assignment.ViewModelClass;
 		const FText VMClassName = IsValid(VMClass) ? VMClass->GetDisplayNameText() : INVTEXT("[Invalid Assignment]");
 		const FText AssignmentName = FText::Format(INVTEXT("{0} ({1})"), VMClassName, FText::FromName(Assignment.ViewModelName));
 		const FText VMName = FText::FromString(GetNameSafe(GetViewModel()));
-		
+
 		const FText Tooltip = [&]()
 		{
 			const FText ViewModelText = IsValid(VMClass)
@@ -74,7 +75,7 @@ public:
 
 			return FText::Format(INVTEXT("{0}\n\n{1}"), ViewModelText, ProviderText);
 		}();
-		
+
 		NodeRow
 		.OverrideResetToDefault(FResetToDefaultOverride::Hide(true))
 		.NameContent()
@@ -92,7 +93,7 @@ public:
 			.Font(IDetailLayoutBuilder::GetDetailFont())
 		];
 	}
-	
+
 	virtual void GenerateChildContent(IDetailChildrenBuilder& ChildrenBuilder) override
 	{
 		UMDViewModelBase* ViewModel = GetViewModel();
@@ -119,7 +120,7 @@ public:
 						if (const TSharedPtr<IPropertyHandle> Child = Handle->GetChildHandle(i))
 						{
 							const FProperty* Property = Child->GetProperty();
-							if (Property != nullptr && !Property->HasMetaData(MDVMEditorUtils::VMHiddenMeta))
+							if (Property != nullptr && !Property->HasMetaData(FMDViewModelGraphStatics::VMHiddenMeta))
 							{
 								const bool bCanEdit = Property->HasAnyPropertyFlags(CPF_Edit);
 								ChildrenBuilder
@@ -135,7 +136,7 @@ public:
 			for (TFieldIterator<FProperty> It(ViewModel->GetClass()); It; ++It)
 			{
 				const FProperty* Prop = *It;
-				if (Prop != nullptr && !Prop->HasMetaData(MDVMEditorUtils::VMHiddenMeta))
+				if (Prop != nullptr && !Prop->HasMetaData(FMDViewModelGraphStatics::VMHiddenMeta))
 				{
 					const FAddPropertyParams Params = FAddPropertyParams()
 						.ForceShowProperty()
@@ -151,7 +152,7 @@ public:
 #endif
 		}
 	}
-	
+
 private:
 	UMDViewModelBase* GetViewModel() const
 	{
@@ -166,7 +167,7 @@ private:
 
 		return nullptr;
 	}
-	
+
 	const TSharedPtr<IPropertyHandle> VMHandle;
 	const FMDViewModelAssignment Assignment;
 	const FMDViewModelAssignmentData AssignmentData;
@@ -179,10 +180,10 @@ public:
 		: AssignmentsHandle(AssignmentsHandle)
 		, ViewModelsHandle(ViewModelsHandle)
 	{}
-	
+
 	virtual FName GetName() const override { return TEXT("MDVMAssignments"); }
 	virtual bool InitiallyCollapsed() const override { return false; }
-	
+
 	virtual TSharedPtr<IPropertyHandle> GetPropertyHandle() const override
 	{
 		return AssignmentsHandle;
@@ -218,13 +219,13 @@ public:
 			{
 				continue;
 			}
-			
+
 			void* ValuePtr = nullptr;
 			if (ValueHandle->GetValueData(ValuePtr) != FPropertyAccess::Success || ValuePtr == nullptr)
 			{
 				continue;
 			}
-			
+
 			void* KeyPtr = nullptr;
 			if (KeyHandle->GetValueData(KeyPtr) != FPropertyAccess::Success || KeyPtr == nullptr)
 			{
@@ -260,7 +261,7 @@ private:
 			{
 				continue;
 			}
-			
+
 			void* DataPtr = nullptr;
 			if (KeyHandle->GetValueData(DataPtr) != FPropertyAccess::Success || DataPtr == nullptr)
 			{
@@ -276,13 +277,13 @@ private:
 
 		return nullptr;
 	}
-	
+
 	const TSharedRef<IPropertyHandle> AssignmentsHandle;
 	const TSharedRef<IPropertyHandle> ViewModelsHandle;
 };
 
 void FMDViewModelAssignmentComponentCustomization::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
-{	
+{
 	HideDefaultCategories();
 	TryAddViewModelEditorButton();
 	AddViewModelDetails();
@@ -295,7 +296,7 @@ void FMDViewModelAssignmentComponentCustomization::HideDefaultCategories()
 	{
 		return;
 	}
-	
+
 	TArray<FName> Categories;
 	DetailBuilder->GetCategoryNames(Categories);
 	for (const FName& Category : Categories)
@@ -317,7 +318,7 @@ void FMDViewModelAssignmentComponentCustomization::TryAddViewModelEditorButton()
 	{
 		return;
 	}
-	
+
 	DetailBuilder->EditCategory("ViewModelEditor", INVTEXT("View Model Editor"), ECategoryPriority::Important)
 		.AddCustomRow(INVTEXT("View Model Editor"))
 		.NameContent()
@@ -355,7 +356,7 @@ void FMDViewModelAssignmentComponentCustomization::AddViewModelDetails()
 	IDetailCategoryBuilder& AssignmentCategory = DetailBuilder->EditCategory("ViewModelAssignments", INVTEXT("View Model Assignments"));
 	TSharedRef<IPropertyHandle> ViewModelsHandle = DetailBuilder->GetProperty(TEXT("ViewModels"), UMDViewModelAssignmentComponent::StaticClass());
 	TSharedPtr<IPropertyHandle> AssignmentsHandle = nullptr;
-	
+
 	if (Component->IsTemplate())
 	{
 		AssignmentsHandle = DetailBuilder->GetProperty(TEXT("Assignments"), UMDViewModelAssignmentComponent::StaticClass());
@@ -371,7 +372,7 @@ void FMDViewModelAssignmentComponentCustomization::AddViewModelDetails()
 	{
 		return;
 	}
-	
+
 	AssignmentCategory.AddCustomBuilder(MakeShared<FMDVMAssignmentsBuilder>(AssignmentsHandle.ToSharedRef(), ViewModelsHandle));
 
 	Component->StopListeningForAnyViewModelChanged(this);
@@ -408,7 +409,7 @@ UMDViewModelAssignmentComponent* FMDViewModelAssignmentComponentCustomization::G
 			return Cast<UMDViewModelAssignmentComponent>(WeakComponents[0].Get());
 		}
 	}
-	
+
 	return nullptr;
 }
 

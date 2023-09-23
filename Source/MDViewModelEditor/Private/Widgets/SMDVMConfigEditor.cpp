@@ -9,6 +9,7 @@
 #include "Modules/ModuleManager.h"
 #include "PropertyEditorModule.h"
 #include "Util/MDViewModelClassFilter.h"
+#include "Util/MDViewModelGraphStatics.h"
 #include "Util/MDVMEditorUtils.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "Widgets/SBoxPanel.h"
@@ -21,7 +22,7 @@ public:
 	{
 		return MakeShared<FMDVMConfigDetails>();
 	}
-	
+
 	virtual void CustomizeDetails(IDetailLayoutBuilder& DetailBuilder) override
 	{
 		TArray<TWeakObjectPtr<UObject>> Objects;
@@ -31,7 +32,7 @@ public:
 		{
 			return;
 		}
-		
+
 		TArray<FName> Categories;
 		DetailBuilder.GetCategoryNames(Categories);
 
@@ -47,7 +48,7 @@ public:
 			for (const TSharedRef<IPropertyHandle>& Property : Properties)
 			{
 				const FProperty* Prop = Property->GetProperty();
-				if (Prop != nullptr && !Property->HasMetaData(MDVMEditorUtils::VMHiddenMeta) && Prop->HasAnyPropertyFlags(CPF_Config))
+				if (Prop != nullptr && !Property->HasMetaData(FMDViewModelGraphStatics::VMHiddenMeta) && Prop->HasAnyPropertyFlags(CPF_Config))
 				{
 					IDetailPropertyRow& Row = ConfigCategory.AddProperty(Property);
 					if (Prop->HasAnyPropertyFlags(CPF_GlobalConfig) && Prop->GetOwnerClass() != Objects[0].Get())
@@ -81,11 +82,11 @@ void SMDVMConfigEditor::Construct(const FArguments& InArgs)
 	DetailsViewArgs.bShowScrollBar = true;
 	DetailsViewArgs.NotifyHook = this;
 	DetailsViewArgs.bForceHiddenPropertyVisibility = true;
-	
+
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>(TEXT("PropertyEditor"));
 	ViewModelDetails = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
 	ViewModelDetails->RegisterInstancedCustomPropertyLayout(UMDViewModelBase::StaticClass(), FOnGetDetailCustomizationInstance::CreateStatic(&FMDVMConfigDetails::MakeInstance));
-	
+
 	ChildSlot
 	[
 		SNew(SVerticalBox)

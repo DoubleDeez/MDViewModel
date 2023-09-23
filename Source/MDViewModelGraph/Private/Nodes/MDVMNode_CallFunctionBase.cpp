@@ -342,6 +342,11 @@ void UMDVMNode_CallFunctionBase::InitializeViewModelFunctionParams(const FMDView
 	bIsSetPure = bIsPureFunc;
 }
 
+bool UMDVMNode_CallFunctionBase::IsFunctionValidForNode(const UFunction& Func) const
+{
+	return !Func.HasMetaData(FMDViewModelGraphStatics::VMHiddenMeta);
+}
+
 bool UMDVMNode_CallFunctionBase::CanTogglePurity() const
 {
 	if (const UFunction* Func = GetTargetFunction())

@@ -12,7 +12,7 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs, const TSharedPtr<F
 		.Orientation(Orient_Horizontal)
 		+SSplitter::Slot()
 		.MinSize(300.f)
-		.Value(0.34f)
+		.Value(0.25f)
 		[
 			SNew(SVerticalBox)
 			+SVerticalBox::Slot()
@@ -25,7 +25,7 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs, const TSharedPtr<F
 				[
 					SNew(STextBlock)
 					.Text(INVTEXT("View Model Properties"))
-					.ToolTipText(INVTEXT("Blueprint accessible properties and getters from the selected view model. Properties marked with FieldNotify can be bound to."))
+					.ToolTipText(INVTEXT("Blueprint accessible properties and getter functions from the selected view model. Properties marked with FieldNotify can be bound to.\r\nYou can drag and drop these onto into your blueprint graph."))
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
 				]
 			]
@@ -34,16 +34,12 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs, const TSharedPtr<F
 			.Padding(4.f, 0)
 			[
 				SAssignNew(PropertyInspector, SMDViewModelFieldInspector, BlueprintEditor)
-				.bIncludeBlueprintVisibleProperties(true)
-				.bIncludeBlueprintAssignableProperties(false)
-				.bIncludeBlueprintCallable(false)
-				.bIncludeBlueprintPure(true)
-				.bIncludeFieldNotifyFunctions(true)
+				.InspectorType(EMDViewModelFieldInspectorType::Properties)
 			]
 		]
 		+SSplitter::Slot()
 		.MinSize(300.f)
-		.Value(0.33f)
+		.Value(0.25f)
 		[
 			SNew(SVerticalBox)
 			+SVerticalBox::Slot()
@@ -65,16 +61,12 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs, const TSharedPtr<F
 			.Padding(4.f, 0)
 			[
 				SAssignNew(EventInspector, SMDViewModelFieldInspector, BlueprintEditor)
-				.bIncludeBlueprintVisibleProperties(false)
-				.bIncludeBlueprintAssignableProperties(true)
-				.bIncludeBlueprintCallable(false)
-				.bIncludeBlueprintPure(false)
-				.bIncludeFieldNotifyFunctions(false)
+				.InspectorType(EMDViewModelFieldInspectorType::Events)
 			]
 		]
 		+SSplitter::Slot()
 		.MinSize(300.f)
-		.Value(0.33f)
+		.Value(0.25f)
 		[
 			SNew(SVerticalBox)
 			+SVerticalBox::Slot()
@@ -96,11 +88,34 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs, const TSharedPtr<F
 			.Padding(4.f, 0)
 			[
 				SAssignNew(CommandInspector, SMDViewModelFieldInspector, BlueprintEditor)
-				.bIncludeBlueprintVisibleProperties(false)
-				.bIncludeBlueprintAssignableProperties(false)
-				.bIncludeBlueprintCallable(true)
-				.bIncludeBlueprintPure(false)
-				.bIncludeFieldNotifyFunctions(false)
+				.InspectorType(EMDViewModelFieldInspectorType::Commands)
+			]
+		]
+		+SSplitter::Slot()
+		.MinSize(300.f)
+		.Value(0.25f)
+		[
+			SNew(SVerticalBox)
+			+SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(4.f, 0)
+			[
+				SNew(SBorder)
+				.Padding(4.f)
+				.BorderImage(HeaderBrushPtr)
+				[
+					SNew(STextBlock)
+					.Text(INVTEXT("View Model Helpers"))
+					.ToolTipText(INVTEXT("Pure Blueprint Callable functions from the selected view model that are not Property Getter functions.\r\nYou can drag and drop these onto into your blueprint graph."))
+					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
+				]
+			]
+			+SVerticalBox::Slot()
+			.FillHeight(1.f)
+			.Padding(4.f, 0)
+			[
+				SAssignNew(HelperInspector, SMDViewModelFieldInspector, BlueprintEditor)
+				.InspectorType(EMDViewModelFieldInspectorType::Helpers)
 			]
 		]
 	];
@@ -123,5 +138,10 @@ void SMDViewModelDetails::UpdateViewModel(TSubclassOf<UMDViewModelBase> ViewMode
 	if (CommandInspector.IsValid())
 	{
 		CommandInspector->SetReferences(ViewModelClass, DebugViewModel, ViewModelName);
+	}
+
+	if (HelperInspector.IsValid())
+	{
+		HelperInspector->SetReferences(ViewModelClass, DebugViewModel, ViewModelName);
 	}
 }

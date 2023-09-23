@@ -7,7 +7,7 @@ class FMDViewModelEventDebugLineItem : public FMDViewModelFunctionDebugLineItem
 {
 public:
 	FMDViewModelEventDebugLineItem(const FMulticastDelegateProperty* Prop, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, bool bIsFieldNotify = false, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
-		: FMDViewModelFunctionDebugLineItem(Prop->SignatureFunction, Prop->GetDisplayNameText(), Prop->GetToolTipText(), DebugViewModel, BlueprintEditorPtr, false, false, bIsFieldNotify, ViewModelClass, ViewModelName)
+		: FMDViewModelFunctionDebugLineItem(Prop->SignatureFunction, Prop->GetDisplayNameText(), Prop->GetToolTipText(), DebugViewModel, BlueprintEditorPtr, nullptr, bIsFieldNotify, ViewModelClass, ViewModelName)
 		, WeakDelegateProp(Prop)
 	{
 	}

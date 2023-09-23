@@ -2,9 +2,7 @@
 
 #include "EdGraphSchema_K2.h"
 #include "HAL/FileManager.h"
-#include "Kismet2/KismetEditorUtilities.h"
 #include "Nodes/MDVMNode_ViewModelFieldNotify.h"
-#include "SourceCodeNavigation.h"
 #include "Util/MDViewModelGraphStatics.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMDragAndDropWrapperButton.h"
@@ -32,7 +30,7 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GetNameIcon()
 		}
 
 		return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFunctionDebugLineItem>(AsShared()))
-			.bCanDrag(bIsCommand || bIsGetter)
+			.bCanDrag(DragAndDropCreator.IsBound())
 			[
 				SNew(SImage)
 				.Image(FAppStyle::Get().GetBrush(TEXT("GraphEditor.Function_16x")))
@@ -47,7 +45,7 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GetNameIcon()
 TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GenerateNameWidget(TSharedPtr<FString> InSearchString)
 {
 	return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFunctionDebugLineItem>(AsShared()))
-		.bCanDrag(bIsCommand || bIsGetter)
+		.bCanDrag(DragAndDropCreator.IsBound())
 		[
 			FMDViewModelDebugLineItemBase::GenerateNameWidget(InSearchString)
 		];
@@ -56,7 +54,7 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GenerateNameWidget(TShare
 TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GenerateValueWidget(TSharedPtr<FString> InSearchString)
 {
 	return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFunctionDebugLineItem>(AsShared()))
-		.bCanDrag(bIsCommand || bIsGetter)
+		.bCanDrag(DragAndDropCreator.IsBound())
 		[
 			SNew(SWidgetSwitcher)
 			.WidgetIndex(this, &FMDViewModelFunctionDebugLineItem::GetShouldDisplayFieldNotifyIndex)
@@ -96,22 +94,9 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GenerateValueWidget(TShar
 
 TSharedRef<FMDVMInspectorDragAndDropActionBase> FMDViewModelFunctionDebugLineItem::CreateDragAndDropAction() const
 {
-	check(bIsCommand || bIsGetter);
+	check(DragAndDropCreator.IsBound());
 
-	if (bIsCommand)
-	{
-		return FMDVMInspectorDragAndDropCommand::Create(
-			GetFunction(),
-			GetViewModelAssignmentReference()
-		);
-	}
-	else /*if (bIsGetter)*/
-	{
-		return FMDVMInspectorDragAndDropGetter::Create(
-			GetFunction(),
-			GetViewModelAssignmentReference()
-		);
-	}
+	return DragAndDropCreator.Execute(GetFunction(), GetViewModelAssignmentReference());
 }
 
 void FMDViewModelFunctionDebugLineItem::UpdateIsDebugging(bool InIsDebugging)
@@ -143,7 +128,7 @@ void FMDViewModelFunctionDebugLineItem::UpdateCachedChildren() const
 
 FDebugLineItem* FMDViewModelFunctionDebugLineItem::Duplicate() const
 {
-	return new FMDViewModelFunctionDebugLineItem(FunctionPtr.Get(), DisplayName, Description, DebugViewModel, BlueprintEditorPtr, bIsCommand, bIsGetter, bIsFieldNotify, ViewModelClass, ViewModelName);
+	return new FMDViewModelFunctionDebugLineItem(FunctionPtr.Get(), DisplayName, Description, DebugViewModel, BlueprintEditorPtr, DragAndDropCreator, bIsFieldNotify, ViewModelClass, ViewModelName);
 }
 
 bool FMDViewModelFunctionDebugLineItem::CanCreateNodes() const

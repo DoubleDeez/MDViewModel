@@ -1,14 +1,17 @@
 #pragma once
 #include "MDViewModelDebugLineItemBase.h"
 
+class FMDVMInspectorDragAndDropCommand;
+
+using FMDVMDragAndDropCreatorFunc = TDelegate<TSharedRef<FMDVMInspectorDragAndDropActionBase>(TWeakObjectPtr<const UFunction>, const FMDViewModelAssignmentReference&)>;
+
 class FMDViewModelFunctionDebugLineItem : public FMDViewModelDebugLineItemBase
 {
 public:
-	FMDViewModelFunctionDebugLineItem(const UFunction* Function, const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, bool bIsCommand, bool bIsGetter, bool bIsFieldNotify = false, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
+	FMDViewModelFunctionDebugLineItem(const UFunction* Function, const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, FMDVMDragAndDropCreatorFunc DragAndDropCreator = nullptr, bool bIsFieldNotify = false, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
 		: FMDViewModelDebugLineItemBase(DisplayName, Description, DebugViewModel, BlueprintEditorPtr, bIsFieldNotify, ViewModelClass, ViewModelName)
 		, FunctionPtr(Function)
-		, bIsCommand(bIsCommand)
-		, bIsGetter(bIsGetter)
+		, DragAndDropCreator(DragAndDropCreator)
 	{
 	}
 
@@ -58,8 +61,7 @@ private:
 	int32 GetAddOrViewBoundFieldNotifyFunctionIndex() const;
 
 	TWeakObjectPtr<const UFunction> FunctionPtr;
+	FMDVMDragAndDropCreatorFunc DragAndDropCreator;
 	bool bIsDebugging = false;
-	bool bIsCommand = false;
-	bool bIsGetter = false;
 };
 

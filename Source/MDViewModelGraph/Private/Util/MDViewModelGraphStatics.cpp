@@ -16,6 +16,8 @@
 #include "Nodes/MDVMNode_ViewModelFieldNotify.h"
 #include "ViewModel/MDViewModelBase.h"
 
+const FName FMDViewModelGraphStatics::VMHiddenMeta = TEXT("MDVMHidden");
+
 void FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(const UBlueprint* Blueprint, TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments)
 {
 	if (Blueprint != nullptr)
