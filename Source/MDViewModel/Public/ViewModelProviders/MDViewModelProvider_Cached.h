@@ -57,16 +57,16 @@ public:
 	// Only actors of this class will be considered
 	UPROPERTY(EditAnywhere, Category = "World Actor", meta = (AllowAbstract))
 	TSoftClassPtr<AActor> ActorClass;
-	
+
 	// Only actors that implement this interface will be considered
 	UPROPERTY(EditAnywhere, Category = "World Actor", meta = (AllowAbstract))
 	TSoftClassPtr<UInterface> RequiredInterface;
-	
+
 	// Only actors that have a component of this class will be considered
 	// NOTE: Only actors that have the component when initializing the view model will be considered, adding the component to an actor afterwards will not update the view model.
 	UPROPERTY(EditAnywhere, Category = "World Actor", meta = (AllowAbstract))
 	TSoftClassPtr<UActorComponent> RequiredComponentClass;
-	
+
 	// Only actors that have a component that implement this interface will be considered
 	// NOTE: Only actors that have the component when initializing the view model will be considered, adding the component to an actor afterwards will not update the view model.
 	UPROPERTY(EditAnywhere, Category = "World Actor", meta = (AllowAbstract))
@@ -110,6 +110,7 @@ enum class EMDViewModelProvider_CacheLifetime
 	Relative,
 	RelativeProperty,
 	Custom UMETA(Hidden),
+	Invalid UMETA(Hidden),
 };
 
 USTRUCT(DisplayName = "Cached Provider Settings")
@@ -132,13 +133,13 @@ public:
 
 	UE_DEPRECATED(All, "The lifetime enum is deprecated, use ViewModelLifetimeTag instead.")
 	UPROPERTY()
-	EMDViewModelProvider_CacheLifetime ViewModelLifetime = EMDViewModelProvider_CacheLifetime::Global;
+	EMDViewModelProvider_CacheLifetime ViewModelLifetime = EMDViewModelProvider_CacheLifetime::Invalid;
 
 	// For Relative lifetime, this view model's lifetime and context object will be tied to the view model assignment selected here
 	UPROPERTY(EditAnywhere, Category = "Provider|Relative", meta = (EditConditionLifetime = "MDVM.Provider.Cached.Lifetimes.Relative,MDVM.Provider.Cached.Lifetimes.RelativeViewModelProperty"))
 	FMDViewModelAssignmentReference RelativeViewModel;
 
-	// For World Actor lifetime, the first actor in the world that passes this filter will be the view model's cache and context object 
+	// For World Actor lifetime, the first actor in the world that passes this filter will be the view model's cache and context object
 	UPROPERTY(EditAnywhere, Category = "Provider|World Actor", meta = (EditConditionLifetime = "MDVM.Provider.Cached.Lifetimes.WorldActor"))
 	FMDVMWorldActorFilter WorldActorFilter;
 
@@ -198,7 +199,7 @@ public:
 
 protected:
 	virtual IMDViewModelCacheInterface* ResolveAndBindViewModelCache(IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data, const FMDViewModelProvider_Cached_Settings& Settings);
-	
+
 	UMDViewModelBase* FindOrCreateCachedViewModel_Internal(const UObject* WorldContextObject, UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings);
 	UMDViewModelBase* FindCachedViewModel_Internal(const UObject* WorldContextObject, const UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass) const;
 
@@ -216,7 +217,7 @@ protected:
 
 	void OnActorSpawned(AActor* Actor, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
 	void OnActorRemoved(AActor* Actor, TWeakObjectPtr<AActor> BoundActor, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data);
-	
+
 	void OnViewModelCacheShuttingDown(TWeakInterfacePtr<IMDViewModelCacheInterface> CachePtr);
 
 	IMDViewModelCacheInterface* ResolveGlobalCache(const UGameInstance* GameInstance) const;
@@ -251,12 +252,12 @@ protected:
 
 	// Bind RefreshViewModel to the specified view model changing and get the view model
 	UMDViewModelBase* ResolveViewModelAndBindDelegates(const FMDViewModelAssignmentReference& Reference, int32 DelegateIndex, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
-	
+
 	void BindViewTargetDelegates(IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data);
 
 	bool DoesActorPassFilter(AActor* Candidate, const FMDVMWorldActorFilter& Filter) const;
 
-	// Checks WidgetDelegateHandles to see if the handle at the specified index is bound, if not it adds a new entry and calls BindFunc to populate it 
+	// Checks WidgetDelegateHandles to see if the handle at the specified index is bound, if not it adds a new entry and calls BindFunc to populate it
 	template<typename T, typename TBindingKey, typename = typename TEnableIf<std::is_same_v<typename TDecay<TBindingKey>::Type, FMDVMAssignmentObjectKey>>::Type>
 	void BindDelegateIfUnbound(TBindingKey&& BindingKey, T* Owner, int32 DelegateIndex, TFunctionRef<FDelegateHandle(T&)> BindFunc);
 
@@ -303,12 +304,12 @@ T* UMDViewModelProvider_Cached::FindCachedViewModel(const UObject* WorldContextO
 
 template <typename T, typename TBindingKey, typename>
 void UMDViewModelProvider_Cached::BindDelegateIfUnbound(TBindingKey&& BindingKey, T* Owner, int32 DelegateIndex, TFunctionRef<FDelegateHandle(T&)> BindFunc)
-{	
+{
 	if (!IsValidObject(Owner))
 	{
 		return;
 	}
-	
+
 	// Find or Add a Delegate Wrapper at the specified DelegateIndex
 	auto& WrapperArray = ObjectDelegateHandles.FindOrAdd(Forward<FMDVMAssignmentObjectKey>(BindingKey));
 	if (WrapperArray.IsValidIndex(DelegateIndex))
@@ -337,7 +338,7 @@ void UMDViewModelProvider_Cached::UnbindDelegate(const FMDVMAssignmentObjectKey&
 	{
 		return;
 	}
-	
+
 	FMDWrappedDelegateHandle& Wrapper = (*WrapperArrayPtr)[DelegateIndex];
 	T* OldOwner = Cast<T>(Wrapper.DelegateOwner.Get());
 	if (!IsValidObject(OldOwner))

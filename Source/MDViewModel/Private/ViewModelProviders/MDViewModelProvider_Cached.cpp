@@ -23,6 +23,7 @@
 #include "Subsystems/MDObjectViewModelCache.h"
 #include "Subsystems/MDWorldViewModelCache.h"
 #include "Util/MDViewModelAssignmentData.h"
+#include "Util/MDViewModelConfig.h"
 #include "Util/MDViewModelFunctionLibrary.h"
 #include "Util/MDViewModelLog.h"
 #include "ViewModel/MDViewModelBase.h"
@@ -109,7 +110,7 @@ const FGameplayTag& FMDViewModelProvider_Cached_Settings::GetLifetimeTag() const
 	{
 		return ViewModelLifetimeTag;
 	}
-	
+
 	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	return MDVMCachedProvider_Private::RemapLifetime(ViewModelLifetime);
 	PRAGMA_ENABLE_DEPRECATION_WARNINGS
@@ -188,7 +189,7 @@ FText UMDViewModelProvider_Cached::GetDescription(const FInstancedStruct& Provid
 		// Settings are null for static references to this provider (eg. in the provider selector)
 		return INVTEXT("The view model will be grabbed from (or added to) the selected cache, keyed by the view model name and class.");
 	}
-	
+
 	static const FText DescriptionFormat = INVTEXT("The view model will be grabbed from (or added to) the selected cache, keyed by the view model name and class.\n\nSelected Lifetime: {0}\n{1}");
 
 	const FGameplayTag& LifetimeTag = SettingsPtr->GetLifetimeTag();
@@ -237,15 +238,20 @@ void UMDViewModelProvider_Cached::OnProviderSettingsInitializedInEditor(FInstanc
 	FMDViewModelProvider_Cached_Settings* SettingsPtr = Settings.GetMutablePtr<FMDViewModelProvider_Cached_Settings>();
 	if (ensure(SettingsPtr))
 	{
+		PRAGMA_DISABLE_DEPRECATION_WARNINGS
 		// Fixup old lifetime enum to tag
-		if (!SettingsPtr->ViewModelLifetimeTag.IsValid())
+		if (!SettingsPtr->ViewModelLifetimeTag.IsValid() && SettingsPtr->ViewModelLifetime != EMDViewModelProvider_CacheLifetime::Invalid)
 		{
-			PRAGMA_DISABLE_DEPRECATION_WARNINGS
 			SettingsPtr->ViewModelLifetimeTag = MDVMCachedProvider_Private::RemapLifetime(SettingsPtr->ViewModelLifetime);
-			PRAGMA_ENABLE_DEPRECATION_WARNINGS
 			FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 		}
-		
+		PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+		if (!SettingsPtr->ViewModelLifetimeTag.IsValid())
+		{
+			SettingsPtr->ViewModelLifetimeTag = GetDefault<UMDViewModelConfig>()->DefaultViewModelLifetime;
+		}
+
 		SettingsPtr->RelativeViewModel.OnGetBoundObjectClass.BindWeakLambda(Blueprint, [Blueprint]()
 		{
 			return IsValid(Blueprint) ? Cast<UClass>(Blueprint->GeneratedClass) : nullptr;
@@ -531,7 +537,7 @@ void UMDViewModelProvider_Cached::OnObjectDestroy(TWeakInterfacePtr<IMDViewModel
 					}
 				}
 			}
-			
+
 			BoundAssignments.Remove(ObjectPtr);
 		}
 	}
@@ -580,7 +586,7 @@ UMDViewModelBase* UMDViewModelProvider_Cached::SetViewModelFromCache(const UObje
 					PreviousCacheMap->Remove(&Object, AssignmentRef);
 				}
 			}
-			
+
 			AssignmentToCacheMap.Add(AssignmentRef, CacheInterface);
 			BoundCaches.FindOrAdd(CacheInterface).Add(&Object, AssignmentRef);
 		}
@@ -626,7 +632,7 @@ void UMDViewModelProvider_Cached::OnFieldValueChanged(UObject* Object, UE::Field
 void UMDViewModelProvider_Cached::OnActorSpawned(AActor* Actor, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data)
 {
 	// Don't go through refresh view model since we have the Actor we need already so we can avoid the expensive TActorIterator
-	
+
 	const FMDViewModelProvider_Cached_Settings* Settings = Data.ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
 	IMDViewModelRuntimeInterface* Object = ObjectPtr.Get();
 	if (IsValid(Actor) && Object != nullptr)
@@ -987,9 +993,9 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveRelativeProperty
 IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveRelativeViewModelPropertyCacheAndBindDelegates(const FMDViewModelAssignmentReference& VMReference,
 	const FMemberReference& PropertyReference, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
-	constexpr int32 ViewModelDelegateIndex = MDVMDI_Default;	
+	constexpr int32 ViewModelDelegateIndex = MDVMDI_Default;
 	UMDViewModelBase* RelativeViewModel = ResolveViewModelAndBindDelegates(VMReference, MDVMDI_Default, Object, Assignment, Data);
-	
+
 	if (!IsValid(RelativeViewModel))
 	{
 		return nullptr;
@@ -1017,7 +1023,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveFieldCacheAndBin
 	}
 
 	const UE::FieldNotification::FFieldId FieldId = FieldNotifyOwner->GetFieldNotificationDescriptor().GetField(Owner->GetClass(), FieldName);
-	
+
 	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
 	UnbindDelegateIfNewOwner<INotifyFieldValueChanged>(BindingKey, FieldNotifyOwner, DelegateIndex, [&FieldId](auto& OldOwner, FDelegateHandle& Handle)
 	{
@@ -1029,7 +1035,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveFieldCacheAndBin
 		const auto Delegate = INotifyFieldValueChanged::FFieldValueChangedDelegate::CreateUObject(this, &UMDViewModelProvider_Cached::OnFieldValueChanged, Object.MakeWeak(), Assignment, Data);
 		return NewOwner.AddFieldValueChangedDelegate(FieldId, Delegate);
 	});
-		
+
 	UObject* PropertyValue = nullptr;
 	if (Property != nullptr)
 	{
@@ -1071,13 +1077,13 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheA
 		}
 	}
 
-	return ResolveWorldActorCacheAndBindDelegates(FoundActor, Object, Assignment, Data);	
+	return ResolveWorldActorCacheAndBindDelegates(FoundActor, Object, Assignment, Data);
 }
 
 IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheAndBindDelegates(AActor* Actor, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
 	UWorld* World = Object.ResolveWorld();
-	
+
 	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
 	UnbindDelegateIfNewOwner<UWorld>(BindingKey, World, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
 	{
@@ -1088,7 +1094,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheA
 		OldOwner.RemoveOnActorDestroyededHandler(Handle);
 #endif
 	});
-	
+
 	if (IsValid(Actor))
 	{
 		// Unbind if we were bound since we don't need to listen for it anymore
@@ -1113,7 +1119,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheA
 			return Owner.AddOnActorDestroyedHandler(MoveTemp(Delegate));
 #endif
 		});
-		
+
 		return ResolveActorCache(Actor);
 	}
 	else
@@ -1126,7 +1132,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheA
 			OldOwner.RemoveOnActorDestroyededHandler(Handle);
 #endif
 		});
-		
+
 		BindDelegateIfUnbound<UWorld>(MoveTemp(BindingKey), World, MDVMDI_Default, [&](auto& Owner)
 		{
 			auto Delegate = FOnActorSpawned::FDelegate::CreateUObject(this, &UMDViewModelProvider_Cached::OnActorSpawned, Object.MakeWeak(), Assignment, Data);

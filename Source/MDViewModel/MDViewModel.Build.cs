@@ -12,12 +12,13 @@ public class MDViewModel : ModuleRules
 			new string[]
 			{
 				"Core",
+				"DeveloperSettings",
 				"GameplayTags",
 				"StructUtils",
 				"UMG"
 			}
 		);
-		
+
 #if UE_5_3_OR_LATER
 		PublicDependencyModuleNames.Add("FieldNotification");
 #endif
