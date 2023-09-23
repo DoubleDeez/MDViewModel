@@ -11,6 +11,15 @@ struct FMDViewModelEditorAssignment;
 class FMenuBuilder;
 class FUICommandList;
 
+struct FMDVMCachedViewModelNodeParams
+{
+	FMDViewModelAssignmentReference VMAssignment;
+	FVector2D GraphPosition = FVector2D(0);
+	TWeakObjectPtr<UEdGraph> Graph;
+	TWeakObjectPtr<UEdGraphNode> Node;
+	FEdGraphPinReference Pin;
+};
+
 class FMDVMDragAndDropViewModel : public FMDVMInspectorDragAndDropActionBase
 {
 public:
@@ -18,9 +27,23 @@ public:
 
 	static TSharedRef<FMDVMDragAndDropViewModel> Create(const FMDViewModelAssignmentReference& InVMAssignment);
 
+	static void CreateGetter(FMDVMCachedViewModelNodeParams Params);
+	static void CreateSetter(FMDVMCachedViewModelNodeParams Params);
+	static void FinalizeNode(UEdGraphNode* NewNode, const FMDVMCachedViewModelNodeParams& Params);
+
+	virtual FReply DroppedOnPin(FVector2D ScreenPosition, FVector2D GraphPosition) override;
+
 	virtual UEdGraphNode* CreateNodeOnDrop(UEdGraph& Graph, const FVector2D& GraphPosition) override;
 
 	virtual FText GetNodeTitle() const override;
+
+	void SetAltDrag(bool InIsAltDrag) {	bAltDrag = InIsAltDrag; }
+	void SetCtrlDrag(bool InIsCtrlDrag) { bControlDrag = InIsCtrlDrag; }
+
+private:
+	TOptional<bool> bIsGetter;
+	bool bControlDrag = false;
+	bool bAltDrag = false;
 };
 
 class SMDViewModelListItem : public STableRow<TSharedPtr<FMDViewModelEditorAssignment>>

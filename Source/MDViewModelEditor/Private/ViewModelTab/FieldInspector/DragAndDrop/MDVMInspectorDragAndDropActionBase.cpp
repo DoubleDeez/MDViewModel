@@ -9,7 +9,7 @@ FReply FMDVMInspectorDragAndDropActionBase::DroppedOnPin(FVector2D ScreenPositio
 {
 	UEdGraph* Graph = GetHoveredGraph();
 	if (Graph != nullptr && VMAssignment.IsAssignmentValid())
-	{		
+	{
 		if (UEdGraphNode* ResultNode = CreateNodeOnDrop(*Graph, GraphPosition))
 		{
 			if (UEdGraphPin* FromPin = GetHoveredPin())
@@ -28,12 +28,10 @@ FReply FMDVMInspectorDragAndDropActionBase::DroppedOnPin(FVector2D ScreenPositio
 					ResultNode->AutowireNewNode(FromNodeOut);
 				}
 			}
-			
-			return FReply::Handled();
 		}
 	}
-	
-	return FReply::Unhandled();
+
+	return FReply::Handled();
 }
 
 FReply FMDVMInspectorDragAndDropActionBase::DroppedOnNode(FVector2D ScreenPosition, FVector2D GraphPosition)
@@ -43,6 +41,7 @@ FReply FMDVMInspectorDragAndDropActionBase::DroppedOnNode(FVector2D ScreenPositi
 
 FReply FMDVMInspectorDragAndDropActionBase::DroppedOnPanel(const TSharedRef<SWidget>& Panel, FVector2D ScreenPosition, FVector2D GraphPosition, UEdGraph& Graph)
 {
+	HoveredPanelWidget = Panel;
 	return DroppedOnPin(ScreenPosition, GraphPosition);
 }
 

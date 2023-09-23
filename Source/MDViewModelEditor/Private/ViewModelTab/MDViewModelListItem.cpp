@@ -11,6 +11,7 @@
 #include "Framework/Commands/GenericCommands.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Nodes/MDVMNode_GetViewModel.h"
+#include "Nodes/MDVMNode_SetViewModel.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
@@ -32,23 +33,172 @@ TSharedRef<FMDVMDragAndDropViewModel> FMDVMDragAndDropViewModel::Create(const FM
 	return Action;
 }
 
+void FMDVMDragAndDropViewModel::CreateGetter(FMDVMCachedViewModelNodeParams Params)
+{
+	if (Params.Graph.IsValid())
+	{
+		UMDVMNode_GetViewModel* NewNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UMDVMNode_GetViewModel>(
+			Params.Graph.Get(),
+			Params.GraphPosition,
+			EK2NewNodeFlags::SelectNewNode,
+			[&](UMDVMNode_GetViewModel* NewInstance)
+			{
+				NewInstance->SetDefaultAssignment(Params.VMAssignment);
+			}
+		);
+
+		FinalizeNode(NewNode, Params);
+	}
+}
+
+void FMDVMDragAndDropViewModel::CreateSetter(FMDVMCachedViewModelNodeParams Params)
+{
+	if (Params.Graph.IsValid())
+	{
+		UMDVMNode_SetViewModel* NewNode = FEdGraphSchemaAction_K2NewNode::SpawnNode<UMDVMNode_SetViewModel>(
+			Params.Graph.Get(),
+			Params.GraphPosition,
+			EK2NewNodeFlags::SelectNewNode,
+			[&](UMDVMNode_SetViewModel* NewInstance)
+			{
+				NewInstance->SetDefaultAssignment(Params.VMAssignment);
+			}
+		);
+
+		FinalizeNode(NewNode, Params);
+	}
+}
+
+void FMDVMDragAndDropViewModel::FinalizeNode(UEdGraphNode* NewNode, const FMDVMCachedViewModelNodeParams& Params)
+{
+	if (NewNode)
+	{
+		if (UEdGraphPin* FromPin = Params.Pin.Get())
+		{
+			NewNode->AutowireNewNode(FromPin);
+		}
+		else if (const UEdGraphNode* FromNode = Params.Node.Get())
+		{
+			const UEdGraphSchema_K2* Schema = GetDefault<UEdGraphSchema_K2>();
+			if (UEdGraphPin* FromNodeIn = Schema->FindExecutionPin(*FromNode, EGPD_Input))
+			{
+				NewNode->AutowireNewNode(FromNodeIn);
+			}
+			else if (UEdGraphPin* FromNodeOut = Schema->FindExecutionPin(*FromNode, EGPD_Output))
+			{
+				NewNode->AutowireNewNode(FromNodeOut);
+			}
+		}
+	}
+}
+
+FReply FMDVMDragAndDropViewModel::DroppedOnPin(FVector2D ScreenPosition, FVector2D GraphPosition)
+{
+	FModifierKeysState ModifierKeys = FSlateApplication::Get().GetModifierKeys();
+	const bool bModifiedKeysActive = ModifierKeys.IsControlDown() || ModifierKeys.IsAltDown();
+	const bool bAutoCreateGetter = bModifiedKeysActive ? ModifierKeys.IsControlDown() : bControlDrag;
+	const bool bAutoCreateSetter = bModifiedKeysActive ? ModifierKeys.IsAltDown() : bAltDrag;
+
+	if (bAutoCreateGetter || bAutoCreateSetter)
+	{
+		bIsGetter = bAutoCreateGetter;
+	}
+	else if (const UEdGraphPin* FromPin = GetHoveredPin())
+	{
+		if (FromPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Object || FromPin->PinType.PinCategory == UEdGraphSchema_K2::PC_SoftObject)
+		{
+			const UClass* PinClass = Cast<UClass>(FromPin->PinType.PinSubCategoryObject.Get());
+			if (PinClass != nullptr && PinClass->IsChildOf<UMDViewModelBase>())
+			{
+				bIsGetter = FromPin->Direction == EGPD_Input;
+			}
+		}
+	}
+
+	if (bIsGetter.IsSet())
+	{
+		return FMDVMInspectorDragAndDropActionBase::DroppedOnPin(ScreenPosition, GraphPosition);
+	}
+
+	FMDVMCachedViewModelNodeParams Params = { VMAssignment, GraphPosition, GetHoveredGraph(), GetHoveredNode(), GetHoveredPin() };
+
+	FMenuBuilder MenuBuilder(true, NULL);
+	const FText Title = GetNodeTitle();
+
+	MenuBuilder.BeginSection("ViewModelDropped", Title );
+
+	MenuBuilder.AddMenuEntry(
+		FText::Format( INVTEXT("Get {0}"), Title ),
+		FText::Format( INVTEXT("Create Getter for view model '{0}'\n(Ctrl-drag to automatically create a getter)"), Title ),
+		FSlateIcon(),
+		FUIAction(FExecuteAction::CreateStatic(&FMDVMDragAndDropViewModel::CreateGetter, Params))
+	);
+
+	MenuBuilder.AddMenuEntry(
+		FText::Format( INVTEXT("Set {0}"), Title ),
+		FText::Format( INVTEXT("Create Setter for view model '{0}'\n(Alt-drag to automatically create a setter)"), Title ),
+		FSlateIcon(),
+		FUIAction(FExecuteAction::CreateStatic(&FMDVMDragAndDropViewModel::CreateSetter, Params))
+	);
+
+	MenuBuilder.EndSection();
+
+	TSharedPtr<SWidget> MenuParent = HoveredPanelWidget.Pin();
+	if (!MenuParent.IsValid())
+	{
+		MenuParent = FSlateApplication::Get().GetActiveTopLevelWindow();
+	}
+
+	FSlateApplication::Get().PushMenu(
+		MenuParent.ToSharedRef(),
+		FWidgetPath(),
+		MenuBuilder.MakeWidget(),
+		ScreenPosition,
+		FPopupTransitionEffect( FPopupTransitionEffect::ContextMenu)
+	);
+
+	return FReply::Handled();
+}
+
 UEdGraphNode* FMDVMDragAndDropViewModel::CreateNodeOnDrop(UEdGraph& Graph, const FVector2D& GraphPosition)
 {
-	return FEdGraphSchemaAction_K2NewNode::SpawnNode<UMDVMNode_GetViewModel>(
-		&Graph,
-		GraphPosition,
-		EK2NewNodeFlags::SelectNewNode,
-		[&](UMDVMNode_GetViewModel* NewInstance)
-		{
-			NewInstance->SetDefaultAssignment(VMAssignment);
-		}
-	);
+	if (!bIsGetter.IsSet())
+	{
+		return nullptr;
+	}
+
+	if (bIsGetter.GetValue())
+	{
+		bIsGetter.Reset();
+		return FEdGraphSchemaAction_K2NewNode::SpawnNode<UMDVMNode_GetViewModel>(
+			&Graph,
+			GraphPosition,
+			EK2NewNodeFlags::SelectNewNode,
+			[&](UMDVMNode_GetViewModel* NewInstance)
+			{
+				NewInstance->SetDefaultAssignment(VMAssignment);
+			}
+		);
+	}
+	else
+	{
+		bIsGetter.Reset();
+		return FEdGraphSchemaAction_K2NewNode::SpawnNode<UMDVMNode_SetViewModel>(
+			&Graph,
+			GraphPosition,
+			EK2NewNodeFlags::SelectNewNode,
+			[&](UMDVMNode_SetViewModel* NewInstance)
+			{
+				NewInstance->SetDefaultAssignment(VMAssignment);
+			}
+		);
+	}
 }
 
 FText FMDVMDragAndDropViewModel::GetNodeTitle() const
 {
 	const FText VMClassName = (VMAssignment.ViewModelClass.Get() != nullptr) ? VMAssignment.ViewModelClass.Get()->GetDisplayNameText() : INVTEXT("NULL");
-	return FText::Format(INVTEXT("Get {0} ({1})"), VMClassName, FText::FromName(VMAssignment.ViewModelName));
+	return FText::Format(INVTEXT("{0} ({1})"), VMClassName, FText::FromName(VMAssignment.ViewModelName));
 }
 
 void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwningTable, const TSharedPtr<FMDViewModelEditorAssignment>& Item, TWeakPtr<FBlueprintEditor> InBlueprintEditor)
@@ -198,6 +348,8 @@ FReply SMDViewModelListItem::OnDragDetected(const FGeometry& MyGeometry, const F
 	{
 		const FMDViewModelAssignmentReference AssignmentRef = { Assignment->Assignment.ViewModelClass.Get(), Assignment->Assignment.ViewModelName };
 		const TSharedRef<FMDVMDragAndDropViewModel> Action = FMDVMDragAndDropViewModel::Create(AssignmentRef);
+		Action->SetAltDrag(MouseEvent.IsAltDown());
+		Action->SetCtrlDrag(MouseEvent.IsLeftControlDown() || MouseEvent.IsRightControlDown());
 		return FReply::Handled().BeginDragDrop(Action);
 	}
 

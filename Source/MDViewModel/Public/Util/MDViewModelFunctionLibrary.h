@@ -22,7 +22,7 @@ class MDVIEWMODEL_API UMDViewModelFunctionLibrary : public UBlueprintFunctionLib
 
 public:
 	// Set a view model on an object
-	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Set View Model", meta = (DefaultToSelf = "Widget", AutoCreateRefTerm = "Assignment", DeterminesOutputType = "ViewModel"))
+	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Set View Model", meta = (DefaultToSelf = "Widget", AutoCreateRefTerm = "Assignment", DeterminesOutputType = "ViewModel", BlueprintInternalUseOnly = "true"))
 	static UMDViewModelBase* BP_SetViewModel(UPARAM(meta = (VMAssignment = "Assignment", DisplayName = "Object")) UObject* Widget, UPARAM(meta = (VMAssignment = "Assignment")) UMDViewModelBase* ViewModel, const FMDViewModelAssignmentReference& Assignment);
 
 	// Clear a view model that's been set on an object

@@ -73,7 +73,7 @@ void SMDViewModelList::Construct(const FArguments& InArgs, const TSharedPtr<FBlu
 			[
 				SNew(STextBlock)
 				.Text(INVTEXT("Assigned View Models"))
-				.ToolTipText(INVTEXT("These view models will be set on the widget at runtime based on the selected providers."))
+				.ToolTipText(INVTEXT("These view models will be set on the widget at runtime based on the selected providers.\r\nDrag these onto the blueprint graph to creates node to Set or Get them at runtime."))
 				.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
 			]
 		]
