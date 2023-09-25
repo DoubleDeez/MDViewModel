@@ -3,7 +3,7 @@
 	"Version": 1,
 	"VersionName": "1.0",
 	"FriendlyName": "MDViewModel",
-	"Description": "A generic viewmodel framework for UMG widgets and Actor Blueprints",
+	"Description": "An Unreal Engine 5 Model-View-ViewModel Plugin with automatic data binding to use in UMG Widget and Actor Blueprints",
 	"Category": "UI",
 	"CreatedBy": "DoubleDeez",
 	"CreatedByURL": "https://github.com/DoubleDeez",
