@@ -19,7 +19,7 @@ void SMDViewModelEditor::Construct(const FArguments& InArgs, const TSharedPtr<FB
 	}
 
 	Blueprint->OnSetObjectBeingDebugged().AddSP(this, &SMDViewModelEditor::OnSetObjectBeingDebugged);
-	
+
 	TArray<UBlueprint*> Hierarchy;
 	UBlueprint::GetBlueprintHierarchyFromClass(Blueprint->GeneratedClass, Hierarchy);
 	for (UBlueprint* BP : Hierarchy)
@@ -63,9 +63,23 @@ void SMDViewModelEditor::PostRedo(bool bSuccess)
 	}
 }
 
+void SMDViewModelEditor::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
+{
+	SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
+
+	// If the debug object we're looking at gets GCd, the BP won't fire its delegate so we need to check manually
+	if (bIsDebugging && !ObjectBeingDebugged.IsValid())
+	{
+		OnSetObjectBeingDebugged(nullptr);
+	}
+}
+
 void SMDViewModelEditor::OnSetObjectBeingDebugged(UObject* Object)
 {
 	ObjectBeingDebugged = Object;
+
+	bIsDebugging = ObjectBeingDebugged.IsValid();
+	SetCanTick(bIsDebugging);
 
 	OnViewModelChanged();
 }
@@ -74,33 +88,24 @@ void SMDViewModelEditor::OnViewModelSelected(FMDViewModelEditorAssignment* Assig
 {
 	if (Assignment != nullptr)
 	{
-		SelectedViewModelClass = Assignment->Assignment.ViewModelClass;
-		SelectedViewModelName = Assignment->Assignment.ViewModelName;
+		SelectedAssignment = FMDViewModelAssignmentReference(Assignment->Assignment);
 	}
 	else
 	{
-		SelectedViewModelClass = nullptr;
-		SelectedViewModelName = NAME_None;
+		SelectedAssignment = {};
 	}
 
 	OnViewModelChanged();
 }
 
 void SMDViewModelEditor::OnViewModelChanged()
-{	
+{
 	if (ViewModelDetailsWidget.IsValid())
 	{
-		if (SelectedViewModelClass != nullptr)
-		{
-			bool bIsValid = false;
-			UMDViewModelBase* DebugViewModel = UMDViewModelFunctionLibrary::BP_GetViewModel(ObjectBeingDebugged.Get(), { SelectedViewModelClass, SelectedViewModelName }, bIsValid);
+		bool bIsValid = false;
+		UMDViewModelBase* DebugViewModel = UMDViewModelFunctionLibrary::BP_GetViewModel(ObjectBeingDebugged.Get(), SelectedAssignment, bIsValid);
 
-			ViewModelDetailsWidget->UpdateViewModel(SelectedViewModelClass, DebugViewModel, SelectedViewModelName);
-		}
-		else
-		{
-			ViewModelDetailsWidget->UpdateViewModel(nullptr, nullptr, NAME_None);
-		}
+		ViewModelDetailsWidget->UpdateViewModel(SelectedAssignment, ObjectBeingDebugged.IsValid(), DebugViewModel);
 	}
 }
 
@@ -110,7 +115,7 @@ void SMDViewModelEditor::OnBlueprintCompiled(UBlueprint* BP)
 	{
 		ViewModelListWidget->RefreshList();
 	}
-	
+
 	// Force a refresh
 	OnViewModelChanged();
 }

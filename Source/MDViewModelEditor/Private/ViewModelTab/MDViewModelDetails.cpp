@@ -11,7 +11,7 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs, const TSharedPtr<F
 		SNew(SSplitter)
 		.Orientation(Orient_Horizontal)
 		+SSplitter::Slot()
-		.MinSize(300.f)
+		.MinSize(100.f)
 		.Value(0.25f)
 		[
 			SNew(SVerticalBox)
@@ -38,7 +38,7 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs, const TSharedPtr<F
 			]
 		]
 		+SSplitter::Slot()
-		.MinSize(300.f)
+		.MinSize(100.f)
 		.Value(0.25f)
 		[
 			SNew(SVerticalBox)
@@ -65,7 +65,7 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs, const TSharedPtr<F
 			]
 		]
 		+SSplitter::Slot()
-		.MinSize(300.f)
+		.MinSize(100.f)
 		.Value(0.25f)
 		[
 			SNew(SVerticalBox)
@@ -92,7 +92,7 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs, const TSharedPtr<F
 			]
 		]
 		+SSplitter::Slot()
-		.MinSize(300.f)
+		.MinSize(100.f)
 		.Value(0.25f)
 		[
 			SNew(SVerticalBox)
@@ -119,29 +119,27 @@ void SMDViewModelDetails::Construct(const FArguments& InArgs, const TSharedPtr<F
 			]
 		]
 	];
-
-	UpdateViewModel(InArgs._ViewModelClass, InArgs._DebugViewModel, InArgs._ViewModelName);
 }
 
-void SMDViewModelDetails::UpdateViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, UMDViewModelBase* DebugViewModel, const FName& ViewModelName)
+void SMDViewModelDetails::UpdateViewModel(const FMDViewModelAssignmentReference& Assignment, bool bIsDebugging, UMDViewModelBase* DebugViewModel)
 {
 	if (PropertyInspector.IsValid())
 	{
-		PropertyInspector->SetReferences(ViewModelClass, DebugViewModel, ViewModelName);
+		PropertyInspector->SetReferences(Assignment, bIsDebugging, DebugViewModel);
 	}
 
 	if (EventInspector.IsValid())
 	{
-		EventInspector->SetReferences(ViewModelClass, DebugViewModel, ViewModelName);
+		EventInspector->SetReferences(Assignment, bIsDebugging, DebugViewModel);
 	}
 
 	if (CommandInspector.IsValid())
 	{
-		CommandInspector->SetReferences(ViewModelClass, DebugViewModel, ViewModelName);
+		CommandInspector->SetReferences(Assignment, bIsDebugging, DebugViewModel);
 	}
 
 	if (HelperInspector.IsValid())
 	{
-		HelperInspector->SetReferences(ViewModelClass, DebugViewModel, ViewModelName);
+		HelperInspector->SetReferences(Assignment, bIsDebugging, DebugViewModel);
 	}
 }

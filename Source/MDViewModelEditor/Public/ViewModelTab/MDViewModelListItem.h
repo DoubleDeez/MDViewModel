@@ -68,12 +68,19 @@ public:
 
 private:
 	EVisibility GetSourceTextVisibility() const;
+	EVisibility GetDebugVisibility() const;
+
+	FText GetDebugViewModelTooltip() const;
+	const FSlateBrush* GetViewModelInstanceIcon() const;
 
 	FReply OnContextButtonClicked();
 
 	void OnFindReferencesClicked() const;
 	void OnOpenOwnerAssetClicked() const;
 	bool CanOpenOwnerAsset() const;
+
+	void OnCopyViewModelNameClicked() const;
+	bool CanCopyViewModelName() const;
 
 	FString GenerateSearchString() const;
 

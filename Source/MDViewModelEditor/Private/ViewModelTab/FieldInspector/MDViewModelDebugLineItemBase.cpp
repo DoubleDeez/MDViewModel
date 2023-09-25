@@ -6,43 +6,47 @@
 #include "Editor/EditorEngine.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "HAL/FileManager.h"
+#include "Kismet2/KismetDebugUtilities.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "PropertyInfoViewStyle.h"
 #include "SourceCodeNavigation.h"
-#include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropActionBase.h"
 #include "WidgetBlueprint.h"
 
-FMDViewModelDebugLineItemBase::FMDViewModelDebugLineItemBase(const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, bool bIsFieldNotify, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName)
+FMDViewModelDebugLineItemBase::FMDViewModelDebugLineItemBase(const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, const FMDViewModelAssignmentReference& Assignment)
 	: FDebugLineItem(DLT_Watch)
-	, DisplayName(DisplayName)
-	, Description(Description)
-	, bIsFieldNotify(bIsFieldNotify)
 	, BlueprintEditorPtr(BlueprintEditorPtr)
+	, Assignment(Assignment)
 	, BlueprintPtr(BlueprintEditorPtr.IsValid() ? BlueprintEditorPtr.Pin()->GetBlueprintObj() : nullptr)
-	, ViewModelClass(ViewModelClass)
-	, DebugViewModel(DebugViewModel)
-	, ViewModelName(ViewModelName)
 {
 }
 
-void FMDViewModelDebugLineItemBase::UpdateViewModel(const FName& InViewModelName, TSubclassOf<UMDViewModelBase> InViewModelClass)
+void FMDViewModelDebugLineItemBase::UpdateViewModel(const FMDViewModelAssignmentReference& InAssignment)
 {
-	ViewModelName = InViewModelName;
-	ViewModelClass = InViewModelClass;
+	Assignment = InAssignment;
+}
+
+void FMDViewModelDebugLineItemBase::UpdateDebugging(bool InIsDebugging, TWeakObjectPtr<UMDViewModelBase> InDebugViewModel)
+{
+	const bool bDidChange = bIsDebugging != InIsDebugging || DebugViewModel != InDebugViewModel;
+	bIsDebugging = InIsDebugging;
+	DebugViewModel = InDebugViewModel;
+
+	if (bDidChange)
+	{
+		OnDebuggingChanged();
+	}
+}
+
+void FMDViewModelDebugLineItemBase::SetDisplayText(const FText& Name, const FText& Desc)
+{
+	DisplayName = Name;
+	Description = Desc;
 }
 
 TSharedRef<FMDVMInspectorDragAndDropActionBase> FMDViewModelDebugLineItemBase::CreateDragAndDropAction() const
 {
 	return {};
-}
-
-FMDViewModelAssignmentReference FMDViewModelDebugLineItemBase::GetViewModelAssignmentReference() const
-{
-	FMDViewModelAssignmentReference Reference;
-	Reference.ViewModelClass = ViewModelClass;
-	Reference.ViewModelName = ViewModelName;
-	return Reference;
 }
 
 bool FMDViewModelDebugLineItemBase::HasChildren() const
@@ -137,7 +141,8 @@ void FMDViewModelDebugLineItemBase::OnFindReferencesClicked() const
 }
 
 void FMDViewModelDebugLineItemBase::NavigateToDefinitionField() const
-{const FFieldVariant Field = GetFieldForDefinitionNavigation();
+{
+	const FFieldVariant Field = GetFieldForDefinitionNavigation();
 	if (const UFunction* Func = Cast<UFunction>(Field.ToUObject()))
 	{
 		if (Func->IsNative())
@@ -185,4 +190,50 @@ void FMDViewModelDebugLineItemBase::NavigateToDefinitionField() const
 			FKismetEditorUtilities::BringKismetToFocusAttentionOnObject(Prop->GetOwnerUObject());
 		}
 	}
+}
+
+FText FMDViewModelDebugLineItemBase::GeneratePropertyDisplayValue(const FProperty* Property, void* ValuePtr) const
+{
+	if (DebugViewModel.IsValid() && Property != nullptr && ValuePtr != nullptr)
+	{
+		if (Property->IsA<FObjectProperty>() || Property->IsA<FInterfaceProperty>())
+		{
+			const UObject* Object = nullptr;
+			if (const FObjectPropertyBase* ObjectPropertyBase = CastField<FObjectPropertyBase>(Property))
+			{
+				Object = ObjectPropertyBase->GetObjectPropertyValue(ValuePtr);
+			}
+			else if (Property->IsA<FInterfaceProperty>())
+			{
+				const FScriptInterface* InterfaceData = static_cast<const FScriptInterface*>(ValuePtr);
+				Object = InterfaceData->GetObject();
+			}
+
+			if (Object != nullptr)
+			{
+				return FText::FromString(FString::Printf(TEXT("%s (Class: %s)"), *Object->GetName(), *Object->GetClass()->GetName()));
+			}
+			else
+			{
+				return INVTEXT("[None]");
+			}
+		}
+		else if (Property->IsA<FStructProperty>())
+		{
+			if (!CachedChildren.IsSet())
+			{
+				UpdateCachedChildren();
+			}
+
+			return FText::Format(INVTEXT("{0} {0}|plural(one=member,other=members)"), FText::AsNumber(CachedChildren.GetValue().Num()));
+		}
+		else
+		{
+			TSharedPtr<FPropertyInstanceInfo> DebugInfo;
+			FKismetDebugUtilities::GetDebugInfoInternal(DebugInfo, Property, ValuePtr);
+			return DebugInfo->Value;
+		}
+	}
+
+	return FText::GetEmpty();
 }

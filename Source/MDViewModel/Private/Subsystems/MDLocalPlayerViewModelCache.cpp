@@ -12,17 +12,10 @@ bool UMDLocalPlayerViewModelCache::ShouldCreateSubsystem(UObject* Outer) const
 	return ChildClasses.Num() == 0;
 }
 
-void UMDLocalPlayerViewModelCache::Initialize(FSubsystemCollectionBase& Collection)
-{
-	Super::Initialize(Collection);
-
-	// TODO - Notify the provider that we're available
-}
-
 void UMDLocalPlayerViewModelCache::Deinitialize()
 {
 	BroadcastShutdown();
-	
+
 	Super::Deinitialize();
 }
 

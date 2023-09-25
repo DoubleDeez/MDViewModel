@@ -13,10 +13,18 @@ class UBlueprint;
 class FMDViewModelDebugLineItemBase : public FDebugLineItem
 {
 public:
-	FMDViewModelDebugLineItemBase(const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, bool bIsFieldNotify = false, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None);
+	FMDViewModelDebugLineItemBase(const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, const FMDViewModelAssignmentReference& Assignment);
 
-	// TODO - Add DebugViewModel
-	void UpdateViewModel(const FName& InViewModelName, TSubclassOf<UMDViewModelBase> InViewModelClass);
+	void UpdateViewModel(const FMDViewModelAssignmentReference& InAssignment);
+	void UpdateDebugging(bool InIsDebugging, TWeakObjectPtr<UMDViewModelBase> InDebugViewModel);
+
+	void SetDisplayText(const FText& Name, const FText& Desc);
+
+	virtual bool Compare(const FDebugLineItem* BaseOther) const override
+	{
+		const FMDViewModelDebugLineItemBase* Other = static_cast<const FMDViewModelDebugLineItemBase*>(BaseOther);
+		return GetTypeName() == Other->GetTypeName() && Assignment == Other->Assignment;
+	}
 
 #if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
 	virtual uint32 GetHash() const override
@@ -24,17 +32,19 @@ public:
 	virtual uint32 GetHash() override
 #endif
 	{
-		return HashCombine(GetTypeHash(ViewModelName), GetTypeHash(ViewModelClass));
+		return HashCombine(GetTypeHash(Assignment), GetTypeHash(GetTypeName()));
 	}
 
 	virtual TSharedRef<FMDVMInspectorDragAndDropActionBase> CreateDragAndDropAction() const;
 
-	FMDViewModelAssignmentReference GetViewModelAssignmentReference() const;
+	const FMDViewModelAssignmentReference& GetViewModelAssignmentReference() const { return Assignment; }
 
 protected:
 	virtual void UpdateCachedChildren() const {};
 
 	virtual bool HasChildren() const override;
+
+	virtual FName GetTypeName() const { return TEXT("Base"); }
 
 	virtual void ExtendContextMenu(FMenuBuilder& MenuBuilder, bool bInDebuggerTab) override;
 
@@ -46,6 +56,8 @@ protected:
 
 	virtual FText GetDescription() const override;
 
+	virtual void OnDebuggingChanged() {}
+
 	virtual bool CanCreateNodes() const;
 
 	virtual FString GenerateSearchString() const { return {}; }
@@ -56,16 +68,20 @@ protected:
 
 	void NavigateToDefinitionField() const;
 
+	FText GeneratePropertyDisplayValue(const FProperty* Property, void* ValuePtr) const;
+
 	mutable TOptional<TArray<FDebugTreeItemPtr>> CachedChildren;
 
 	mutable TMap<FName, FDebugTreeItemPtr> CachedPropertyItems;
 
+	TWeakPtr<FBlueprintEditor> BlueprintEditorPtr;
+	FMDViewModelAssignmentReference Assignment;
+
 	FText DisplayName;
 	FText Description;
-	bool bIsFieldNotify = false;
-	TWeakPtr<FBlueprintEditor> BlueprintEditorPtr;
+
 	TWeakObjectPtr<UBlueprint> BlueprintPtr;
-	TSubclassOf<UMDViewModelBase> ViewModelClass;
+
+	bool bIsDebugging = false;
 	TWeakObjectPtr<UMDViewModelBase> DebugViewModel;
-	FName ViewModelName = NAME_None;
 };

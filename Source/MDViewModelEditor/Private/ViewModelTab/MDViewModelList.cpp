@@ -151,7 +151,7 @@ void SMDViewModelList::SetupCommands()
 
 	CommandList->MapAction(FMDViewModelEditorCommands::Get().Edit,
 		FExecuteAction::CreateSP(this, &SMDViewModelList::EditSelectedAssignment),
-		FCanExecuteAction::CreateSP(this, &SMDViewModelList::IsSelectedAssignmentValidAndNotPIE)
+		FCanExecuteAction::CreateSP(this, &SMDViewModelList::CanEditSelectedAssignment)
 	);
 
 	CommandList->MapAction(FGenericCommands::Get().Copy,
@@ -171,7 +171,7 @@ void SMDViewModelList::SetupCommands()
 
 	CommandList->MapAction(FGenericCommands::Get().Delete,
 		FExecuteAction::CreateSP(this, &SMDViewModelList::DeleteSelectedAssignment),
-		FCanExecuteAction::CreateSP(this, &SMDViewModelList::IsSelectedAssignmentValidAndNotPIE)
+		FCanExecuteAction::CreateSP(this, &SMDViewModelList::CanEditSelectedAssignment)
 	);
 
 	CommandList->MapAction(FMDViewModelEditorCommands::Get().GoToDefinition,
@@ -467,6 +467,16 @@ void SMDViewModelList::EditSelectedAssignment()
 	{
 		SMDViewModelAssignmentDialog::OpenEditDialog(GetBlueprint(), Assignment);
 	}
+}
+
+bool SMDViewModelList::CanEditSelectedAssignment() const
+{
+	if (const TSharedPtr<FMDViewModelEditorAssignment> Assignment = GetSelectedAssignment())
+	{
+		return Assignment->SuperAssignmentOwner == nullptr && IsSelectedAssignmentValidAndNotPIE();
+	}
+
+	return false;
 }
 
 void SMDViewModelList::CopySelectedAssignment()

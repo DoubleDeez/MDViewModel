@@ -2,6 +2,7 @@
 
 #include "EditorUndoClient.h"
 #include "Templates/SubclassOf.h"
+#include "Util/MDViewModelAssignmentReference.h"
 #include "Widgets/SCompoundWidget.h"
 
 class FBlueprintEditor;
@@ -23,9 +24,11 @@ public:
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs, const TSharedPtr<FBlueprintEditor>& BlueprintEditor);
-	
+
 	virtual void PostUndo(bool bSuccess) override;
 	virtual void PostRedo(bool bSuccess) override;
+
+	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
 
 private:
 	void OnSetObjectBeingDebugged(UObject* Object);
@@ -34,9 +37,10 @@ private:
 	void OnViewModelChanged();
 	void OnBlueprintCompiled(UBlueprint* BP);
 
+	bool bIsDebugging = false;
+
 	TWeakObjectPtr<UObject> ObjectBeingDebugged;
-	TSubclassOf<UMDViewModelBase> SelectedViewModelClass;
-	FName SelectedViewModelName = NAME_None;
+	FMDViewModelAssignmentReference SelectedAssignment;
 
 	TSharedPtr<SMDViewModelList> ViewModelListWidget;
 	TSharedPtr<SMDViewModelDetails> ViewModelDetailsWidget;

@@ -22,6 +22,9 @@ public:
 
 	virtual FReply OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 
+private:
+	bool CanDrag() const;
+
 	TAttribute<bool> bCanDrag;
 	TSharedPtr<FMDViewModelDebugLineItemBase> LineItem;
 	FButtonStyle ButtonStyle;

@@ -6,14 +6,13 @@
 class FMDViewModelFieldDebugLineItem : public FMDViewModelDebugLineItemBase
 {
 public:
-	FMDViewModelFieldDebugLineItem(const FProperty* Property, void* InValuePtr, const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, bool bIsFieldNotify = false, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
-		: FMDViewModelDebugLineItemBase(DisplayName, Description, DebugViewModel, BlueprintEditorPtr, bIsFieldNotify, ViewModelClass, ViewModelName)
-		, PropertyPtr(Property)
-		, ValuePtr(InValuePtr)
-	{
-	}
+	FMDViewModelFieldDebugLineItem(const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, const FMDViewModelAssignmentReference& Assignment, const FProperty* Property, void* InValuePtr, bool bIsFieldNotify = false);
 
-	virtual bool Compare(const FDebugLineItem* BaseOther) const override;
+	virtual bool Compare(const FDebugLineItem* BaseOther) const override
+	{
+		const FMDViewModelFieldDebugLineItem* Other = static_cast<const FMDViewModelFieldDebugLineItem*>(BaseOther);
+		return FMDViewModelDebugLineItemBase::Compare(BaseOther) && PropertyPtr.Get() == Other->PropertyPtr.Get() && ValuePtr == Other->ValuePtr;
+	}
 
 #if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
 	virtual uint32 GetHash() const override
@@ -21,7 +20,7 @@ public:
 	virtual uint32 GetHash() override
 #endif
 	{
-		return HashCombine(GetTypeHash(PropertyPtr), GetTypeHash(ValuePtr));
+		return HashCombine(FMDViewModelDebugLineItemBase::GetHash(), HashCombine(GetTypeHash(PropertyPtr), GetTypeHash(ValuePtr)));
 	}
 
 	virtual bool CanHaveChildren() override { return true; }
@@ -35,9 +34,12 @@ public:
 
 	FText GetDisplayValue() const;
 
+	const FProperty* GetProperty() const { return PropertyPtr.Get(); }
 	void* GetValuePtr() const { return ValuePtr; }
 
 	void UpdateValuePtr(void* InValuePtr);
+
+	bool CanDrag() const;
 
 protected:
 	virtual void UpdateCachedChildren() const override;
@@ -50,6 +52,8 @@ protected:
 
 	virtual FFieldVariant GetFieldForDefinitionNavigation() const override;
 
+	virtual FName GetTypeName() const override { return TEXT("Field"); }
+
 private:
 	int32 GetShouldDisplayFieldNotifyIndex() const;
 	FReply OnAddOrViewBoundFunctionClicked() const;
@@ -57,4 +61,6 @@ private:
 
 	TWeakFieldPtr<const FProperty> PropertyPtr;
 	void* ValuePtr = nullptr;
+
+	bool bIsFieldNotify = false;
 };

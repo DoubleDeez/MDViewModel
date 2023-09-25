@@ -12,17 +12,10 @@ bool UMDGlobalViewModelCache::ShouldCreateSubsystem(UObject* Outer) const
 	return ChildClasses.Num() == 0;
 }
 
-void UMDGlobalViewModelCache::Initialize(FSubsystemCollectionBase& Collection)
-{
-	Super::Initialize(Collection);
-
-	// TODO - Notify the provider that we're available
-}
-
 void UMDGlobalViewModelCache::Deinitialize()
 {
 	BroadcastShutdown();
-	
+
 	Super::Deinitialize();
 }
 

@@ -22,11 +22,11 @@ void SMDViewModelFieldInspector::Construct(const FArguments& InArgs, const TShar
 	SPinValueInspector::Construct({});
 }
 
-void SMDViewModelFieldInspector::SetReferences(TSubclassOf<UMDViewModelBase> InViewModelClass, UMDViewModelBase* InDebugViewModel, const FName& InViewModelName)
+void SMDViewModelFieldInspector::SetReferences(const FMDViewModelAssignmentReference& InAssignment, bool InIsDebugging, UMDViewModelBase* InDebugViewModel)
 {
-	ViewModelClass = InViewModelClass;
+	Assignment = InAssignment;
+	bIsDebugging = InIsDebugging;
 	DebugViewModel = InDebugViewModel;
-	ViewModelName = InViewModelName;
 
 	RefreshList();
 }
@@ -39,22 +39,20 @@ void SMDViewModelFieldInspector::RefreshList()
 
 void SMDViewModelFieldInspector::PopulateTreeView()
 {
-	if (!IsValid(ViewModelClass))
+	if (!Assignment.IsAssignmentValid())
 	{
 		return;
 	}
-
-	bIsDebugging = DebugViewModel.IsValid();
 
 	if (InspectorType == EMDViewModelFieldInspectorType::Events)
 	{
 		if (!VMChangedItem.IsValid())
 		{
-			VMChangedItem = MakeShared<FMDViewModelChangedDebugLineItem>(BlueprintEditorPtr, ViewModelClass, ViewModelName);
+			VMChangedItem = MakeShared<FMDViewModelChangedDebugLineItem>(BlueprintEditorPtr, Assignment);
 		}
 		else
 		{
-			VMChangedItem->UpdateViewModel(ViewModelName, ViewModelClass);
+			VMChangedItem->UpdateViewModel(Assignment);
 		}
 
 		AddTreeItemUnique(VMChangedItem);
@@ -62,9 +60,9 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 
 	TSet<FName> FieldNotifySupportedNames;
 	{
-		const TScriptInterface<INotifyFieldValueChanged> DefaultVM = ViewModelClass->GetDefaultObject();
+		const TScriptInterface<INotifyFieldValueChanged> DefaultVM = Assignment.ViewModelClass.LoadSynchronous()->GetDefaultObject();
 		const UE::FieldNotification::IClassDescriptor& ClassDescriptor = DefaultVM->GetFieldNotificationDescriptor();
-		ClassDescriptor.ForEachField(ViewModelClass, [&FieldNotifySupportedNames](UE::FieldNotification::FFieldId FieldId)
+		ClassDescriptor.ForEachField(Assignment.ViewModelClass.LoadSynchronous(), [&FieldNotifySupportedNames](UE::FieldNotification::FFieldId FieldId)
 		{
 			FieldNotifySupportedNames.Add(FieldId.GetName());
 			return true;
@@ -73,7 +71,7 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 
 	if (InspectorType == EMDViewModelFieldInspectorType::Properties || InspectorType == EMDViewModelFieldInspectorType::Events)
 	{
-		for (TFieldIterator<const FProperty> It(ViewModelClass); It; ++It)
+		for (TFieldIterator<const FProperty> It(Assignment.ViewModelClass.LoadSynchronous()); It; ++It)
 		{
 			if (const FProperty* Prop = *It)
 			{
@@ -85,15 +83,18 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 				const bool bIsFieldNotify = FieldNotifySupportedNames.Contains(Prop->GetFName());
 				if (InspectorType == EMDViewModelFieldInspectorType::Properties && Prop->HasAnyPropertyFlags(CPF_BlueprintVisible))
 				{
-					void* ValuePtr = bIsDebugging ? Prop->ContainerPtrToValuePtr<void>(DebugViewModel.Get()) : nullptr;
+					void* ValuePtr = DebugViewModel.IsValid() ? Prop->ContainerPtrToValuePtr<void>(DebugViewModel.Get()) : nullptr;
 					TSharedPtr<FMDViewModelFieldDebugLineItem>& Item = PropertyTreeItems.FindOrAdd(Prop);
 					if (!Item.IsValid())
 					{
-						Item = MakeShared<FMDViewModelFieldDebugLineItem>(Prop, ValuePtr, Prop->GetDisplayNameText(), Prop->GetToolTipText(), DebugViewModel, BlueprintEditorPtr, bIsFieldNotify, ViewModelClass, ViewModelName);
+						Item = MakeShared<FMDViewModelFieldDebugLineItem>(BlueprintEditorPtr, Assignment, Prop, ValuePtr, bIsFieldNotify);
+						Item->SetDisplayText(Prop->GetDisplayNameText(), Prop->GetToolTipText());
+						Item->UpdateDebugging(bIsDebugging, DebugViewModel);
 					}
 					else
 					{
-						Item->UpdateViewModel(ViewModelName, ViewModelClass);
+						Item->UpdateViewModel(Assignment);
+						Item->UpdateDebugging(bIsDebugging, DebugViewModel);
 						Item->UpdateValuePtr(ValuePtr);
 					}
 
@@ -106,13 +107,14 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 						TSharedPtr<FMDViewModelEventDebugLineItem>& Item = EventTreeItems.FindOrAdd(DelegateProp);
 						if (!Item.IsValid())
 						{
-							Item = MakeShared<FMDViewModelEventDebugLineItem>(DelegateProp, DebugViewModel, BlueprintEditorPtr, false, ViewModelClass, ViewModelName);
+							Item = MakeShared<FMDViewModelEventDebugLineItem>(BlueprintEditorPtr, Assignment, DelegateProp);
 						}
 						else
 						{
-							Item->UpdateViewModel(ViewModelName, ViewModelClass);
+							Item->UpdateViewModel(Assignment);
 						}
 
+						Item->UpdateDebugging(bIsDebugging, DebugViewModel);
 						AddTreeItemUnique(Item);
 					}
 				}
@@ -122,7 +124,7 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 
 	if (InspectorType != EMDViewModelFieldInspectorType::Events)
 	{
-		for (TFieldIterator<UFunction> It(ViewModelClass); It; ++It)
+		for (TFieldIterator<UFunction> It(Assignment.ViewModelClass.LoadSynchronous()); It; ++It)
 		{
 			if (const UFunction* Func = *It)
 			{
@@ -146,14 +148,15 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 					TSharedPtr<FMDViewModelFunctionDebugLineItem>& Item = FunctionTreeItems.FindOrAdd(Func);
 					if (!Item.IsValid())
 					{
-						Item = MakeShared<FMDViewModelFunctionDebugLineItem>(Func, Func->GetDisplayNameText(), Func->GetToolTipText(), DebugViewModel, BlueprintEditorPtr, DragAndDropCreatorFunc, bIsFieldNotify, ViewModelClass, ViewModelName);
+						Item = MakeShared<FMDViewModelFunctionDebugLineItem>(BlueprintEditorPtr, Assignment, Func, DragAndDropCreatorFunc, bIsFieldNotify);
+						Item->SetDisplayText(Func->GetDisplayNameText(), Func->GetToolTipText());
 					}
 					else
 					{
-						Item->UpdateViewModel(ViewModelName, ViewModelClass);
+						Item->UpdateViewModel(Assignment);
 					}
 
-					Item->UpdateIsDebugging(bIsDebugging);
+					Item->UpdateDebugging(bIsDebugging, DebugViewModel);
 					AddTreeItemUnique(Item);
 				}
 			}

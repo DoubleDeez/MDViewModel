@@ -1,15 +1,20 @@
 #include "ViewModelTab/FieldInspector/MDViewModelChangedDebugLineItem.h"
 
 #include "Util/MDViewModelGraphStatics.h"
-#include "ViewModel/MDViewModelBase.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 
+FMDViewModelChangedDebugLineItem::FMDViewModelChangedDebugLineItem(const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, const FMDViewModelAssignmentReference& Assignment)
+	: FMDViewModelDebugLineItemBase(BlueprintEditorPtr, Assignment)
+{
+	SetDisplayText(INVTEXT("On View Model Changed"), INVTEXT("Bind to when this view model is changed"));
+}
+
 bool FMDViewModelChangedDebugLineItem::Compare(const FDebugLineItem* BaseOther) const
 {
 	const FMDViewModelChangedDebugLineItem* Other = static_cast<const FMDViewModelChangedDebugLineItem*>(BaseOther);
-	return ViewModelName == Other->ViewModelName && ViewModelClass == Other->ViewModelClass;
+	return GetTypeName() == Other->GetTypeName() && Assignment == Other->Assignment;
 }
 
 TSharedRef<SWidget> FMDViewModelChangedDebugLineItem::GetNameIcon()
@@ -47,7 +52,7 @@ TSharedRef<SWidget> FMDViewModelChangedDebugLineItem::GenerateValueWidget(TShare
 
 FDebugLineItem* FMDViewModelChangedDebugLineItem::Duplicate() const
 {
-	return new FMDViewModelChangedDebugLineItem(BlueprintEditorPtr, ViewModelClass, ViewModelName);
+	return new FMDViewModelChangedDebugLineItem(BlueprintEditorPtr, Assignment);
 }
 
 bool FMDViewModelChangedDebugLineItem::CanCreateNodes() const
@@ -57,12 +62,12 @@ bool FMDViewModelChangedDebugLineItem::CanCreateNodes() const
 
 FReply FMDViewModelChangedDebugLineItem::OnAddOrViewBoundVMChangedFunctionClicked() const
 {
-	FMDViewModelGraphStatics::OnViewModelChangedRequestedForBlueprint(BlueprintPtr.Get(), { ViewModelClass, ViewModelName });
+	FMDViewModelGraphStatics::OnViewModelChangedRequestedForBlueprint(BlueprintPtr.Get(), Assignment);
 	return FReply::Handled();
 }
 
 int32 FMDViewModelChangedDebugLineItem::GetAddOrViewBoundVMChangedFunctionIndex() const
 {
-	return FMDViewModelGraphStatics::DoesBlueprintBindToViewModelChanged(BlueprintPtr.Get(), { ViewModelClass, ViewModelName })
+	return FMDViewModelGraphStatics::DoesBlueprintBindToViewModelChanged(BlueprintPtr.Get(), Assignment)
 		? 0 : 1;
 }

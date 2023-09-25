@@ -10,9 +10,11 @@
 #include "Framework/Application/SlateApplication.h"
 #include "Framework/Commands/GenericCommands.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "HAL/PlatformApplicationMisc.h"
 #include "Nodes/MDVMNode_GetViewModel.h"
 #include "Nodes/MDVMNode_SetViewModel.h"
 #include "Util/MDViewModelEditorAssignment.h"
+#include "Util/MDViewModelFunctionLibrary.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
 #include "ViewModelTab/MDViewModelEditorCommands.h"
@@ -20,6 +22,7 @@
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SGridPanel.h"
 #include "Widgets/Layout/SSpacer.h"
 #include "Widgets/Text/STextBlock.h"
 
@@ -209,21 +212,22 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<
 
 	BackgroundBrush = static_cast<FSlateBrush>(FSlateColorBrush(FLinearColor::Transparent));
 
-	ButtonStyle = FAppStyle::Get().GetWidgetStyle<FButtonStyle>("FlatButton");
-	ButtonStyle.NormalPadding = FMargin(2.f);
-	ButtonStyle.PressedPadding = FMargin(2.f);
+	const FComboButtonStyle& ComboButtonStyle = FCoreStyle::Get().GetWidgetStyle<FComboButtonStyle>(TEXT("SegmentedCombo.Right"));
+	ButtonStyle = ComboButtonStyle.ButtonStyle;
+	ButtonStyle.Normal = BackgroundBrush;
 
 	const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(Assignment->Assignment.ProviderTag);
 	const bool bIsViewModelClassValid = Item->Assignment.ViewModelClass != nullptr;
 
-	const FText ViewModelToolTip = [&]()
+	const FText ViewModelClassName = bIsViewModelClassValid ? Item->Assignment.ViewModelClass->GetDisplayNameText() : INVTEXT("NULL");
+	const FText ViewModelClassToolTip = [&]()
 	{
 		if (bIsViewModelClassValid)
 		{
 			TArray<TSubclassOf<UObject>> SupportedContextObjects;
 			Item->Assignment.ViewModelClass.GetDefaultObject()->GetStoredContextObjectTypes(Assignment->Data.ViewModelSettings, GetBlueprint(), SupportedContextObjects);
 
-			FText VMToolTip = Item->Assignment.ViewModelClass->GetToolTipText();
+			FText VMToolTip = FText::Format(INVTEXT("{0}\r\n{1}"), ViewModelClassName, Item->Assignment.ViewModelClass->GetToolTipText());
 
 			if (!SupportedContextObjects.IsEmpty())
 			{
@@ -244,81 +248,114 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<
 	const FText SuperDisplayName = (Assignment->SuperAssignmentOwner != nullptr) ? Assignment->SuperAssignmentOwner->GetDisplayNameText() : INVTEXT("NULL");
 	const FText SuperToolTip = FText::Format(INVTEXT("This viewmodel is assigned in a parent blueprint [{0}] therefore it cannot be edited."), SuperDisplayName);
 
+	const FText ProviderName = IsValid(Provider) ? Provider->GetDisplayName() : INVTEXT("Invalid Provider");
+	const FText ProviderToolTip = FText::Format(INVTEXT("{0}\r\n{1}"), ProviderName, IsValid(Provider) ? Provider->GetDescription(Item->Data.ProviderSettings) : INVTEXT("The selected provider is not valid, it may have been deleted or is in an unloaded module."));
+
 	STableRow<TSharedPtr<FMDViewModelEditorAssignment>>::Construct(
 		STableRow<TSharedPtr<FMDViewModelEditorAssignment>>::FArguments()
 		.Padding(0.0f)
 		.Content()
 		[
-			SNew(SBorder)
-			.Padding(5.f)
-			.BorderImage(&BackgroundBrush)
+			SNew(SHorizontalBox)
+			+SHorizontalBox::Slot()
+			.FillWidth(1.f)
 			[
-				SNew(SVerticalBox)
-				+SVerticalBox::Slot()
+				SNew(SBorder)
+				.Padding(5.f)
+				.BorderImage(&BackgroundBrush)
 				[
 					SNew(SHorizontalBox)
 					+SHorizontalBox::Slot()
-					.FillWidth(1.f)
+					.AutoWidth()
 					.VAlign(VAlign_Center)
+					.Padding(0, 0, 4.f, 0)
 					[
-						SNew(STextBlock)
-						.Text(bIsViewModelClassValid ? Item->Assignment.ViewModelClass->GetDisplayNameText() : INVTEXT("NULL"))
-						.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
-						.ToolTipText(ViewModelToolTip)
+						SNew(SImage)
+						.Image(FCoreStyle::Get().GetBrush(TEXT("VerticalBoxDragIndicator")))
+						.ToolTipText(INVTEXT("Drag this onto a blueprint graph to create a Get or Set View Model node.\r\nHold Ctlr or Alt while dragging to automatically select Get or Set respectively."))
 					]
 					+SHorizontalBox::Slot()
-					.AutoWidth()
-					.Padding(4, 0)
+					.FillWidth(1.f)
+					.VAlign(VAlign_Fill)
 					[
-						SNew(STextBlock)
-						.Visibility(this, &SMDViewModelListItem::GetSourceTextVisibility)
-						.Text(INVTEXT("Super"))
-						.ToolTipText(SuperToolTip)
-					]
-					+SHorizontalBox::Slot()
-					.AutoWidth()
-					[
-						SNew(SButton)
-						.Cursor(EMouseCursor::Default)
-						.ButtonStyle(&ButtonStyle)
-						.ContentPadding(2.f)
-						.OnClicked(this, &SMDViewModelListItem::OnContextButtonClicked)
-						.ToolTipText(INVTEXT("Open the context menu for the view model assignment"))
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Center)
+						SNew(SVerticalBox)
+						+SVerticalBox::Slot()
 						[
-							SNew(SImage)
-							.Image(FAppStyle::Get().GetBrush(TEXT("Menu.SubMenuIndicator")))
+							SNew(SHorizontalBox)
+							.Clipping(EWidgetClipping::ClipToBounds)
+							+SHorizontalBox::Slot()
+							.AutoWidth()
+							.VAlign(VAlign_Center)
+							.Padding(0, 0, 4.f, 0)
+							[
+								SNew(SImage)
+								.Visibility(this, &SMDViewModelListItem::GetSourceTextVisibility)
+								.Image(FCoreStyle::Get().GetBrush(TEXT("Icons.ConstraintManager.ParentHierarchy")))
+								.ToolTipText(SuperToolTip)
+							]
+							+SHorizontalBox::Slot()
+							.FillWidth(1.f)
+							.VAlign(VAlign_Center)
+							.Padding(0, 0, 4.f, 0)
+							[
+								SNew(STextBlock)
+								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+								.Text(ViewModelClassName)
+								.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
+								.ToolTipText(ViewModelClassToolTip)
+							]
+							+SHorizontalBox::Slot()
+							.AutoWidth()
+							.VAlign(VAlign_Center)
+							[
+								SNew(SImage)
+								.Image(this, &SMDViewModelListItem::GetViewModelInstanceIcon)
+								.ToolTipText(this, &SMDViewModelListItem::GetDebugViewModelTooltip)
+								.Visibility(this, &SMDViewModelListItem::GetDebugVisibility)
+							]
+						]
+						+SVerticalBox::Slot()
+						[
+							SNew(SHorizontalBox)
+							.Clipping(EWidgetClipping::ClipToBounds)
+							+SHorizontalBox::Slot()
+							.FillWidth(1.f)
+							.VAlign(VAlign_Bottom)
+							.Padding(0, 0, 4.f, 0)
+							[
+								SNew(STextBlock)
+								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+								.Text(FText::FromName(Item->Assignment.ViewModelName))
+								.ToolTipText(FText::Format(INVTEXT("{0}\r\nThe name of this view model assignment. It must be unique for all view models of the same class on this widget."), FText::FromName(Item->Assignment.ViewModelName)))
+							]
+							+SHorizontalBox::Slot()
+							.AutoWidth()
+							.VAlign(VAlign_Bottom)
+							[
+								SNew(STextBlock)
+								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+								.Font(IDetailLayoutBuilder::GetDetailFontItalic())
+								.Text(ProviderName)
+								.ToolTipText(ProviderToolTip)
+							]
 						]
 					]
 				]
-				+SVerticalBox::Slot()
+			]
+			+SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Fill)
+			[
+				SNew(SButton)
+				.Cursor(EMouseCursor::Default)
+				.ButtonStyle(&ButtonStyle)
+				.OnClicked(this, &SMDViewModelListItem::OnContextButtonClicked)
+				.ToolTipText(INVTEXT("Open the context menu for the view model assignment"))
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
 				[
-					SNew(SHorizontalBox)
-					+SHorizontalBox::Slot()
-					.AutoWidth()
-					.VAlign(VAlign_Center)
-					[
-						SNew(STextBlock)
-						.Text(FText::FromName(Item->Assignment.ViewModelName))
-						.ToolTipText(INVTEXT("The name of this view model assignment. It must be unique for all view models of the same class on this widget."))
-					]
-					+SHorizontalBox::Slot()
-					.FillWidth(1.f)
-					.VAlign(VAlign_Center)
-					[
-						SNew(SSpacer)
-						.Size(FVector2D(10.f, 1.f))
-					]
-					+SHorizontalBox::Slot()
-					.AutoWidth()
-					.VAlign(VAlign_Center)
-					[
-						SNew(STextBlock)
-						.Font(IDetailLayoutBuilder::GetDetailFontItalic())
-						.Text(IsValid(Provider) ? Provider->GetDisplayName() : INVTEXT("Invalid Provider"))
-						.ToolTipText(IsValid(Provider) ? Provider->GetDescription(Item->Data.ProviderSettings) : INVTEXT("The selected provider is not valid, it may have been deleted or is in an unloaded module."))
-					]
+					SNew(SImage)
+					.Image(&ComboButtonStyle.DownArrowImage)
 				]
 			]
 		], OwningTable);
@@ -388,6 +425,26 @@ void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder
 	}
 	ContextMenuBuilder.EndSection();
 
+	const UBlueprint* Blueprint = BlueprintEditor.IsValid() ? BlueprintEditor.Pin()->GetBlueprintObj() : nullptr;
+	const bool bIsDebugging = IsValid(Blueprint) && IsValid(Blueprint->GetObjectBeingDebugged());
+
+	if (bIsDebugging)
+	{
+		ContextMenuBuilder.BeginSection(TEXT("ViewModelDebugger"), INVTEXT("View Model Debugger"));
+		{
+			ContextMenuBuilder.AddMenuEntry(
+				INVTEXT("Copy View Model Instance Name"),
+				INVTEXT("Copy the name of the View Model UObject that is current set."),
+				FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("GenericCommands.Copy")),
+				FUIAction(
+					FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnCopyViewModelNameClicked),
+					FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanCopyViewModelName)
+				)
+			);
+		}
+		ContextMenuBuilder.EndSection();
+	}
+
 	ContextMenuBuilder.BeginSection(TEXT("ViewModelTools"), INVTEXT("View Model Tools"));
 	{
 		ContextMenuBuilder.AddMenuEntry(
@@ -422,6 +479,43 @@ EVisibility SMDViewModelListItem::GetSourceTextVisibility() const
 	}
 
 	return EVisibility::Collapsed;
+}
+
+EVisibility SMDViewModelListItem::GetDebugVisibility() const
+{
+	const UBlueprint* Blueprint = BlueprintEditor.IsValid() ? BlueprintEditor.Pin()->GetBlueprintObj() : nullptr;
+	const bool bIsDebugging = IsValid(Blueprint) && IsValid(Blueprint->GetObjectBeingDebugged());
+
+	return bIsDebugging ? EVisibility::Visible : EVisibility::Collapsed;
+}
+
+FText SMDViewModelListItem::GetDebugViewModelTooltip() const
+{
+	const UBlueprint* Blueprint = BlueprintEditor.IsValid() ? BlueprintEditor.Pin()->GetBlueprintObj() : nullptr;
+	UObject* ObjectBeingDebugged = IsValid(Blueprint) ? Blueprint->GetObjectBeingDebugged() : nullptr;
+
+	bool bIsValid = false;
+	const UMDViewModelBase* DebugViewModel = UMDViewModelFunctionLibrary::BP_GetViewModel(ObjectBeingDebugged, FMDViewModelAssignmentReference(Assignment->Assignment), bIsValid);
+
+	if (!bIsValid)
+	{
+		return INVTEXT("This view model has not been set.");
+	}
+	else
+	{
+		const FText ViewModelName = FText::FromString(GetNameSafe(DebugViewModel));
+		return FText::Format(INVTEXT("{0}\r\nThis is the name of the View Model UObject currently set for this assignment on the instance of this blueprint selected in the debugger."), ViewModelName);
+	}
+}
+
+const FSlateBrush* SMDViewModelListItem::GetViewModelInstanceIcon() const
+{
+	const UBlueprint* Blueprint = BlueprintEditor.IsValid() ? BlueprintEditor.Pin()->GetBlueprintObj() : nullptr;
+	UObject* ObjectBeingDebugged = IsValid(Blueprint) ? Blueprint->GetObjectBeingDebugged() : nullptr;
+
+	bool bIsValid = false;
+	UMDViewModelFunctionLibrary::BP_GetViewModel(ObjectBeingDebugged, FMDViewModelAssignmentReference(Assignment->Assignment), bIsValid);
+	return bIsValid ? FAppStyle::Get().GetBrush(TEXT("Icons.SuccessWithColor")) : FAppStyle::Get().GetBrush(TEXT("Icons.WarningWithColor"));
 }
 
 FReply SMDViewModelListItem::OnContextButtonClicked()
@@ -470,6 +564,26 @@ void SMDViewModelListItem::OnOpenOwnerAssetClicked() const
 bool SMDViewModelListItem::CanOpenOwnerAsset() const
 {
 	return GEditor != nullptr && Assignment.IsValid() && IsValid(Assignment->SuperAssignmentOwner) && IsValid(Assignment->SuperAssignmentOwner->ClassGeneratedBy);
+}
+
+void SMDViewModelListItem::OnCopyViewModelNameClicked() const
+{
+	const UBlueprint* Blueprint = BlueprintEditor.IsValid() ? BlueprintEditor.Pin()->GetBlueprintObj() : nullptr;
+	UObject* ObjectBeingDebugged = IsValid(Blueprint) ? Blueprint->GetObjectBeingDebugged() : nullptr;
+
+	bool bIsValid = false;
+	const UMDViewModelBase* DebugViewModel = UMDViewModelFunctionLibrary::BP_GetViewModel(ObjectBeingDebugged, FMDViewModelAssignmentReference(Assignment->Assignment), bIsValid);
+	FPlatformApplicationMisc::ClipboardCopy(*GetNameSafe(DebugViewModel));
+}
+
+bool SMDViewModelListItem::CanCopyViewModelName() const
+{
+	const UBlueprint* Blueprint = BlueprintEditor.IsValid() ? BlueprintEditor.Pin()->GetBlueprintObj() : nullptr;
+	UObject* ObjectBeingDebugged = IsValid(Blueprint) ? Blueprint->GetObjectBeingDebugged() : nullptr;
+
+	bool bIsValid = false;
+	UMDViewModelFunctionLibrary::BP_GetViewModel(ObjectBeingDebugged, FMDViewModelAssignmentReference(Assignment->Assignment), bIsValid);
+	return bIsValid;
 }
 
 FString SMDViewModelListItem::GenerateSearchString() const

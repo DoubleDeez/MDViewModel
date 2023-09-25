@@ -6,6 +6,13 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 
+FMDViewModelEventDebugLineItem::FMDViewModelEventDebugLineItem(const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, const FMDViewModelAssignmentReference& Assignment, const FMulticastDelegateProperty* Prop)
+	: FMDViewModelFunctionDebugLineItem(BlueprintEditorPtr, Assignment, Prop->SignatureFunction)
+	, WeakDelegateProp(Prop)
+{
+	SetDisplayText(Prop->GetDisplayNameText(), Prop->GetToolTipText());
+}
+
 TSharedRef<SWidget> FMDViewModelEventDebugLineItem::GenerateValueWidget(TSharedPtr<FString> InSearchString)
 {
 	return SNew(SButton)
@@ -34,7 +41,11 @@ TSharedRef<SWidget> FMDViewModelEventDebugLineItem::GenerateValueWidget(TSharedP
 
 FDebugLineItem* FMDViewModelEventDebugLineItem::Duplicate() const
 {
-	return new FMDViewModelEventDebugLineItem(WeakDelegateProp.Get(), DebugViewModel, BlueprintEditorPtr, bIsFieldNotify, ViewModelClass, ViewModelName);
+	FMDViewModelEventDebugLineItem* Item = new FMDViewModelEventDebugLineItem(BlueprintEditorPtr, Assignment, WeakDelegateProp.Get());
+	Item->SetDisplayText(DisplayName, Description);
+	Item->UpdateDebugging(bIsDebugging, DebugViewModel);
+
+	return Item;
 }
 
 bool FMDViewModelEventDebugLineItem::CanCreateNodes() const
@@ -48,7 +59,7 @@ FString FMDViewModelEventDebugLineItem::GenerateSearchString() const
 
 	if (WeakDelegateProp.IsValid())
 	{
-		const UMDVMNode_ViewModelEvent* Node = FMDViewModelGraphStatics::FindExistingViewModelEventNode(BlueprintPtr.Get(), WeakDelegateProp->GetFName(), { ViewModelClass, ViewModelName });
+		const UMDVMNode_ViewModelEvent* Node = FMDViewModelGraphStatics::FindExistingViewModelEventNode(BlueprintPtr.Get(), WeakDelegateProp->GetFName(), Assignment);
 		if (IsValid(Node))
 		{
 			Result += Node->GetFindReferenceSearchString();
@@ -67,7 +78,7 @@ FReply FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 {
 	if (WeakDelegateProp.IsValid())
 	{
-		FMDViewModelGraphStatics::OnViewModelEventRequestedForBlueprint(BlueprintPtr.Get(), WeakDelegateProp->GetFName(), { ViewModelClass, ViewModelName });
+		FMDViewModelGraphStatics::OnViewModelEventRequestedForBlueprint(BlueprintPtr.Get(), WeakDelegateProp->GetFName(), Assignment);
 	}
 
 	return FReply::Handled();
@@ -75,6 +86,6 @@ FReply FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 
 int32 FMDViewModelEventDebugLineItem::GetAddOrViewBoundFunctionIndex() const
 {
-	return (!WeakDelegateProp.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelEvent(BlueprintPtr.Get(), WeakDelegateProp->GetFName(), { ViewModelClass, ViewModelName }))
+	return (!WeakDelegateProp.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelEvent(BlueprintPtr.Get(), WeakDelegateProp->GetFName(), Assignment))
 		? 0 : 1;
 }

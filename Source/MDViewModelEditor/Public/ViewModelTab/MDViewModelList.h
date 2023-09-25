@@ -48,6 +48,7 @@ private:
 	bool IsSelectedAssignmentValidAndNotPIE() const;
 
 	void EditSelectedAssignment();
+	bool CanEditSelectedAssignment() const;
 	void CopySelectedAssignment();
 	void PasteAssignment();
 	bool CanPasteAssignment() const;

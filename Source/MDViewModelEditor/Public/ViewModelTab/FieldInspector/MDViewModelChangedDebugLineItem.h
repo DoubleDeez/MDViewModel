@@ -5,10 +5,7 @@
 class FMDViewModelChangedDebugLineItem : public FMDViewModelDebugLineItemBase
 {
 public:
-	FMDViewModelChangedDebugLineItem(const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
-		: FMDViewModelDebugLineItemBase(INVTEXT("On View Model Changed"), INVTEXT("Bind to when this view model is changed"), nullptr, BlueprintEditorPtr, false, ViewModelClass, ViewModelName)
-	{
-	}
+	FMDViewModelChangedDebugLineItem(const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, const FMDViewModelAssignmentReference& Assignment);
 
 	virtual bool Compare(const FDebugLineItem* BaseOther) const override;
 
@@ -24,6 +21,8 @@ protected:
 	virtual FDebugLineItem* Duplicate() const override;
 
 	virtual bool CanCreateNodes() const override;
+
+	virtual FName GetTypeName() const override { return TEXT("Changed"); }
 
 private:
 	FReply OnAddOrViewBoundVMChangedFunctionClicked() const;

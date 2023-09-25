@@ -8,6 +8,7 @@ The MDViewModel plugin is an Unreal-ified implementation of the [Model-View-View
 - Generates Blueprint events automatically for binding view model data to Blueprint logic, facilitating event-based updates to your Views
 - Custom editor extensions to improve view model workflows and debugging
 - FieldNotify properties and functions on view models are automatically exposed as Blueprint Events
+- Integrates with the Blueprint Editor Debugger to display the values of properties on view models that are set on the instance being debugged
 
 ## Compatibility
 
@@ -37,6 +38,5 @@ Check out the [Getting Started page](https://github.com/DoubleDeez/MDViewModel/w
 ## Future Features
 
 - Blueprintable View Models
-- View Model Editor blueprint debugger stablility improvements
 
 https://github.com/DoubleDeez/MDViewModel/assets/1893819/59474726-c86b-42c8-8fce-4a7af77a8931

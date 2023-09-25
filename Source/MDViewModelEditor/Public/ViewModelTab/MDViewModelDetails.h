@@ -2,6 +2,7 @@
 
 #include "Styling/SlateBrush.h"
 #include "Templates/SubclassOf.h"
+#include "Util/MDViewModelAssignmentReference.h"
 #include "Widgets/SCompoundWidget.h"
 
 class FBlueprintEditor;
@@ -15,19 +16,13 @@ class MDVIEWMODELEDITOR_API SMDViewModelDetails : public SCompoundWidget
 {
 public:
 	SLATE_BEGIN_ARGS(SMDViewModelDetails)
-		: _DebugViewModel(nullptr)
-		{
-		}
-
-		SLATE_ARGUMENT(TSubclassOf<UMDViewModelBase>, ViewModelClass)
-		SLATE_ARGUMENT(FName, ViewModelName)
-		SLATE_ARGUMENT(UMDViewModelBase*, DebugViewModel)
+		{}
 
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs, const TSharedPtr<FBlueprintEditor>& BlueprintEditor);
 
-	void UpdateViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, UMDViewModelBase* DebugViewModel, const FName& ViewModelName);
+	void UpdateViewModel(const FMDViewModelAssignmentReference& Assignment, bool bIsDebugging, UMDViewModelBase* DebugViewModel);
 
 private:
 	TSharedPtr<SMDViewModelFieldInspector> PropertyInspector;

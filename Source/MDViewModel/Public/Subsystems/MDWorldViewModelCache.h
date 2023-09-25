@@ -18,7 +18,6 @@ class MDVIEWMODEL_API UMDWorldViewModelCache : public UWorldSubsystem, public IM
 public:
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
 protected:

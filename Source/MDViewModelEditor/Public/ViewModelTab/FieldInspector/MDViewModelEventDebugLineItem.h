@@ -6,10 +6,21 @@
 class FMDViewModelEventDebugLineItem : public FMDViewModelFunctionDebugLineItem
 {
 public:
-	FMDViewModelEventDebugLineItem(const FMulticastDelegateProperty* Prop, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, bool bIsFieldNotify = false, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
-		: FMDViewModelFunctionDebugLineItem(Prop->SignatureFunction, Prop->GetDisplayNameText(), Prop->GetToolTipText(), DebugViewModel, BlueprintEditorPtr, nullptr, bIsFieldNotify, ViewModelClass, ViewModelName)
-		, WeakDelegateProp(Prop)
+	FMDViewModelEventDebugLineItem(const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, const FMDViewModelAssignmentReference& Assignment, const FMulticastDelegateProperty* Prop);
+
+	virtual bool Compare(const FDebugLineItem* BaseOther) const override
 	{
+		const FMDViewModelEventDebugLineItem* Other = static_cast<const FMDViewModelEventDebugLineItem*>(BaseOther);
+		return FMDViewModelFunctionDebugLineItem::Compare(BaseOther) && WeakDelegateProp.Get() == Other->WeakDelegateProp.Get();
+	}
+
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+	virtual uint32 GetHash() const override
+#else
+	virtual uint32 GetHash() override
+#endif
+	{
+		return HashCombine(GetTypeHash(WeakDelegateProp), FMDViewModelFunctionDebugLineItem::GetHash());
 	}
 
 	virtual TSharedRef<SWidget> GenerateValueWidget(TSharedPtr<FString> InSearchString) override;
@@ -22,6 +33,10 @@ protected:
 	virtual FString GenerateSearchString() const override;
 
 	virtual FFieldVariant GetFieldForDefinitionNavigation() const override;
+
+	virtual FName GetTypeName() const override { return TEXT("Event"); }
+
+	virtual bool CanDisplayReturnValue() const override { return false; }
 
 private:
 	FReply OnAddOrViewBoundFunctionClicked() const;

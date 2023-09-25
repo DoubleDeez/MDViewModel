@@ -8,17 +8,13 @@ using FMDVMDragAndDropCreatorFunc = TDelegate<TSharedRef<FMDVMInspectorDragAndDr
 class FMDViewModelFunctionDebugLineItem : public FMDViewModelDebugLineItemBase
 {
 public:
-	FMDViewModelFunctionDebugLineItem(const UFunction* Function, const FText& DisplayName, const FText& Description, TWeakObjectPtr<UMDViewModelBase> DebugViewModel, const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, FMDVMDragAndDropCreatorFunc DragAndDropCreator = nullptr, bool bIsFieldNotify = false, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FName& ViewModelName = NAME_None)
-		: FMDViewModelDebugLineItemBase(DisplayName, Description, DebugViewModel, BlueprintEditorPtr, bIsFieldNotify, ViewModelClass, ViewModelName)
-		, FunctionPtr(Function)
-		, DragAndDropCreator(DragAndDropCreator)
-	{
-	}
+	FMDViewModelFunctionDebugLineItem(const TWeakPtr<FBlueprintEditor>& BlueprintEditorPtr, const FMDViewModelAssignmentReference& Assignment, const UFunction* Function, const FMDVMDragAndDropCreatorFunc& DragAndDropCreator = {}, bool bIsFieldNotify = false);
+	virtual ~FMDViewModelFunctionDebugLineItem() override;
 
 	virtual bool Compare(const FDebugLineItem* BaseOther) const override
 	{
 		const FMDViewModelFunctionDebugLineItem* Other = static_cast<const FMDViewModelFunctionDebugLineItem*>(BaseOther);
-		return FunctionPtr == Other->FunctionPtr;
+		return FMDViewModelDebugLineItemBase::Compare(BaseOther) && FunctionPtr == Other->FunctionPtr;
 	}
 
 #if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
@@ -27,7 +23,7 @@ public:
 	virtual uint32 GetHash() override
 #endif
 	{
-		return GetTypeHash(FunctionPtr);
+		return HashCombine(GetTypeHash(FunctionPtr), FMDViewModelDebugLineItemBase::GetHash());
 	}
 
 	virtual bool CanHaveChildren() override { return true; }
@@ -39,8 +35,6 @@ public:
 	virtual TSharedRef<SWidget> GenerateValueWidget(TSharedPtr<FString> InSearchString) override;
 
 	virtual TSharedRef<FMDVMInspectorDragAndDropActionBase> CreateDragAndDropAction() const override;
-
-	void UpdateIsDebugging(bool InIsDebugging);
 
 	const UFunction* GetFunction() const { return FunctionPtr.Get(); }
 
@@ -55,13 +49,26 @@ protected:
 
 	virtual FFieldVariant GetFieldForDefinitionNavigation() const override;
 
+	virtual FName GetTypeName() const override { return TEXT("Function"); }
+
+	virtual FText GetDisplayValue() const;
+
+	virtual bool CanDisplayReturnValue() const;
+
+	virtual void OnDebuggingChanged() override;
+
 private:
 	int32 GetShouldDisplayFieldNotifyIndex() const;
 	FReply OnAddOrViewBoundFieldNotifyFunctionClicked() const;
 	int32 GetAddOrViewBoundFieldNotifyFunctionIndex() const;
 
+	void TryUpdateGetterReturnValue() const;
+	void CleanUpGetterReturnValue() const;
+
 	TWeakObjectPtr<const UFunction> FunctionPtr;
 	FMDVMDragAndDropCreatorFunc DragAndDropCreator;
-	bool bIsDebugging = false;
+
+	bool bIsFieldNotify = false;
+	mutable void* GetterReturnValuePtr = nullptr;
 };
 

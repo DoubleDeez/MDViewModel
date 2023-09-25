@@ -39,7 +39,7 @@ public:
 
 	void Construct(const FArguments& InArgs, const TSharedPtr<FBlueprintEditor>& BlueprintEditor);
 
-	void SetReferences(TSubclassOf<UMDViewModelBase> InViewModelClass, UMDViewModelBase* InDebugViewModel, const FName& InViewModelName);
+	void SetReferences(const FMDViewModelAssignmentReference& InAssignment, bool InIsDebugging, UMDViewModelBase* InDebugViewModel);
 
 	void RefreshList();
 
@@ -58,11 +58,10 @@ private:
 	TMap<const FMulticastDelegateProperty*, TSharedPtr<FMDViewModelEventDebugLineItem>> EventTreeItems;
 	TSharedPtr<FMDViewModelChangedDebugLineItem> VMChangedItem;
 
-	TSubclassOf<UMDViewModelBase> ViewModelClass;
+	FMDViewModelAssignmentReference Assignment;
 	TWeakObjectPtr<UMDViewModelBase> DebugViewModel;
 	bool bIsDebugging = false;
 	TWeakPtr<FBlueprintEditor> BlueprintEditorPtr;
-	FName ViewModelName = NAME_None;
 
 	EMDViewModelFieldInspectorType InspectorType = EMDViewModelFieldInspectorType::None;
 };

@@ -1,5 +1,7 @@
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMDragAndDropWrapperButton.h"
 
+#include "Editor.h"
+#include "Editor/EditorEngine.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropActionBase.h"
 #include "ViewModelTab/FieldInspector/MDViewModelDebugLineItemBase.h"
 
@@ -28,13 +30,13 @@ void SMDVMDragAndDropWrapperButton::Construct(const FArguments& InArgs, TSharedR
 
 TOptional<EMouseCursor::Type> SMDVMDragAndDropWrapperButton::GetCursor() const
 {
-	return (bCanDrag.Get(false) && LineItem.IsValid()) ? EMouseCursor::GrabHand : SCompoundWidget::GetCursor();
+	return CanDrag() ? EMouseCursor::GrabHand : SCompoundWidget::GetCursor();
 }
 
 FReply SMDVMDragAndDropWrapperButton::OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
 	FReply Reply = SButton::OnMouseButtonDown(MyGeometry, MouseEvent);
-	if (bCanDrag.Get(false) && LineItem.IsValid() && MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+	if (CanDrag() && MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
 	{
 		Reply = Reply.DetectDrag(AsShared(), EKeys::LeftMouseButton);
 	}
@@ -44,10 +46,15 @@ FReply SMDVMDragAndDropWrapperButton::OnMouseButtonDown(const FGeometry& MyGeome
 
 FReply SMDVMDragAndDropWrapperButton::OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	if (bCanDrag.Get(false) && LineItem.IsValid())
+	if (CanDrag() && LineItem.IsValid())
 	{
 		return FReply::Handled().BeginDragDrop(LineItem->CreateDragAndDropAction());
 	}
 
 	return FReply::Unhandled();
+}
+
+bool SMDVMDragAndDropWrapperButton::CanDrag() const
+{
+	return !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr && bCanDrag.Get(false);
 }
