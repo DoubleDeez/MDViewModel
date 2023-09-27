@@ -174,6 +174,7 @@ UMDViewModelBase* UMDViewModelProvider_Cached::SetViewModel(IMDViewModelRuntimeI
 		);
 #endif
 		IMDViewModelCacheInterface* ViewModelCache = ResolveAndBindViewModelCache(Object, Assignment, Data, *Settings);
+		ViewModelCache = RedirectCache(Object.ResolveWorld(), ViewModelCache, Assignment.ViewModelClass, Data.ViewModelSettings);
 		return SetViewModelFromCache(Object.ResolveWorld(), ViewModelCache, Object, Assignment, Data);
 	}
 
@@ -487,6 +488,7 @@ UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel_Inter
 {
 	if (IMDViewModelCacheInterface* ViewModelCache = ResolveObjectCache(CacheContextObject, WorldContextObject))
 	{
+		ViewModelCache = RedirectCache(WorldContextObject, ViewModelCache, ViewModelClass, ViewModelSettings);
 		return ViewModelCache->GetOrCreateViewModel(WorldContextObject, ViewModelName, ViewModelClass, ViewModelSettings);
 	}
 
@@ -497,6 +499,7 @@ UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel_Internal(cons
 {
 	if (const IMDViewModelCacheInterface* ViewModelCache = ResolveObjectCache(CacheContextObject, WorldContextObject))
 	{
+		ViewModelCache = RedirectCache(WorldContextObject, const_cast<IMDViewModelCacheInterface*>(ViewModelCache), ViewModelClass, {});
 		return ViewModelCache->GetViewModel(ViewModelName, ViewModelClass);
 	}
 
@@ -692,6 +695,23 @@ void UMDViewModelProvider_Cached::OnViewModelCacheShuttingDown(TWeakInterfacePtr
 
 		BoundCaches.Remove(CachePtr);
 	}
+}
+
+IMDViewModelCacheInterface* UMDViewModelProvider_Cached::RedirectCache(const UObject* WorldContextObject, IMDViewModelCacheInterface* Cache, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings) const
+{
+	if (!IsValid(ViewModelClass) || Cache == nullptr)
+	{
+		return Cache;
+	}
+
+	UObject* CacheContextObject = Cache->GetViewModelOwner();
+	UObject* RedirectedCacheContextObject = ViewModelClass.GetDefaultObject()->CDORedirectCachedContextObject(WorldContextObject, CacheContextObject, ViewModelSettings);
+	if (!IsValid(RedirectedCacheContextObject) || RedirectedCacheContextObject == CacheContextObject)
+	{
+		return Cache;
+	}
+
+	return ResolveObjectCache(RedirectedCacheContextObject, WorldContextObject);
 }
 
 IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveGlobalCache(const UGameInstance* GameInstance) const

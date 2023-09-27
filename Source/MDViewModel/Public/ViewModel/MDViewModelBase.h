@@ -82,6 +82,12 @@ public:
 	virtual void OnSetOnObject(UObject* Object) {}
 	virtual void OnUnsetFromObject(UObject* Object) {}
 
+	// Called on the CDO. Override to redirect the cache context object from the one from the selected Provider to one appropriate for your view model.
+	// This can also affect the view model instance's context object. Can be used to move the responsibility of selecting a cache context from the editor to the view model implementer.
+	// Any cache binding for the original context will still take place so the view models are updated appropriately (eg. Binding to the Owning Player but redirecting to a component on the player will still update the view model when the Owning Player changes)
+	// ViewModelSettings are not guaranteed to be valid, it will depend on the source of the request for the cached view model
+	virtual UObject* CDORedirectCachedContextObject(const UObject* WorldContextObject, UObject* ProvidedCacheContextObject, const FInstancedStruct& ViewModelSettings) const { return ProvidedCacheContextObject; }
+
 	// Listen for changes to the specified field
 	UFUNCTION(BlueprintCallable, Category = "FieldNotify", meta = (DisplayName = "Add Field Value Changed Delegate", ScriptName = "AddFieldValueChangedDelegate"))
 	void K2_AddFieldValueChangedDelegate(FFieldNotificationId FieldId, FFieldValueChangedDynamicDelegate Delegate);

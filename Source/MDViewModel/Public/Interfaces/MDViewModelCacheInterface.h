@@ -29,12 +29,12 @@ public:
 
 	bool IsShutdown() const { return bIsShutdown; }
 
+	virtual UObject* GetViewModelOwner() const = 0;
+
 	FSimpleMulticastDelegate OnShuttingDown;
 
 protected:
 	void BroadcastShutdown();
-
-	virtual UObject* GetViewModelOwner() const = 0;
 
 	virtual TMap<FMDViewModelInstanceKey, TObjectPtr<UMDViewModelBase>>& GetViewModelCache() = 0;
 

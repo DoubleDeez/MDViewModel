@@ -272,7 +272,7 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<
 					[
 						SNew(SImage)
 						.Image(FCoreStyle::Get().GetBrush(TEXT("VerticalBoxDragIndicator")))
-						.ToolTipText(INVTEXT("Drag this onto a blueprint graph to create a Get or Set View Model node.\r\nHold Ctlr or Alt while dragging to automatically select Get or Set respectively."))
+						.ToolTipText(INVTEXT("Drag this onto a blueprint graph to create a Get or Set View Model node.\r\nHold Ctrl or Alt while dragging to automatically select Get or Set respectively."))
 					]
 					+SHorizontalBox::Slot()
 					.FillWidth(1.f)

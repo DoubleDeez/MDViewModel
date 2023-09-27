@@ -220,6 +220,8 @@ protected:
 
 	void OnViewModelCacheShuttingDown(TWeakInterfacePtr<IMDViewModelCacheInterface> CachePtr);
 
+	IMDViewModelCacheInterface* RedirectCache(const UObject* WorldContextObject, IMDViewModelCacheInterface* Cache, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings) const;
+
 	IMDViewModelCacheInterface* ResolveGlobalCache(const UGameInstance* GameInstance) const;
 	IMDViewModelCacheInterface* ResolveLocalPlayerCache(const ULocalPlayer* LocalPlayer) const;
 	IMDViewModelCacheInterface* ResolveWorldCache(const UWorld* World) const;
