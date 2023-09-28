@@ -76,10 +76,20 @@ void SMDViewModelEditor::Tick(const FGeometry& AllottedGeometry, const double In
 
 void SMDViewModelEditor::OnSetObjectBeingDebugged(UObject* Object)
 {
+	if (IMDViewModelRuntimeInterface* VMRuntime = MDViewModelUtils::GetViewModelRuntimeInterface(ObjectBeingDebugged.Get()))
+	{
+		VMRuntime->StopListeningForAnyViewModelChanged(this);
+	}
+	
 	ObjectBeingDebugged = Object;
 
 	bIsDebugging = ObjectBeingDebugged.IsValid();
 	SetCanTick(bIsDebugging);
+
+	if (IMDViewModelRuntimeInterface* VMRuntime = MDViewModelUtils::GetViewModelRuntimeInterface(ObjectBeingDebugged.Get()))
+	{
+		VMRuntime->ListenForAnyViewModelChanged(FSimpleDelegate::CreateSP(this, &SMDViewModelEditor::OnViewModelChanged));
+	}
 
 	OnViewModelChanged();
 }

@@ -352,4 +352,6 @@ void IMDViewModelRuntimeInterface::BroadcastViewModelChanged(UMDViewModelBase* O
 			Delegate.ExecuteIfBound(OldViewModel, NewViewModel);
 		}
 	}
+
+	OnAnyViewModelSetDelegates.Broadcast();
 }
