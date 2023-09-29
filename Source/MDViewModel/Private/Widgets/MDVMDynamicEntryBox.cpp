@@ -36,10 +36,11 @@ void UMDVMDynamicEntryBox::ValidateCompiledDefaults(IWidgetCompilerLog& CompileL
 void UMDVMDynamicEntryBox::PopulateItems(const TArray<UMDViewModelBase*>& ViewModels)
 {
 	const int32 NumVMs = ViewModels.Num();
+	const int32 NumEntries = FMath::Max(NumVMs, MinimumEntriesToDisplay);
 	const int32 StartNumItems = GetNumEntries();
 
 	// Remove entries we don't need
-	for (int32 i = StartNumItems - 1; i >= NumVMs; --i)
+	for (int32 i = StartNumItems - 1; i >= NumEntries; --i)
 	{
 		UUserWidget* Widget = GetAllEntries()[i];
 		if (IsValid(Widget))
@@ -50,17 +51,17 @@ void UMDVMDynamicEntryBox::PopulateItems(const TArray<UMDViewModelBase*>& ViewMo
 				bool bIsValid = false;
 				OnEntryRemoved.Broadcast(Widget, UMDViewModelFunctionLibrary::BP_GetViewModel(Widget, ViewModelAssignment, bIsValid));
 			}
-			
+
 			UMDViewModelFunctionLibrary::BP_ClearViewModel(Widget, ViewModelAssignment);
 			RemoveEntry(Widget);
 		}
 	}
 
 	// Populate the entries, creating new ones as needed
-	for (int32 i = 0; i < NumVMs; ++i)
+	for (int32 i = 0; i < NumEntries; ++i)
 	{
 		// CurrentViewModel is only valid during this loop iteration
-		TGuardValue<TWeakObjectPtr<UMDViewModelBase>> CurrentVMGuard(CurrentViewModel, ViewModels[i]);
+		TGuardValue<TWeakObjectPtr<UMDViewModelBase>> CurrentVMGuard(CurrentViewModel, (i < NumVMs) ? ViewModels[i] : nullptr);
 
 		// Reuse an existing widget or create a new one.
 		if (i < StartNumItems)
@@ -74,13 +75,22 @@ void UMDVMDynamicEntryBox::PopulateItems(const TArray<UMDViewModelBase*>& ViewMo
 		}
 	}
 
-	ensureMsgf(GetNumEntries() == NumVMs, TEXT("Failed to populate the list to the exact number of view models."));
+	ensureMsgf(GetNumEntries() == NumEntries, TEXT("Failed to populate the list to the exact number of view models."));
+}
+
+void UMDVMDynamicEntryBox::SynchronizeProperties()
+{
+#if WITH_EDITORONLY_DATA
+	NumDesignerPreviewEntries = FMath::Max(NumDesignerPreviewEntries, MinimumEntriesToDisplay);
+#endif
+
+	Super::SynchronizeProperties();
 }
 
 void UMDVMDynamicEntryBox::AddEntryChild(UUserWidget& ChildWidget)
 {
 	PopulateEntryWidget(&ChildWidget);
-	
+
 	Super::AddEntryChild(ChildWidget);
 }
 

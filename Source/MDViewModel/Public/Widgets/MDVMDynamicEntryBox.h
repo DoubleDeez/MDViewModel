@@ -16,7 +16,7 @@ class MDVIEWMODEL_API UMDVMDynamicEntryBox : public UDynamicEntryBox
 
 public:
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEntryDynamicEvent, UUserWidget*, Widget, UMDViewModelBase*, ViewModel);
-	
+
 	virtual void PostInitProperties() override;
 
 #if WITH_EDITOR
@@ -36,11 +36,17 @@ public:
 	FOnEntryDynamicEvent OnEntryRemoved;
 
 protected:
+	virtual void SynchronizeProperties() override;
 	virtual void AddEntryChild(UUserWidget& ChildWidget) override;
 
 	// The view model to set on the entry widgets when populating this list
-	UPROPERTY(EditAnywhere, Category = "View Model")
+	UPROPERTY(EditAnywhere, Category = "EntryLayout", meta = (DisplayAfter = "EntryWidgetClass"))
 	FMDViewModelAssignmentReference ViewModelAssignment;
+
+	// At least this many widgets will display when calling PopulateItems, setting null view models to make up the difference in items if necessary
+	// Also acts as a lower limit for `NumDesignerPreviewEntries`
+	UPROPERTY(EditAnywhere, Category = "DynamicEntryBox", meta = (DisplayAfter = "NumDesignerPreviewEntries", ClampMin = 0))
+	int32 MinimumEntriesToDisplay = 0;
 
 private:
 #if WITH_EDITOR
