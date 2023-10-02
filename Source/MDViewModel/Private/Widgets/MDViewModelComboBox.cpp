@@ -101,7 +101,7 @@ TSharedRef<SWidget> UMDViewModelComboBox::RebuildWidget()
 		.InitiallySelectedItem(SelectedItem)
 		.IsFocusable(bIsFocusable)
 		.ComboBoxStyle(&WidgetStyle)
-#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 2)
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 		.ScrollBarStyle(&ScrollBarStyle)
 #endif
 		.ItemStyle(&EntryStyle)
