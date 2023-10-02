@@ -119,6 +119,13 @@ struct MDVIEWMODEL_API FMDViewModelProvider_Cached_Settings
 	GENERATED_BODY()
 
 public:
+	FMDViewModelProvider_Cached_Settings()
+		PRAGMA_DISABLE_DEPRECATION_WARNINGS
+		: ViewModelLifetime(EMDViewModelProvider_CacheLifetime::Invalid)
+		PRAGMA_ENABLE_DEPRECATION_WARNINGS
+	{
+	}
+
 	UPROPERTY(EditAnywhere, Category = "Provider", meta = (InlineEditConditionToggle))
 	bool bOverrideCachedViewModelKey = false;
 
@@ -133,7 +140,7 @@ public:
 
 	UE_DEPRECATED(All, "The lifetime enum is deprecated, use ViewModelLifetimeTag instead.")
 	UPROPERTY()
-	EMDViewModelProvider_CacheLifetime ViewModelLifetime = EMDViewModelProvider_CacheLifetime::Invalid;
+	EMDViewModelProvider_CacheLifetime ViewModelLifetime;
 
 	// For Relative lifetime, this view model's lifetime and context object will be tied to the view model assignment selected here
 	UPROPERTY(EditAnywhere, Category = "Provider|Relative", meta = (EditConditionLifetime = "MDVM.Provider.Cached.Lifetimes.Relative,MDVM.Provider.Cached.Lifetimes.RelativeViewModelProperty"))
