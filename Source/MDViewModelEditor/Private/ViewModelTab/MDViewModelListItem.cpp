@@ -224,18 +224,34 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<
 	{
 		if (bIsViewModelClassValid)
 		{
-			TArray<TSubclassOf<UObject>> SupportedContextObjects;
-			Item->Assignment.ViewModelClass.GetDefaultObject()->GetStoredContextObjectTypes(Assignment->Data.ViewModelSettings, GetBlueprint(), SupportedContextObjects);
+			TArray<TSubclassOf<UObject>> StoredContextObjects;
+			Item->Assignment.ViewModelClass.GetDefaultObject()->GetStoredContextObjectTypes(Assignment->Data.ViewModelSettings, GetBlueprint(), StoredContextObjects);
 
 			FText VMToolTip = FText::Format(INVTEXT("{0}\r\n{1}"), ViewModelClassName, Item->Assignment.ViewModelClass->GetToolTipText());
 
-			if (!SupportedContextObjects.IsEmpty())
+			if (!StoredContextObjects.IsEmpty())
 			{
-				VMToolTip = FText::Format(INVTEXT("{0}\n\nStored Context Object {1}|plural(one=Type,other=Types):"), VMToolTip, SupportedContextObjects.Num());
+				FText ContextObjectToolTip = FText::Format(INVTEXT("Stored Context Object {0}|plural(one=Type,other=Types):"), StoredContextObjects.Num());
 
-				for (const TSubclassOf<UObject>& Class : SupportedContextObjects)
+				for (const TSubclassOf<UObject>& Class : StoredContextObjects)
 				{
-					VMToolTip = FText::Format(INVTEXT("{0}\n{1}"), VMToolTip, Class->GetDisplayNameText());
+					if (IsValid(Class))
+					{
+						ContextObjectToolTip = FText::Format(INVTEXT("{0}\n{1}"), ContextObjectToolTip, Class->GetDisplayNameText());
+					}
+					else
+					{
+						ContextObjectToolTip = FText::Format(INVTEXT("{0}\n[None]"), ContextObjectToolTip);
+					}
+				}
+
+				if (!StoredContextObjects.IsEmpty())
+				{
+					VMToolTip = FText::Format(INVTEXT("{0}\n\n{1}"), VMToolTip, ContextObjectToolTip);
+				}
+				else
+				{
+					VMToolTip = FText::Format(INVTEXT("{0}\nStores any Context Object type."), VMToolTip);
 				}
 			}
 

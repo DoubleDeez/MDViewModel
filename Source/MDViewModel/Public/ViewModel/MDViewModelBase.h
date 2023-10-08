@@ -56,7 +56,7 @@ public:
 	virtual void OnViewModelSettingsPropertyChanged(FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, const FMDViewModelAssignment& Assignment) const {};
 	// If this view model requires anything from ViewModelSettings or elsewhere, this can be overridden to message any issues to the user
 	virtual bool ValidateViewModelSettings(const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, const FMDViewModelAssignment& Assignment, TArray<FText>& OutIssues) const { return true; }
-	// If this view model can only be initialized with specific context object types, this can be overridden to message those types to the user. The supported types is allowed to change based on the ViewModelSettings or Blueprint
+	// If this view model can only be initialized with specific context object types, this can be overridden to message those types to the user. The supported types is allowed to change based on the ViewModelSettings or Blueprint. Add nullptr to indicate that the context object is not used for this view model.
 	virtual void GetSupportedContextObjectTypes(const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, TArray<TSubclassOf<UObject>>& OutClasses) const {};
 	// If the types gathered in GetSupportedContextObjectTypes differs from the type of the ContextObject being stored (due to RedirectContextObject), overridden this to report the types that will be stored
 	virtual void GetStoredContextObjectTypes(const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, TArray<TSubclassOf<UObject>>& OutClasses) const { GetSupportedContextObjectTypes(ViewModelSettings, Blueprint, OutClasses); };

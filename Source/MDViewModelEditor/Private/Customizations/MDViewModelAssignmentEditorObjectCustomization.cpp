@@ -236,11 +236,11 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 
 				TArray<TSubclassOf<UObject>> ProviderExpectedContextObjectClasses;
 				Provider->GetExpectedContextObjectTypes(EditorObject->ProviderSettings, EditorObject->ViewModelSettings, Blueprint, ProviderExpectedContextObjectClasses);
-				ProviderExpectedContextObjectClasses = ProviderExpectedContextObjectClasses.FilterByPredicate([](const TSubclassOf<UObject>& Class) { return Class != nullptr; });
+				const bool bProviderHasNoContext = !ProviderExpectedContextObjectClasses.IsEmpty() && ProviderExpectedContextObjectClasses.FilterByPredicate([](const TSubclassOf<UObject>& Class) { return Class != nullptr; }).IsEmpty();
 
 				TArray<TSubclassOf<UObject>> ViewModelSupportedContextObjectClasses;
 				ViewModelCDO->GetSupportedContextObjectTypes(EditorObject->ViewModelSettings, Blueprint, ViewModelSupportedContextObjectClasses);
-				ViewModelSupportedContextObjectClasses = ViewModelSupportedContextObjectClasses.FilterByPredicate([](const TSubclassOf<UObject>& Class) { return Class != nullptr; });
+				const bool bVMDoesNotRequireContext = ViewModelSupportedContextObjectClasses.ContainsByPredicate([](const TSubclassOf<UObject>& Class) { return !IsValid(Class); });
 
 				// Determine which provided classes match what the view model supports
 				TSet<TSubclassOf<UObject>> ExactMatches;
@@ -250,7 +250,16 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 				{
 					for (const TSubclassOf<UObject>& ProvidedContextClass : ProviderExpectedContextObjectClasses)
 					{
-						if (VMContextClass == ProvidedContextClass)
+						if (!IsValid(ProvidedContextClass))
+						{
+							continue;
+						}
+
+						if (!IsValid(VMContextClass))
+						{
+							ExactMatches.Add(ProvidedContextClass);
+						}
+						else if (VMContextClass == ProvidedContextClass)
 						{
 							ExactMatches.Add(VMContextClass);
 						}
@@ -292,6 +301,11 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 
 				auto SortingFunc = [&] (const TSubclassOf<UObject>& A, const TSubclassOf<UObject>& B)
 				{
+					if (!IsValid(A) || !IsValid(B))
+					{
+						return !IsValid(A);
+					}
+
 					if (ExactMatches.Contains(A) != ExactMatches.Contains(B))
 					{
 						return ExactMatches.Contains(A);
@@ -309,39 +323,74 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 				ViewModelSupportedContextObjectClasses.StableSort(SortingFunc);
 
 				const FSlateFontInfo RegularStyle = FCoreStyle::GetDefaultFontStyle("Regular", 8);
+				const FSlateFontInfo ItalicStyle = FCoreStyle::GetDefaultFontStyle("Italic", 8);
 				const FSlateFontInfo BoldStyle = FCoreStyle::GetDefaultFontStyle("Bold", 8);
 
 				const FSlateColor ExactMatchColor = FColorList::LimeGreen;
 				const FSlateColor PossibleMatchColor = FLinearColor(1.f, 0.65f, 0.f);
 				const FSlateColor NoMatchColor = FLinearColor(0.5f, 0.5f, 0.5f);
+				const FSlateColor InvalidMatchColor = FLinearColor(1.f, 0.f, 0.f);
 
 				const int32 NumRows = FMath::Max(ProviderExpectedContextObjectClasses.Num(), ViewModelSupportedContextObjectClasses.Num());
-				for (int32 i = 0; i < NumRows; ++i)
+				if (NumRows == 0)
 				{
-					const TSubclassOf<UObject> ProvidedContextClass = ProviderExpectedContextObjectClasses.IsValidIndex(i) ? ProviderExpectedContextObjectClasses[i] : nullptr;
-					const TSubclassOf<UObject> VMContextClass = ViewModelSupportedContextObjectClasses.IsValidIndex(i) ? ViewModelSupportedContextObjectClasses[i] : nullptr;
-					const bool bIsProvidedClassInMatches = ExactMatches.Contains(ProvidedContextClass) || PossibleMatches.Contains(VMContextClass);
-					const bool bIsVMClassInMatches = ExactMatches.Contains(VMContextClass) || PossibleMatches.Contains(VMContextClass);
-
-					Group.AddWidgetRow()
-					.NameContent()
+					Group.AddWidgetRow().NameContent()
 					[
-						IsValid(ProvidedContextClass)
-							? SNew(STextBlock)
-							.Text(ProvidedContextClass->GetDisplayNameText())
-							.Font(bIsProvidedClassInMatches ? BoldStyle : RegularStyle)
-							.ColorAndOpacity(bIsProvidedClassInMatches ? (ExactMatches.Contains(ProvidedContextClass) ? ExactMatchColor : PossibleMatchColor) : NoMatchColor)
-							: SNew(STextBlock)
+						SNew(STextBlock)
+							.Text(INVTEXT("[Unspecified]"))
+							.Font(ItalicStyle)
+							.ColorAndOpacity(NoMatchColor)
 					]
 					.ValueContent()
 					[
-						IsValid(VMContextClass)
-							? SNew(STextBlock)
-							.Text(VMContextClass->GetDisplayNameText())
-							.Font(bIsVMClassInMatches ? BoldStyle : RegularStyle)
-							.ColorAndOpacity(bIsVMClassInMatches ? (ExactMatches.Contains(VMContextClass) ? ExactMatchColor : PossibleMatchColor) : NoMatchColor)
-							: SNew(STextBlock)
+						SNew(STextBlock)
+							.Text(INVTEXT("[Unspecified]"))
+							.Font(ItalicStyle)
+							.ColorAndOpacity(NoMatchColor)
 					];
+				}
+				else
+				{
+					for (int32 i = 0; i < NumRows; ++i)
+					{
+						const bool bIsFirstRow = i == 0;
+						const bool bHasProviderEntry = ProviderExpectedContextObjectClasses.IsValidIndex(i);
+						const bool bHasViewModelEntry = ViewModelSupportedContextObjectClasses.IsValidIndex(i);
+						const TSubclassOf<UObject> ProvidedContextClass = bHasProviderEntry ? ProviderExpectedContextObjectClasses[i] : nullptr;
+						const TSubclassOf<UObject> VMContextClass = bHasViewModelEntry ? ViewModelSupportedContextObjectClasses[i] : nullptr;
+						const bool bIsProvidedClassInMatches = ExactMatches.Contains(ProvidedContextClass) || PossibleMatches.Contains(VMContextClass);
+						const bool bIsVMClassInMatches = ExactMatches.Contains(VMContextClass) || PossibleMatches.Contains(VMContextClass);
+
+						Group.AddWidgetRow()
+						.NameContent()
+						[
+							IsValid(ProvidedContextClass)
+								? SNew(STextBlock)
+									.Text(ProvidedContextClass->GetDisplayNameText())
+									.Font(bIsProvidedClassInMatches ? BoldStyle : RegularStyle)
+									.ColorAndOpacity(bIsProvidedClassInMatches ? (ExactMatches.Contains(ProvidedContextClass) ? ExactMatchColor : PossibleMatchColor) : NoMatchColor)
+								: (bHasProviderEntry || bIsFirstRow)
+									? SNew(STextBlock)
+										.Text(bHasProviderEntry ? INVTEXT("[No Context Object]") : INVTEXT("[Unspecified]"))
+										.Font(bHasProviderEntry ? RegularStyle : ItalicStyle)
+										.ColorAndOpacity(NoMatchColor)
+									: SNew(STextBlock)
+						]
+						.ValueContent()
+						[
+							IsValid(VMContextClass)
+								? SNew(STextBlock)
+									.Text(VMContextClass->GetDisplayNameText())
+									.Font(bIsVMClassInMatches ? BoldStyle : RegularStyle)
+									.ColorAndOpacity(bIsVMClassInMatches ? (ExactMatches.Contains(VMContextClass) ? ExactMatchColor : PossibleMatchColor) : NoMatchColor)
+								: (bHasViewModelEntry || bIsFirstRow)
+									? SNew(STextBlock)
+										.Text(bHasViewModelEntry ? INVTEXT("[Context Object Not Required]") : INVTEXT("[Unspecified]"))
+										.Font(bHasViewModelEntry ? BoldStyle : ItalicStyle)
+										.ColorAndOpacity(bHasViewModelEntry ? ExactMatchColor : NoMatchColor)
+									: SNew(STextBlock)
+						];
+					}
 				}
 
 				const TTuple<FText, FSlateColor> ContextObjectHint = [&]() -> TTuple<FText, FSlateColor>
@@ -356,9 +405,26 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 						return { INVTEXT("This view model does not specify its supported context objects for the current settings. Override GetSupportedContextObjectTypes to specify them."), NoMatchColor };
 					}
 
+					if (bProviderHasNoContext)
+					{
+						if (bVMDoesNotRequireContext)
+						{
+							return { INVTEXT("This Provider does not provide any Context Objects and this view model does not require a Context Object."), ExactMatchColor };
+						}
+						else
+						{
+							return { INVTEXT("This Provider does not provide any Context Objects."), InvalidMatchColor };
+						}
+					}
+
+					if (bVMDoesNotRequireContext)
+					{
+						return { INVTEXT("This view model does not require a Context Object."), ExactMatchColor };
+					}
+
 					if (PossibleMatches.IsEmpty() && ExactMatches.IsEmpty())
 					{
-						return { INVTEXT("This view model does not support any of the provided context objects."), NoMatchColor };
+						return { INVTEXT("This view model does not support any of the provided context objects."), InvalidMatchColor };
 					}
 
 					if (ExactMatches.IsEmpty())
@@ -369,7 +435,7 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 					bool bAllClassesHaveExactMatch = true;
 					for (const TSubclassOf<UObject>& ProvidedContextClass : ProviderExpectedContextObjectClasses)
 					{
-						if (!ExactMatches.Contains(ProvidedContextClass))
+						if (!IsValid(ProvidedContextClass) || !ExactMatches.Contains(ProvidedContextClass))
 						{
 							bAllClassesHaveExactMatch = false;
 							break;
