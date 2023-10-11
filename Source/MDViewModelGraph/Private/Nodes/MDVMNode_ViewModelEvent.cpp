@@ -175,7 +175,7 @@ FText UMDVMNode_ViewModelEvent::GetTargetDelegateDisplayName() const
 
 void UMDVMNode_ViewModelEvent::InitializeViewModelEventParams(const FMDViewModelAssignmentReference& InAssignment, const FName& InDelegatePropertyName)
 {
-	if (Assignment.IsAssignmentValid())
+	if (InAssignment.IsAssignmentValid())
 	{
 		Assignment = InAssignment;
 		DelegatePropertyName = InDelegatePropertyName;
