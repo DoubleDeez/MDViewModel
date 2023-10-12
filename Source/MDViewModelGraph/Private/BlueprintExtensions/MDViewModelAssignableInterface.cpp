@@ -5,6 +5,7 @@
 #include "Subsystems/MDViewModelGraphSubsystem.h"
 #include "Util/MDViewModelAssignmentReference.h"
 #include "Util/MDViewModelEditorAssignment.h"
+#include "Util/MDViewModelGraphStatics.h"
 #include "ViewModel/MDViewModelBase.h"
 
 UBlueprint* IMDViewModelAssignableInterface::GetBlueprint() const
@@ -141,6 +142,21 @@ void IMDViewModelAssignableInterface::SearchParentAssignments(TMap<FMDViewModelA
 {
 	if (const UBlueprint* Blueprint = GetBlueprint())
 	{
-		MDViewModelUtils::SearchViewModelAssignments(Blueprint->ParentClass, OutViewModelAssignments, ViewModelClass, ProviderTag, ViewModelName);
+		UClass* ParentClass = Blueprint->ParentClass;
+		
+		// If we're compiling this BP and the parent BP, we'll need to search the Parent BP instead of its Class
+		if (IsValid(ParentClass) && Blueprint->bBeingCompiled)
+		{
+			if (const UBlueprint* ParentBP = Cast<UBlueprint>(ParentClass->ClassGeneratedBy))
+			{
+				if (ParentBP->bBeingCompiled)
+				{
+					FMDViewModelGraphStatics::SearchViewModelAssignmentsForBlueprint(ParentBP, OutViewModelAssignments, ViewModelClass, ProviderTag, ViewModelName);
+					return;
+				}
+			}
+		}
+		
+		MDViewModelUtils::SearchViewModelAssignments(ParentClass, OutViewModelAssignments, ViewModelClass, ProviderTag, ViewModelName);
 	}
 }

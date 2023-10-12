@@ -27,6 +27,9 @@ void FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(const UBluepr
 			return BPExtension != nullptr && BPExtension->Implements<UMDViewModelAssignableInterface>();
 		});
 
+		UClass* ParentClass = Blueprint->ParentClass;
+		const UBlueprint* ParentBP = IsValid(ParentClass) ? Cast<UBlueprint>(ParentClass->ClassGeneratedBy) : nullptr;
+
 		if (ExtensionPtr != nullptr)
 		{
 			if (const IMDViewModelAssignableInterface* Extension = Cast<IMDViewModelAssignableInterface>(ExtensionPtr->Get()))
@@ -34,10 +37,15 @@ void FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(const UBluepr
 				Extension->GetAllAssignments(OutViewModelAssignments);
 			}
 		}
+		else if (Blueprint->bBeingCompiled && IsValid(ParentBP) && ParentBP->bBeingCompiled)
+		{
+			// If we're compiling this BP and the parent BP, we'll need to search the Parent BP instead of its Class
+			GetViewModelAssignmentsForBlueprint(ParentBP, OutViewModelAssignments);
+		}
 		else
 		{
 			// If this BP doesn't have assignments, get the parent assignments
-			MDViewModelUtils::GetViewModelAssignments(Blueprint->ParentClass, OutViewModelAssignments);
+			MDViewModelUtils::GetViewModelAssignments(ParentClass, OutViewModelAssignments);
 		}
 	}
 }
