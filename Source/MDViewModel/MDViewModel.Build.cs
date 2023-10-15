@@ -21,6 +21,9 @@ public class MDViewModel : ModuleRules
 
 #if UE_5_3_OR_LATER
 		PublicDependencyModuleNames.Add("FieldNotification");
+		PublicDefinitions.Add("MDVM_WITH_BLUEPRINT_FIELD_NOTIFY=1");
+#else
+		PublicDefinitions.Add("MDVM_WITH_BLUEPRINT_FIELD_NOTIFY=0");
 #endif
 
 		PrivateDependencyModuleNames.AddRange(

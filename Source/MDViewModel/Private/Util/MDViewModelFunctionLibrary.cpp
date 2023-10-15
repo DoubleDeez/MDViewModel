@@ -98,8 +98,6 @@ DEFINE_FUNCTION(UMDViewModelFunctionLibrary::execFindOrCreateCachedViewModel)
 	P_GET_STRUCT_REF(FInstancedStruct, ViewModelSettings);
 	P_GET_OBJECT(UClass, ViewModelClass);
 	P_GET_PROPERTY(FNameProperty, CachedViewModelKey);
-	/*FInstancedStruct ViewModelSettingsTemp;
-	const FInstancedStruct& ViewModelSettings = Stack.StepCompiledInRef<FStructProperty, FInstancedStruct>(&ViewModelSettingsTemp);*/
 
 	P_FINISH;
 

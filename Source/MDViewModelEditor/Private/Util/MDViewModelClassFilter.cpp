@@ -1,12 +1,13 @@
 #include "Util/MDViewModelClassFilter.h"
 
 #include "ViewModel/MDViewModelBase.h"
+#include "ViewModel/MDViewModelBlueprintBase.h"
 #include "ViewModelProviders/MDViewModelProviderBase.h"
 
 FMDViewModelClassFilter::FMDViewModelClassFilter(UMDViewModelProviderBase* Provider)
 {
 	ProviderSupportedViewModelClasses = TArray<FMDViewModelSupportedClass>{};
-	
+
 	if (IsValid(Provider))
 	{
 		Provider->GetSupportedViewModelClasses(ProviderSupportedViewModelClasses.GetValue());
@@ -21,11 +22,11 @@ FMDViewModelClassFilter::FMDViewModelClassFilter(bool bAllowAbstract)
 
 bool FMDViewModelClassFilter::IsClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const UClass* InClass, TSharedRef<FClassViewerFilterFuncs> InFilterFuncs)
 {
-	if (InClass == UMDViewModelBase::StaticClass() || !InClass->IsChildOf<UMDViewModelBase>())
+	if (InClass == UMDViewModelBase::StaticClass() || InClass == UMDViewModelBlueprintBase::StaticClass() || !InClass->IsChildOf<UMDViewModelBase>())
 	{
 		return false;
 	}
-		
+
 	const bool bHasValidFlags = !InClass->HasAnyClassFlags(CLASS_Hidden | CLASS_HideDropDown | CLASS_Deprecated);
 	if (bHasValidFlags && (bAllowAbstract || !InClass->HasAnyClassFlags(CLASS_Abstract)))
 	{
@@ -33,7 +34,7 @@ bool FMDViewModelClassFilter::IsClassAllowed(const FClassViewerInitializationOpt
 		{
 			return true;
 		}
-		
+
 		for (const FMDViewModelSupportedClass& SupportedClass : ProviderSupportedViewModelClasses.GetValue())
 		{
 			if (SupportedClass.Class == InClass || (SupportedClass.bAllowChildClasses && InClass->IsChildOf(SupportedClass.Class)))
@@ -52,7 +53,7 @@ bool FMDViewModelClassFilter::IsUnloadedClassAllowed(const FClassViewerInitializ
 	{
 		return false;
 	}
-		
+
 	const bool bHasValidFlags = !InUnloadedClassData->HasAnyClassFlags(CLASS_Hidden | CLASS_HideDropDown | CLASS_Deprecated);
 	if (bHasValidFlags && (bAllowAbstract || !InUnloadedClassData->HasAnyClassFlags(CLASS_Abstract)))
 	{
@@ -60,7 +61,7 @@ bool FMDViewModelClassFilter::IsUnloadedClassAllowed(const FClassViewerInitializ
 		{
 			return true;
 		}
-		
+
 		for (const FMDViewModelSupportedClass& SupportedClass : ProviderSupportedViewModelClasses.GetValue())
 		{
 			if (SupportedClass.bAllowChildClasses && InUnloadedClassData->IsChildOf(SupportedClass.Class))

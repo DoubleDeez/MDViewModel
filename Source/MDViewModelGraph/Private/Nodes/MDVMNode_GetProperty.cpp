@@ -14,6 +14,7 @@
 #include "Util/MDViewModelAssignmentReference.h"
 #include "Util/MDViewModelGraphStatics.h"
 #include "ViewModel/MDViewModelBase.h"
+#include "ViewModel/MDViewModelBlueprintBase.h"
 
 void UMDVMNode_GetProperty::AllocateDefaultPins()
 {
@@ -68,7 +69,7 @@ void UMDVMNode_GetProperty::GetMenuActions(FBlueprintActionDatabaseRegistrar& In
 		{
 			if (const FProperty* Prop = *PropIt)
 			{
-				if (Prop->GetOwnerUObject() == UMDViewModelBase::StaticClass() || Prop->GetOwnerUObject() == UObject::StaticClass())
+				if (Prop->GetOwnerUObject() == UMDViewModelBase::StaticClass() || Prop->GetOwnerUObject() == UMDViewModelBlueprintBase::StaticClass() || Prop->GetOwnerUObject() == UObject::StaticClass())
 				{
 					continue;
 				}

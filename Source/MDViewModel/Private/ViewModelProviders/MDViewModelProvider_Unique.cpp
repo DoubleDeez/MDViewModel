@@ -30,7 +30,17 @@ UMDViewModelBase* UMDViewModelProvider_Unique::SetViewModel(IMDViewModelRuntimeI
 			*GetPathNameSafe(OwningObject)
 		);
 #endif
-		return Object.SetViewModelOfClass(OwningObject, OwningObject, FMDViewModelAssignmentReference(Assignment), Data.ViewModelSettings);
+
+		const FMDViewModelAssignmentReference AssignmentReference(Assignment);
+		if (!Object.IsListeningForChanges(this, AssignmentReference))
+		{
+			auto Delegate = FMDVMOnViewModelSet::FDelegate::CreateUObject(this, &UMDViewModelProvider_Unique::OnBoundObjectViewModelChanged);
+			Object.ListenForChanges(MoveTemp(Delegate), AssignmentReference);
+		}
+
+		UMDViewModelBase* ViewModel = Object.SetViewModelOfClass(OwningObject, OwningObject, AssignmentReference, Data.ViewModelSettings);
+		UniqueVMs.Add(ViewModel);
+		return ViewModel;
 	}
 
 	return nullptr;
@@ -45,3 +55,11 @@ void UMDViewModelProvider_Unique::GetExpectedContextObjectTypes(const FInstanced
 	}
 }
 #endif
+
+void UMDViewModelProvider_Unique::OnBoundObjectViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel)
+{
+	if (IsValid(OldViewModel) && UniqueVMs.Remove(OldViewModel) > 0)
+	{
+		OldViewModel->ShutdownViewModelFromProvider();
+	}
+}

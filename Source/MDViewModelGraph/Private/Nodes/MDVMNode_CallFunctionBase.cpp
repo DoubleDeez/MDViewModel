@@ -13,6 +13,7 @@
 #include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelGraphStatics.h"
 #include "ViewModel/MDViewModelBase.h"
+#include "ViewModel/MDViewModelBlueprintBase.h"
 
 void UMDVMNode_CallFunctionBase::BeginDestroy()
 {
@@ -38,7 +39,7 @@ void UMDVMNode_CallFunctionBase::GetMenuActions(FBlueprintActionDatabaseRegistra
 		{
 			if (const UFunction* Func = *FuncIt)
 			{
-				if (Func->GetOuterUClass() == UMDViewModelBase::StaticClass())
+				if (Func->GetOuterUClass() == UMDViewModelBase::StaticClass() || Func->GetOuterUClass() == UMDViewModelBlueprintBase::StaticClass())
 				{
 					continue;
 				}

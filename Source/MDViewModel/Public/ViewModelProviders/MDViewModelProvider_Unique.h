@@ -2,6 +2,7 @@
 
 #include "MDViewModelProviderBase.h"
 #include "NativeGameplayTags.h"
+#include "ViewModel/MDViewModelBase.h"
 #include "MDViewModelProvider_Unique.generated.h"
 
 MDVIEWMODEL_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_MDVMProvider_Unique);
@@ -24,4 +25,9 @@ public:
 	virtual FText GetDescription(const FInstancedStruct& ProviderSettings) const override { return INVTEXT("A unique view model instance will be created for the assigned object."); }
 	virtual void GetExpectedContextObjectTypes(const FInstancedStruct& ProviderSettings, const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, TArray<TSubclassOf<UObject>>& OutContextObjectClasses) const override;
 #endif
+
+private:
+	void OnBoundObjectViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel);
+
+	TSet<TWeakObjectPtr<UMDViewModelBase>> UniqueVMs;
 };

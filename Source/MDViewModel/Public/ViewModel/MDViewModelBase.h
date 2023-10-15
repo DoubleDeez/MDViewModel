@@ -36,6 +36,8 @@ class MDVIEWMODEL_API UMDViewModelBase : public UObject, public INotifyFieldValu
 	GENERATED_BODY()
 
 public:
+	virtual void BeginDestroy() override;
+
 	// Called by view model providers after they create the view model object
 	void InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject, const UObject* WorldContext = nullptr);
 	void InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, const UObject* InContextObject, const UObject* WorldContext = nullptr);
@@ -177,6 +179,7 @@ protected:
 	virtual void ShutdownViewModel() {}
 
 	// Creates and initializes a view model instance that is intended to be owned by this view model. Passes along this view model's World Context Object
+	// View models must call ShutdownSubViewModels on all SubViewModels in ShutdownViewModel
 	UMDViewModelBase* CreateSubViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, UObject* InContextObject, const FInstancedStruct& ViewModelSettings = FInstancedStruct(), const UObject* WorldContextObject = nullptr) const;
 	UMDViewModelBase* CreateSubViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, const UObject* InContextObject, const FInstancedStruct& ViewModelSettings = FInstancedStruct(), const UObject* WorldContextObject = nullptr) const;
 	template<typename T>
@@ -188,6 +191,13 @@ protected:
 	template<typename T, typename U, typename = decltype(TBaseStructure<U>::Get())>
 	T* CreateSubViewModel(const UObject* InContextObject, const U& ViewModelSettings, TSubclassOf<UMDViewModelBase> ViewModelClass = T::StaticClass(), const UObject* WorldContextObject = nullptr) const;
 
+	// Shuts down a raw pointer to a view model and clears the pointer
+	static void ShutdownSubViewModel(UMDViewModelBase*& ViewModel);
+	// Shuts down a TObjectPtr to a view model and clears the pointer
+	template<typename T>
+	static void ShutdownSubViewModel(TObjectPtr<T>& ViewModel);
+	// Shuts down a weak object ptr to a view model and resets the ptr
+	static void ShutdownSubViewModel(TWeakObjectPtr<UMDViewModelBase>& ViewModelPtr);
 	// Iterates an array of View Models, shuts them down and resets the array
 	template<typename T>
 	static void ShutdownSubViewModels(TArray<T>& ViewModels);
@@ -198,7 +208,11 @@ protected:
 	template<typename T, typename U>
 	static void ShutdownSubViewModels(TMap<T, U>& ViewModels);
 
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
+	virtual void BroadcastFieldValueChanged(UE::FieldNotification::FFieldId InFieldId) override;
+#else
 	void BroadcastFieldValueChanged(UE::FieldNotification::FFieldId InFieldId);
+#endif
 
 	// Helper that changes for equality before setting and broadcasting the specified field. Uses operator==.
 	// Returns whether the field value was changed or not
@@ -223,6 +237,11 @@ protected:
 	void K2_BroadcastFieldValueChanged(FFieldNotificationId FieldId);
 
 private:
+	// Returns the context object of this view model, casted to the specified type. Will error if the context object is not of the specified type.
+	UFUNCTION(BlueprintCallable, Category = "View Model", CustomThunk, meta = (DisplayName = "Get View Model Context Object as Type", DeterminesOutputType = "ContextType", AllowPrivateAccess = "true", ContextType = "/Script/CoreUObject.Object"))
+	UObject* GetContextObjectAsType(UPARAM(meta = (AllowAbstract = "true", AllowedClasses = "/Script/CoreUObject.Object,/Script/CoreUObject.Interface")) UClass* ContextType) const;
+	DECLARE_FUNCTION(execGetContextObjectAsType);
+
 	const UObject* GetEffectiveWorldContextObject() const;
 
 	UPROPERTY(Transient)
@@ -311,14 +330,22 @@ T* UMDViewModelBase::CreateSubViewModel(const UObject* InContextObject, const U&
 }
 
 template <typename T>
+void UMDViewModelBase::ShutdownSubViewModel(TObjectPtr<T>& ViewModel)
+{
+	if (IsValid(ViewModel))
+	{
+		ViewModel->ShutdownViewModelFromProvider();
+	}
+
+	ViewModel = nullptr;
+}
+
+template <typename T>
 void UMDViewModelBase::ShutdownSubViewModels(TArray<T>& ViewModels)
 {
-	for (UMDViewModelBase* ViewModel : ViewModels)
+	for (T& ViewModel : ViewModels)
 	{
-		if (IsValid(ViewModel))
-		{
-			ViewModel->ShutdownViewModelFromProvider();
-		}
+		ShutdownSubViewModel(ViewModel);
 	}
 
 	ViewModels.Reset();
@@ -327,12 +354,9 @@ void UMDViewModelBase::ShutdownSubViewModels(TArray<T>& ViewModels)
 template <typename T>
 void UMDViewModelBase::ShutdownSubViewModels(TSet<T>& ViewModels)
 {
-	for (UMDViewModelBase* ViewModel : ViewModels)
+	for (T& ViewModel : ViewModels)
 	{
-		if (IsValid(ViewModel))
-		{
-			ViewModel->ShutdownViewModelFromProvider();
-		}
+		ShutdownSubViewModel(ViewModel);
 	}
 
 	ViewModels.Reset();
@@ -341,24 +365,16 @@ void UMDViewModelBase::ShutdownSubViewModels(TSet<T>& ViewModels)
 template <typename T, typename U>
 void UMDViewModelBase::ShutdownSubViewModels(TMap<T, U>& ViewModels)
 {
-	for (const TTuple<T, U>& Pair : ViewModels)
+	for (TTuple<T, U>& Pair : ViewModels)
 	{
-		if constexpr (std::is_convertible_v<T, UMDViewModelBase*>)
+		if constexpr (std::is_convertible_v<T, UMDViewModelBase*>|| std::is_convertible_v<T, TWeakObjectPtr<UMDViewModelBase>>)
 		{
-			UMDViewModelBase* ViewModel = Pair.Key;
-			if (IsValid(ViewModel))
-			{
-				ViewModel->ShutdownViewModelFromProvider();
-			}
+			ShutdownSubViewModel(Pair.Key);
 		}
 
-		if constexpr (std::is_convertible_v<U, UMDViewModelBase*>)
+		if constexpr (std::is_convertible_v<U, UMDViewModelBase*> || std::is_convertible_v<U, TWeakObjectPtr<UMDViewModelBase>>)
 		{
-			UMDViewModelBase* ViewModel = Pair.Value;
-			if (IsValid(ViewModel))
-			{
-				ViewModel->ShutdownViewModelFromProvider();
-			}
+			ShutdownSubViewModel(Pair.Value);
 		}
 	}
 

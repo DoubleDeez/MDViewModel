@@ -2,6 +2,7 @@
 
 #include "BlueprintEditor.h"
 #include "BlueprintModes/WidgetBlueprintApplicationModes.h"
+#include "EdGraph/EdGraph.h"
 #include "Editor.h"
 #include "Editor/EditorEngine.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
@@ -161,9 +162,28 @@ void FMDViewModelDebugLineItemBase::NavigateToDefinitionField() const
 				FSourceCodeNavigation::OpenSourceFile(AbsNativeParentClassHeaderPath);
 			}
 		}
+		else if (UBlueprint* BP = Func->GetTypedOuter<UBlueprint>())
+		{
+			TObjectPtr<UEdGraph>* FuncGraphPtr = BP->FunctionGraphs.FindByPredicate([Func](const UEdGraph* Graph)
+			{
+				return IsValid(Graph) && Graph->GetFName() == Func->GetFName();
+			});
+
+			if (FuncGraphPtr == nullptr || !IsValid(*FuncGraphPtr))
+			{
+				FuncGraphPtr = BP->EventGraphs.FindByPredicate([Func](const UEdGraph* Graph)
+				{
+					return IsValid(Graph) && Graph->GetFName() == Func->GetFName();
+				});
+			}
+
+			if (FuncGraphPtr != nullptr && IsValid(*FuncGraphPtr))
+			{
+				FKismetEditorUtilities::BringKismetToFocusAttentionOnObject(*FuncGraphPtr);
+			}
+		}
 		else
 		{
-			// TODO - Find actual Function Graph/Event Node
 			FKismetEditorUtilities::BringKismetToFocusAttentionOnObject(Func);
 		}
 	}
@@ -184,6 +204,10 @@ void FMDViewModelDebugLineItemBase::NavigateToDefinitionField() const
 				const FString AbsNativeParentClassHeaderPath = FPaths::ConvertRelativePathToFull(NativeParentClassHeaderPath);
 				FSourceCodeNavigation::OpenSourceFile(AbsNativeParentClassHeaderPath);
 			}
+		}
+		else if (const UBlueprint* BP = Func->GetTypedOuter<UBlueprint>())
+		{
+			FKismetEditorUtilities::BringKismetToFocusAttentionOnObject(BP);
 		}
 		else
 		{

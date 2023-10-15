@@ -4,6 +4,7 @@
 #include "EdGraphSchema_K2.h"
 #include "UObject/WeakFieldPtr.h"
 #include "ViewModel/MDViewModelBase.h"
+#include "ViewModel/MDViewModelBlueprintBase.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropCommand.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropFunctionBase.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropGetter.h"
@@ -75,13 +76,13 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 		{
 			if (const FProperty* Prop = *It)
 			{
-				if (Prop->GetOwnerUObject() == UMDViewModelBase::StaticClass())
+				if (Prop->GetOwnerUObject() == UMDViewModelBase::StaticClass() || Prop->GetOwnerUObject() == UMDViewModelBlueprintBase::StaticClass())
 				{
 					continue;
 				}
 
 				const bool bIsFieldNotify = FieldNotifySupportedNames.Contains(Prop->GetFName());
-				if (InspectorType == EMDViewModelFieldInspectorType::Properties && Prop->HasAnyPropertyFlags(CPF_BlueprintVisible))
+				if (InspectorType == EMDViewModelFieldInspectorType::Properties && Prop->HasAnyPropertyFlags(CPF_BlueprintVisible) && !Prop->HasAnyPropertyFlags(CPF_BlueprintAssignable))
 				{
 					void* ValuePtr = DebugViewModel.IsValid() ? Prop->ContainerPtrToValuePtr<void>(DebugViewModel.Get()) : nullptr;
 					TSharedPtr<FMDViewModelFieldDebugLineItem>& Item = PropertyTreeItems.FindOrAdd(Prop);
@@ -128,13 +129,13 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 		{
 			if (const UFunction* Func = *It)
 			{
-				if (Func->GetOuterUClass() == UMDViewModelBase::StaticClass())
+				if (Func->GetOuterUClass() == UMDViewModelBase::StaticClass() || Func->GetOuterUClass() == UMDViewModelBlueprintBase::StaticClass())
 				{
 					continue;
 				}
 
 				// We only want visible functions that are actually callable on the view model instance
-				if (Func->HasAnyFunctionFlags(FUNC_Static | FUNC_Private) || !Func->HasAnyFunctionFlags(FUNC_BlueprintCallable))
+				if (Func->HasAnyFunctionFlags(FUNC_Static | FUNC_Private | FUNC_Delegate) || !Func->HasAnyFunctionFlags(FUNC_BlueprintCallable))
 				{
 					continue;
 				}

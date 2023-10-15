@@ -4,19 +4,25 @@
 #include "Engine/World.h"
 #include "InstancedStruct.h"
 
+void UMDViewModelBase::BeginDestroy()
+{
+	ensureAlwaysMsgf(!bIsInitialized, TEXT("View Model [%s] is being destroyed without having been shutdown."), *GetName());
+	Super::BeginDestroy();
+}
+
 void UMDViewModelBase::InitializeViewModelWithContext(const FInstancedStruct& ViewModelSettings, UObject* InContextObject, const UObject* WorldContext)
 {
 	if (!ensureAlwaysMsgf(!bIsInitialized, TEXT("View Model [%s] is already initialized but InitializeViewModelWithContext is being called again."), *GetName()))
 	{
 		return;
 	}
-	
+
 	WorldContextObjectPtr = WorldContext;
 	CachedViewModelSettings = ViewModelSettings;
 	ContextObject = RedirectContextObject(InContextObject);
 
 	ensureAlwaysMsgf(IsValid(GetWorld()), TEXT("View Model [%s]'s WorldContext [%s] and ContextObject [%s] could not reach the world. Either the World Context Object or the Context Object are expected to have a valid GetWorld() result."), *GetName(), *GetNameSafe(WorldContextObjectPtr.Get()), *GetNameSafe(GetContextObject()));
-	
+
 	InitializeViewModel();
 
 	bIsInitialized = true;
@@ -41,8 +47,10 @@ void UMDViewModelBase::InitializeViewModelWithContext(const UObject* InContextOb
 void UMDViewModelBase::ShutdownViewModelFromProvider()
 {
 	ShutdownViewModel();
-	
+
 	OnViewModelShutDown.Broadcast();
+
+	bIsInitialized = false;
 }
 
 UWorld* UMDViewModelBase::GetWorld() const
@@ -67,7 +75,7 @@ UWorld* UMDViewModelBase::GetWorld() const
 	{
 		return Context->GetWorld();
 	}
-	
+
 	return nullptr;
 }
 
@@ -165,6 +173,56 @@ UObject* UMDViewModelBase::GetContextObject() const
 	return GetContextObject<UObject>();
 }
 
+UObject* UMDViewModelBase::GetContextObjectAsType(UClass* ContextType) const
+{
+	checkf(false, TEXT("Calling a CustomThunk 'GetContextObjectAsType'"));
+	return nullptr;
+}
+
+DEFINE_FUNCTION(UMDViewModelBase::execGetContextObjectAsType)
+{
+	P_GET_OBJECT(UClass, ContextType);
+
+	P_FINISH;
+
+	if (ContextType == nullptr)
+	{
+		const FBlueprintExceptionInfo ExceptionInfo(
+			EBlueprintExceptionType::AccessViolation,
+			INVTEXT("A valid Context Type must be passed in to Get Context Object as Type.")
+		);
+		FBlueprintCoreDelegates::ThrowScriptException(P_THIS, Stack, ExceptionInfo);
+		*StaticCast<UObject**>(RESULT_PARAM) = nullptr;
+		return;
+	}
+
+	UObject* ContextObject = P_THIS->ContextObject.Get();
+
+	if (!IsValid(ContextObject))
+	{
+		const FBlueprintExceptionInfo ExceptionInfo(
+			EBlueprintExceptionType::AccessViolation,
+			INVTEXT("The Context Object is Invalid.")
+		);
+		FBlueprintCoreDelegates::ThrowScriptException(P_THIS, Stack, ExceptionInfo);
+		*StaticCast<UObject**>(RESULT_PARAM) = nullptr;
+		return;
+	}
+
+	if (!ContextObject->IsA(ContextType))
+	{
+		const FBlueprintExceptionInfo ExceptionInfo(
+			EBlueprintExceptionType::AccessViolation,
+			FText::Format(INVTEXT("The Context Object [{0}] is not of Type [{1}]"), FText::FromName(ContextObject->GetFName()), FText::FromName(ContextType->GetFName()))
+		);
+		FBlueprintCoreDelegates::ThrowScriptException(P_THIS, Stack, ExceptionInfo);
+		*StaticCast<UObject**>(RESULT_PARAM) = nullptr;
+		return;
+	}
+
+	*StaticCast<UObject**>(RESULT_PARAM) = ContextObject;
+}
+
 UMDViewModelBase* UMDViewModelBase::CreateSubViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, UObject* InContextObject, const FInstancedStruct& ViewModelSettings, const UObject* WorldContextObject) const
 {
 	checkf(IsValid(ViewModelClass), TEXT("UMDViewModelBase::CreateSubViewModel required a valid ViewModelClass"));
@@ -179,7 +237,7 @@ UMDViewModelBase* UMDViewModelBase::CreateSubViewModel(TSubclassOf<UMDViewModelB
 	// Use the provided WorldContextObject if set, otherwise try the Context Object, then fallback to whatever this view model uses as its context object
 	const bool bDoesContextHaveValidWorld = IsValid(InContextObject) && IsValid(GEngine) && IsValid(GEngine->GetWorldFromContextObject(InContextObject, EGetWorldErrorMode::ReturnNull));
 	const UObject* WorldContext = IsValid(WorldContextObject) ? WorldContextObject : (bDoesContextHaveValidWorld ? InContextObject : GetEffectiveWorldContextObject());
-	
+
 	UMDViewModelBase* ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), ViewModelClass, VMObjectName);
 	ViewModel->InitializeViewModelWithContext(ViewModelSettings, InContextObject, WorldContext);
 	return ViewModel;
@@ -188,6 +246,26 @@ UMDViewModelBase* UMDViewModelBase::CreateSubViewModel(TSubclassOf<UMDViewModelB
 UMDViewModelBase* UMDViewModelBase::CreateSubViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, const UObject* InContextObject, const FInstancedStruct& ViewModelSettings, const UObject* WorldContextObject) const
 {
 	return CreateSubViewModel(ViewModelClass, const_cast<UObject*>(InContextObject), ViewModelSettings, WorldContextObject);
+}
+
+void UMDViewModelBase::ShutdownSubViewModel(UMDViewModelBase*& ViewModel)
+{
+	if (IsValid(ViewModel))
+	{
+		ViewModel->ShutdownViewModelFromProvider();
+	}
+
+	ViewModel = nullptr;
+}
+
+void UMDViewModelBase::ShutdownSubViewModel(TWeakObjectPtr<UMDViewModelBase>& ViewModelPtr)
+{
+	if (UMDViewModelBase* ViewModel = ViewModelPtr.Get())
+	{
+		ViewModel->ShutdownViewModelFromProvider();
+	}
+
+	ViewModelPtr.Reset();
 }
 
 void UMDViewModelBase::BroadcastFieldValueChanged(UE::FieldNotification::FFieldId InFieldId)
