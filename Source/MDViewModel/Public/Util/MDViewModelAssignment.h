@@ -26,6 +26,14 @@ public:
 	UPROPERTY()
 	FName ViewModelName = MDViewModelUtils::DefaultViewModelName;
 
+#if WITH_EDITORONLY_DATA
+	// Store class name so that this Assignment is still unique if ViewModelClass is renamed/deleted
+	UPROPERTY()
+	FName ViewModelClassName = NAME_None;
+
+	void UpdateViewModelClassName();
+#endif
+
 	bool IsValid() const;
 
 	bool operator==(const FMDViewModelAssignment& Other) const;

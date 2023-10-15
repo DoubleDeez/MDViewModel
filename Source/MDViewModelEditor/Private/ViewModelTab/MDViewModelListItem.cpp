@@ -219,7 +219,9 @@ void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<
 	const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(Assignment->Assignment.ProviderTag);
 	const bool bIsViewModelClassValid = Item->Assignment.ViewModelClass != nullptr;
 
-	const FText ViewModelClassName = bIsViewModelClassValid ? Item->Assignment.ViewModelClass->GetDisplayNameText() : INVTEXT("NULL");
+	const FText ViewModelClassName = bIsViewModelClassValid
+		? Item->Assignment.ViewModelClass->GetDisplayNameText()
+		: FText::Format(INVTEXT("NULL (Was: {0})"), (Item->Assignment.ViewModelClassName.IsNone() ? INVTEXT("Unknown") : FText::FromName(Item->Assignment.ViewModelClassName)));
 	const FText ViewModelClassToolTip = [&]()
 	{
 		if (bIsViewModelClassValid)

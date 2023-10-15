@@ -458,7 +458,12 @@ bool SMDViewModelList::IsSelectedAssignmentValid() const
 
 bool SMDViewModelList::IsSelectedAssignmentValidAndNotPIE() const
 {
-	return IsSelectedAssignmentValid() && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
+	return IsSelectedAssignmentValid() && IsNotPIE();
+}
+
+bool SMDViewModelList::IsNotPIE() const
+{
+	return !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
 }
 
 void SMDViewModelList::EditSelectedAssignment()
@@ -473,7 +478,7 @@ bool SMDViewModelList::CanEditSelectedAssignment() const
 {
 	if (const TSharedPtr<FMDViewModelEditorAssignment> Assignment = GetSelectedAssignment())
 	{
-		return Assignment->SuperAssignmentOwner == nullptr && IsSelectedAssignmentValidAndNotPIE();
+		return Assignment->SuperAssignmentOwner == nullptr && IsNotPIE();
 	}
 
 	return false;
@@ -631,7 +636,7 @@ bool SMDViewModelList::CanGoToSelectedAssignmentDefinition() const
 
 void SMDViewModelList::OnItemDoubleClicked(TSharedPtr<FMDViewModelEditorAssignment> Item)
 {
-	if (Item.IsValid() && !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr)
+	if (Item.IsValid() && IsNotPIE())
 	{
 		SMDViewModelAssignmentDialog::OpenEditDialog(GetBlueprint(), Item);
 	}

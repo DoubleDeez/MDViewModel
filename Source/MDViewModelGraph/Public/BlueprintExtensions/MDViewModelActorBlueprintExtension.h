@@ -15,10 +15,12 @@ class MDVIEWMODELGRAPH_API UMDViewModelActorBlueprintExtension : public UBluepri
 	GENERATED_BODY()
 
 public:
+	virtual void PostLoad() override;
+
 	virtual TArray<FMDViewModelEditorAssignment>& GetAssignments() override { return Assignments; }
 
 protected:
 	UPROPERTY()
 	TArray<FMDViewModelEditorAssignment> Assignments;
-	
+
 };

@@ -37,22 +37,22 @@ public:
 
 protected:
 	// Redirect from the provided Context Object. The result will be the result of GetContextObject for this view model's life time.
-	UFUNCTION(BlueprintImplementableEvent, Category = "View Model", DisplayName = "Redirect Context Object")
+	UFUNCTION(BlueprintImplementableEvent, Category = "View Model", DisplayName = "Redirect Context Object", meta = (MDVMHidden))
 	UObject* BP_RedirectContextObject(UObject* ProvidedContextObject) const;
 	virtual UObject* RedirectContextObject(UObject* ProvidedContextObject) const override;
 
 	// Redirect from the configured Context Object lifetime. Instances of this view model will be cached on the result.
-	UFUNCTION(BlueprintImplementableEvent, Category = "View Model", DisplayName = "Redirect Cached Context Object (CDO Only)")
+	UFUNCTION(BlueprintImplementableEvent, Category = "View Model", DisplayName = "Redirect Cached Context Object (CDO Only)", meta = (MDVMHidden))
 	UObject* BP_CDORedirectCachedContextObject(UObject* ProvidedCacheContextObject, const FInstancedStruct& ViewModelSettings) const;
 	virtual UObject* CDORedirectCachedContextObject(const UObject* WorldContextObject, UObject* ProvidedCacheContextObject, const FInstancedStruct& ViewModelSettings) const override;
 
 	// Bind to the context object, set initial property values and perform any other necessary initialization
-	UFUNCTION(BlueprintImplementableEvent, Category = "View Model", DisplayName = "Initialize View Model")
+	UFUNCTION(BlueprintImplementableEvent, Category = "View Model", DisplayName = "Initialize View Model", meta = (MDVMHidden))
 	void BP_InitializeViewModel();
 	virtual void InitializeViewModel() override;
 
 	// Unbind any delegates and perform any other necessary uninitialization
-	UFUNCTION(BlueprintImplementableEvent, Category = "View Model", DisplayName = "Shutdown View Model")
+	UFUNCTION(BlueprintImplementableEvent, Category = "View Model", DisplayName = "Shutdown View Model", meta = (MDVMHidden))
 	void BP_ShutdownViewModel();
 	virtual void ShutdownViewModel() override;
 

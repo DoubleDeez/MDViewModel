@@ -52,7 +52,7 @@ private:
 	static void OpenDialog_Internal(UBlueprint* Blueprint, TSharedPtr<FMDViewModelEditorAssignment> EditorItem = nullptr, bool bDuplicateItem = false);
 	static void OnDialogClosed(const TSharedRef<SWindow>& Window);
 	static TWeakPtr<SWindow> ActiveDialogWindowPtr;
-	
+
 	EVisibility GetAddVisibility() const;
 	EVisibility GetSaveVisibility() const;
 	EVisibility GetAssignmentErrorVisibility() const;
@@ -62,8 +62,8 @@ private:
 
 	bool DoesAssignmentHaveError() const;
 	FText GetAssignmentError() const;
-	
-	IMDViewModelAssignableInterface* GetExtension(bool bCreateIfNecessary = false) const; 
+
+	IMDViewModelAssignableInterface* GetExtension(bool bCreateIfNecessary = false) const;
 
 	EMDVMDialogMode Mode = EMDVMDialogMode::Add;
 
@@ -73,4 +73,5 @@ private:
 	TStrongObjectPtr<UMDViewModelAssignmentEditorObject> EditorObject;
 	TWeakObjectPtr<UBlueprint> BlueprintPtr;
 	TOptional<FName> OriginalAssignmentName;
+	TOptional<TSubclassOf<UMDViewModelBase>> OriginalAssignedClass;
 };

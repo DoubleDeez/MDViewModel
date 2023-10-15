@@ -3,6 +3,7 @@
 #include "BlueprintEditor.h"
 #include "EdGraphSchema_K2.h"
 #include "UObject/WeakFieldPtr.h"
+#include "Util/MDViewModelGraphStatics.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModel/MDViewModelBlueprintBase.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropCommand.h"
@@ -76,7 +77,9 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 		{
 			if (const FProperty* Prop = *It)
 			{
-				if (Prop->GetOwnerUObject() == UMDViewModelBase::StaticClass() || Prop->GetOwnerUObject() == UMDViewModelBlueprintBase::StaticClass())
+				if (Prop->GetOwnerUObject() == UMDViewModelBase::StaticClass()
+					|| Prop->GetOwnerUObject() == UMDViewModelBlueprintBase::StaticClass()
+					|| Prop->HasMetaData(FMDViewModelGraphStatics::VMHiddenMeta))
 				{
 					continue;
 				}
@@ -129,13 +132,21 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 		{
 			if (const UFunction* Func = *It)
 			{
-				if (Func->GetOuterUClass() == UMDViewModelBase::StaticClass() || Func->GetOuterUClass() == UMDViewModelBlueprintBase::StaticClass())
+				if (Func->GetOuterUClass() == UMDViewModelBase::StaticClass()
+					|| Func->GetOuterUClass() == UMDViewModelBlueprintBase::StaticClass()
+					|| Func->HasMetaData(FMDViewModelGraphStatics::VMHiddenMeta))
 				{
 					continue;
 				}
 
 				// We only want visible functions that are actually callable on the view model instance
 				if (Func->HasAnyFunctionFlags(FUNC_Static | FUNC_Private | FUNC_Delegate) || !Func->HasAnyFunctionFlags(FUNC_BlueprintCallable))
+				{
+					continue;
+				}
+
+				// Only Protected functions that are native will be shown since that's seems to be a common pattern
+				if (!Func->HasAllFunctionFlags(FUNC_Native) && Func->HasAllFunctionFlags(FUNC_Protected))
 				{
 					continue;
 				}

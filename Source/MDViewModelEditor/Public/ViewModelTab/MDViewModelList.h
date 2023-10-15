@@ -46,6 +46,7 @@ private:
 
 	bool IsSelectedAssignmentValid() const;
 	bool IsSelectedAssignmentValidAndNotPIE() const;
+	bool IsNotPIE() const;
 
 	void EditSelectedAssignment();
 	bool CanEditSelectedAssignment() const;

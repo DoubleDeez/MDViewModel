@@ -29,7 +29,7 @@ public:
 		: FInstancedStructDataDetails(InStructProperty)
 	{
 	}
-	
+
 	virtual void OnChildRowAdded(IDetailPropertyRow& ChildRow) override
 	{
 		ChildRow.ShouldAutoExpand(true);
@@ -46,7 +46,7 @@ private:
 		{
 			return;
 		}
-		
+
 		const FString& EditConditions = Property->GetMetaData(EditConditionKey);
 		TArray<FString> EditConditionsList;
 		EditConditions.ParseIntoArray(EditConditionsList, TEXT(","));
@@ -59,7 +59,7 @@ private:
 			{
 				continue;
 			}
-			
+
 			const FGameplayTag EditConditionTag = FGameplayTag::RequestGameplayTag(*CleanEditConditionString);
 			if (!EditConditionTag.IsValid())
 			{
@@ -68,7 +68,7 @@ private:
 
 			EditConditionTags.AddTag(EditConditionTag);
 		}
-		
+
 		TArray<UObject*> Objects;
 		Property->GetOuterObjects(Objects);
 		if (Objects.IsEmpty())
@@ -98,12 +98,12 @@ private:
 
 			return EditConditionTags.HasTagExact(SettingsPtr->GetLifetimeTag());
 		});
-		
+
 		const TAttribute<EVisibility> VisibilityAttribute = TAttribute<EVisibility>::Create([EditConditionAttribute]()
 		{
 			return EditConditionAttribute.Get(false) ? EVisibility::Visible : EVisibility::Collapsed;
 		});
-		
+
 		ChildRow
 			.EditCondition(EditConditionAttribute, nullptr)
 			.Visibility(VisibilityAttribute);
@@ -143,10 +143,11 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 	if (EditorItem.IsValid())
 	{
 		EditorObject->PopulateFromAssignment(*EditorItem.Get(), GetBlueprint());
-		
+
 		if (Mode == EMDVMDialogMode::Edit)
 		{
 			OriginalAssignmentName = EditorObject->ViewModelInstanceName;
+			OriginalAssignedClass = EditorObject->ViewModelClass;
 		}
 	}
 
@@ -261,7 +262,7 @@ void SMDViewModelAssignmentDialog::OpenDialog_Internal(UBlueprint* Blueprint, TS
 		ActiveDialogWindow->FlashWindow();
 		return;
 	}
-	
+
 	const bool bIsEditMode = EditorItem.IsValid() && !bDuplicateItem;
 	const TSharedRef<SWindow> PickerWindow = SNew(SWindow)
 		.Title(bIsEditMode ? INVTEXT("Edit a View Model Assignment") : INVTEXT("Add a View Model Assignment"))
@@ -408,7 +409,7 @@ FText SMDViewModelAssignmentDialog::GetAssignmentError() const
 	{
 		return INVTEXT("Internal error, close and try again.");
 	}
-	
+
 	if (!EditorObject->ViewModelProvider.IsValid())
 	{
 		return INVTEXT("Select a View Model Provider.");
@@ -424,11 +425,13 @@ FText SMDViewModelAssignmentDialog::GetAssignmentError() const
 		return INVTEXT("Enter a valid View Model Name.");
 	}
 
-	if (Mode != EMDVMDialogMode::Edit || !OriginalAssignmentName.IsSet() || EditorObject->ViewModelInstanceName != OriginalAssignmentName.GetValue())
+	if (Mode != EMDVMDialogMode::Edit
+		|| !OriginalAssignmentName.IsSet() || EditorObject->ViewModelInstanceName != OriginalAssignmentName.GetValue()
+		|| !OriginalAssignedClass.IsSet() || EditorObject->ViewModelClass != OriginalAssignedClass.GetValue())
 	{
 		if (FMDViewModelGraphStatics::DoesBlueprintContainViewModelAssignments(GetBlueprint(), EditorObject->ViewModelClass, FGameplayTag::EmptyTag, EditorObject->ViewModelInstanceName))
 		{
-			return INVTEXT("The assignment's Name and Class pairing is not unique.");
+			return INVTEXT("The view model assignment's Name and Class pairing is not unique.");
 		}
 	}
 

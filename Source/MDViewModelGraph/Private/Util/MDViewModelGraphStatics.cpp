@@ -251,6 +251,11 @@ UMDVMNode_ViewModelChanged* FMDViewModelGraphStatics::FindExistingViewModelChang
 
 bool FMDViewModelGraphStatics::DoesBlueprintUseAssignment(UBlueprint* BP, const FMDViewModelAssignmentReference& Assignment)
 {
+	if (!Assignment.IsAssignmentValid())
+	{
+		return false;
+	}
+
 	TArray<UBlueprint*> DependentBlueprints;
 	FBlueprintEditorUtils::FindDependentBlueprints(BP, DependentBlueprints);
 	DependentBlueprints.Add(BP);

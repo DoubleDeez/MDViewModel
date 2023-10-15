@@ -22,7 +22,7 @@ void UMDViewModelAssignmentEditorObject::PopulateFromAssignment(const FMDViewMod
 	{
 		ViewModelInstanceTagProperty->RemoveMetaData(NAME_Categories);
 	}
-	
+
 	ViewModelClass = Assignment.Assignment.ViewModelClass;
 	ViewModelProvider = Assignment.Assignment.ProviderTag;
 	ViewModelInstanceName = Assignment.Assignment.ViewModelName;
@@ -46,14 +46,21 @@ void UMDViewModelAssignmentEditorObject::PopulateFromAssignment(const FMDViewMod
 		ProviderSettings.Reset();
 	}
 
-	const UMDViewModelBase* ViewModelCDO = ViewModelClass->GetDefaultObject<UMDViewModelBase>();
-	if (Assignment.Data.ViewModelSettings.IsValid() && Assignment.Data.ViewModelSettings.GetScriptStruct() == ViewModelCDO->GetViewModelSettingsStruct())
+	const UMDViewModelBase* ViewModelCDO = IsValid(ViewModelClass) ? ViewModelClass->GetDefaultObject<UMDViewModelBase>() : nullptr;
+	if (IsValid(ViewModelCDO))
 	{
-		ViewModelSettings = Assignment.Data.ViewModelSettings;
+		if (Assignment.Data.ViewModelSettings.IsValid() && Assignment.Data.ViewModelSettings.GetScriptStruct() == ViewModelCDO->GetViewModelSettingsStruct())
+		{
+			ViewModelSettings = Assignment.Data.ViewModelSettings;
+		}
+		else
+		{
+			ViewModelSettings.InitializeAs(ViewModelCDO->GetViewModelSettingsStruct());
+		}
 	}
 	else
 	{
-		ViewModelSettings.InitializeAs(ViewModelCDO->GetViewModelSettingsStruct());
+		ViewModelSettings = Assignment.Data.ViewModelSettings;
 	}
 }
 

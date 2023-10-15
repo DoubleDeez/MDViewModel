@@ -45,6 +45,8 @@ void IMDViewModelAssignableInterface::GetAllAssignments(TMap<FMDViewModelAssignm
 
 void IMDViewModelAssignableInterface::AddAssignment(FMDViewModelEditorAssignment&& Assignment)
 {
+	Assignment.Assignment.UpdateViewModelClassName();
+
 	if (!GetAssignments().Contains(Assignment))
 	{
 		UBlueprint* Blueprint = GetBlueprint();
@@ -64,6 +66,7 @@ void IMDViewModelAssignableInterface::UpdateAssignment(const FMDViewModelEditorA
 	{
 		ModifyObject();
 
+		UpdatedAssignment.Assignment.UpdateViewModelClassName();
 		const FMDViewModelEditorAssignment OldAssignment = GetAssignments()[AssignmentIndex];
 		GetAssignments()[AssignmentIndex] = UpdatedAssignment;
 
@@ -143,7 +146,7 @@ void IMDViewModelAssignableInterface::SearchParentAssignments(TMap<FMDViewModelA
 	if (const UBlueprint* Blueprint = GetBlueprint())
 	{
 		UClass* ParentClass = Blueprint->ParentClass;
-		
+
 		// If we're compiling this BP and the parent BP, we'll need to search the Parent BP instead of its Class
 		if (IsValid(ParentClass) && Blueprint->bBeingCompiled)
 		{
@@ -156,7 +159,7 @@ void IMDViewModelAssignableInterface::SearchParentAssignments(TMap<FMDViewModelA
 				}
 			}
 		}
-		
+
 		MDViewModelUtils::SearchViewModelAssignments(ParentClass, OutViewModelAssignments, ViewModelClass, ProviderTag, ViewModelName);
 	}
 }

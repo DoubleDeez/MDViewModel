@@ -5,6 +5,16 @@
 #include "WidgetExtensions/MDViewModelWidgetClassExtension.h"
 
 
+void UMDViewModelWidgetBlueprintExtension::PostLoad()
+{
+	Super::PostLoad();
+
+	for (FMDViewModelEditorAssignment& Assignment : Assignments)
+	{
+		Assignment.Assignment.UpdateViewModelClassName();
+	}
+}
+
 void UMDViewModelWidgetBlueprintExtension::HandleBeginCompilation(FWidgetBlueprintCompilerContext& InCreationContext)
 {
 	Super::HandleBeginCompilation(InCreationContext);
