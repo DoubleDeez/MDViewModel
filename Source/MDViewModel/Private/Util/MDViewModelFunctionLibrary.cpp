@@ -13,7 +13,7 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModel(UUserWidget* Widget,
 	FMDViewModelAssignmentReference AssignmentReference;
 	AssignmentReference.ViewModelClass = ViewModelClass;
 	AssignmentReference.ViewModelName = ViewModelName;
-	
+
 	return BP_SetViewModel(Widget, ViewModel, AssignmentReference);
 }
 
@@ -49,7 +49,7 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::SetViewModelOfClass(const UObject
 	FMDViewModelAssignmentReference AssignmentReference;
 	AssignmentReference.ViewModelClass = ViewModelClass;
 	AssignmentReference.ViewModelName = ViewModelName;
-	
+
 	return BP_SetViewModelOfClass(WorldContextObject, Widget, ContextObject, AssignmentReference, ViewModelSettings);
 }
 
@@ -81,7 +81,7 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::BP_GetViewModel(UObject* Object, 
 		bIsValid = IsValid(ViewModel);
 		return ViewModel;
 	}
-	
+
 	bIsValid = false;
 	return nullptr;
 }
@@ -89,6 +89,37 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::BP_GetViewModel(UObject* Object, 
 UMDViewModelBase* UMDViewModelFunctionLibrary::FindOrCreateCachedViewModel(const UObject* WorldContextObject, UObject* CacheContextObject, const FInstancedStruct& ViewModelSettings, TSubclassOf<UMDViewModelBase> ViewModelClass, FName CachedViewModelKey)
 {
 	return UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(WorldContextObject, CacheContextObject, ViewModelClass, CachedViewModelKey, ViewModelSettings);
+}
+
+DEFINE_FUNCTION(UMDViewModelFunctionLibrary::execFindOrCreateCachedViewModel)
+{
+	P_GET_OBJECT(const UObject, WorldContextObject);
+	P_GET_OBJECT(UObject, CacheContextObject);
+	P_GET_STRUCT_REF(FInstancedStruct, ViewModelSettings);
+	P_GET_OBJECT(UClass, ViewModelClass);
+	P_GET_PROPERTY(FNameProperty, CachedViewModelKey);
+	/*FInstancedStruct ViewModelSettingsTemp;
+	const FInstancedStruct& ViewModelSettings = Stack.StepCompiledInRef<FStructProperty, FInstancedStruct>(&ViewModelSettingsTemp);*/
+
+	P_FINISH;
+
+	if (CacheContextObject == nullptr)
+	{
+		const FBlueprintExceptionInfo ExceptionInfo(
+			EBlueprintExceptionType::AccessViolation,
+			INVTEXT("A valid Context Object must be passed in to Find or Create Cached View Model.")
+		);
+		FBlueprintCoreDelegates::ThrowScriptException(P_THIS, Stack, ExceptionInfo);
+		*StaticCast<UMDViewModelBase**>(RESULT_PARAM) = nullptr;
+		return;
+	}
+
+	UMDViewModelBase* ViewModel = nullptr;
+	P_NATIVE_BEGIN
+	ViewModel = UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(WorldContextObject, CacheContextObject, ViewModelClass, CachedViewModelKey, ViewModelSettings);
+	P_NATIVE_END
+
+	*StaticCast<UMDViewModelBase**>(RESULT_PARAM) = ViewModel;
 }
 
 UMDViewModelBase* UMDViewModelFunctionLibrary::FindCachedViewModel(const UObject* WorldContextObject, const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, FName CachedViewModelKey)

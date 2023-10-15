@@ -486,10 +486,16 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveAndBindViewModel
 UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel_Internal(const UObject* WorldContextObject, UObject* CacheContextObject, const FName& ViewModelName,
 	TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
 {
-	if (IMDViewModelCacheInterface* ViewModelCache = ResolveObjectCache(CacheContextObject, WorldContextObject))
+	if (ensureAlwaysMsgf(IsValid(CacheContextObject), TEXT("Attempting to Find or Create a Cached View Model on an invalid CacheContextObject")))
 	{
-		ViewModelCache = RedirectCache(WorldContextObject, ViewModelCache, ViewModelClass, ViewModelSettings);
-		return ViewModelCache->GetOrCreateViewModel(WorldContextObject, ViewModelName, ViewModelClass, ViewModelSettings);
+		if (IMDViewModelCacheInterface* ViewModelCache = ResolveObjectCache(CacheContextObject, WorldContextObject))
+		{
+			ViewModelCache = RedirectCache(WorldContextObject, ViewModelCache, ViewModelClass, ViewModelSettings);
+			if (ensureAlwaysMsgf(ViewModelCache != nullptr, TEXT("Failed to redirect View Model Cache for context [%s] with View Model Class [%s]"), *GetNameSafe(CacheContextObject), *GetNameSafe(ViewModelClass)))
+			{
+				return ViewModelCache->GetOrCreateViewModel(WorldContextObject, ViewModelName, ViewModelClass, ViewModelSettings);
+			}
+		}
 	}
 
 	return nullptr;
@@ -497,10 +503,16 @@ UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel_Inter
 
 UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel_Internal(const UObject* WorldContextObject, const UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass) const
 {
-	if (const IMDViewModelCacheInterface* ViewModelCache = ResolveObjectCache(CacheContextObject, WorldContextObject))
+	if (IsValid(CacheContextObject))
 	{
-		ViewModelCache = RedirectCache(WorldContextObject, const_cast<IMDViewModelCacheInterface*>(ViewModelCache), ViewModelClass, {});
-		return ViewModelCache->GetViewModel(ViewModelName, ViewModelClass);
+		if (const IMDViewModelCacheInterface* ViewModelCache = ResolveObjectCache(CacheContextObject, WorldContextObject))
+		{
+			ViewModelCache = RedirectCache(WorldContextObject, const_cast<IMDViewModelCacheInterface*>(ViewModelCache), ViewModelClass, {});
+			if (ensureAlwaysMsgf(ViewModelCache != nullptr, TEXT("Failed to redirect View Model Cache for context [%s] with View Model Class [%s]"), *GetNameSafe(CacheContextObject), *GetNameSafe(ViewModelClass)))
+			{
+				return ViewModelCache->GetViewModel(ViewModelName, ViewModelClass);
+			}
+		}
 	}
 
 	return nullptr;
