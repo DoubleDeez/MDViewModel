@@ -40,6 +40,7 @@ private:
 
 	void OnAssignmentsChanged(UBlueprint* Blueprint);
 
+	void AddViewModelAssignment();
 	FReply OnAddViewModel();
 	bool CanAddViewModel() const;
 	void OnAssignmentAdded(const FMDViewModelEditorAssignment& Assignment);

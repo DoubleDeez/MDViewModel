@@ -13,6 +13,7 @@
 #include "Util/MDViewModelGraphStatics.h"
 #include "Util/MDViewModelUtils.h"
 #include "ViewModel/MDViewModelBase.h"
+#include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
 
@@ -29,7 +30,7 @@ namespace MDViewModelAssignmentReferenceCustomization_Private
 		{
 			return true;
 		}
-		
+
 		const FString DefaultToSelfString = Pin.GetOwningNode()->GetPinMetaData(Pin.PinName, FBlueprintMetadata::MD_DefaultToSelf);
 		if (DefaultToSelfString == Pin.PinName.ToString())
 		{
@@ -111,8 +112,27 @@ TSharedRef<SWidget> FMDViewModelAssignmentReferenceCustomization::MakeAssignment
 	FMenuBuilder MenuBuilder(true, nullptr);
 	if (UClass* BoundObjectClass = GetBoundObjectClass())
 	{
+		TArray<UPackage*> AssignmentPackages;
+		StructHandle->GetOuterPackages(AssignmentPackages);
+
+		TArray<UObject*> AssignmentObjects;
+		StructHandle->GetOuterObjects(AssignmentObjects);
+
+		const UMDViewModelAssignmentEditorObject* EditorObject = AssignmentObjects.Num() == 1 ? Cast<UMDViewModelAssignmentEditorObject>(AssignmentObjects[0]) : nullptr;
+
+		const UBlueprint* BoundBlueprint = Cast<UBlueprint>(BoundObjectClass->ClassGeneratedBy);
+		const bool bIsReferenceInSamePackage = IsValid(BoundBlueprint) && AssignmentPackages.Num() == 1 && BoundObjectClass->GetOuterUPackage() == AssignmentPackages[0];
+		const bool bIsReferenceFromEditorObjectInSamePackage = IsValid(EditorObject) && EditorObject->BlueprintPtr.Get() == BoundBlueprint;
+
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
-		MDViewModelUtils::GetViewModelAssignments(BoundObjectClass, ViewModelAssignments);
+		if (bIsReferenceInSamePackage || bIsReferenceFromEditorObjectInSamePackage)
+		{
+			FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(BoundBlueprint, ViewModelAssignments);
+		}
+		else
+		{
+			MDViewModelUtils::GetViewModelAssignments(BoundObjectClass, ViewModelAssignments);
+		}
 
 		for (const auto& Pair : ViewModelAssignments)
 		{
@@ -162,7 +182,7 @@ TSharedRef<SWidget> SMDViewModelAssignmentReferenceGraphPin::GetDefaultValueWidg
 	{
 		return SGraphPin::GetDefaultValueWidget();
 	}
-	
+
 	return SNew(SComboButton)
 		   .Visibility(this, &SGraphPin::GetDefaultValueVisibility)
 		   .OnGetMenuContent(this, &SMDViewModelAssignmentReferenceGraphPin::MakeAssignmentMenu)
@@ -189,7 +209,7 @@ void SMDViewModelAssignmentReferenceGraphPin::GetWidgetViewModelAssignments(TMap
 	}
 
 	const UBlueprint* Blueprint = GraphPinObj->GetOwningNode()->GetTypedOuter<UBlueprint>();
-	
+
 	// If it's a self pin, we can get the up-to-date assignments that haven't been compiled yet
 	if (Blueprint != nullptr && MDViewModelAssignmentReferenceCustomization_Private::IsSelfPin(*WidgetPin))
 	{
@@ -214,19 +234,19 @@ const UEdGraphPin* SMDViewModelAssignmentReferenceGraphPin::GetWidgetPin() const
 			{
 				continue;
 			}
-			
+
 			// Is this pin our Widget?
 			const FString AssignmentMeta = OwningNode->GetPinMetaData(Pin->GetFName(), VMAssignmentMeta);
 			if (AssignmentMeta != GraphPinObj->GetName())
 			{
 				continue;
 			}
-			
+
 			// If the pin connected, check it instead since its class might be more specific
 			return (Pin->LinkedTo.IsEmpty() || Pin->LinkedTo[0] == nullptr) ? Pin : Pin->LinkedTo[0];
 		}
 	}
-	
+
 	return nullptr;
 }
 
@@ -243,19 +263,19 @@ const UEdGraphPin* SMDViewModelAssignmentReferenceGraphPin::GetViewModelPin() co
 				// Not a view model pin
 				continue;
 			}
-			
+
 			// Is this pin our view model?
 			const FString AssignmentMeta = OwningNode->GetPinMetaData(Pin->GetFName(), VMAssignmentMeta);
 			if (AssignmentMeta != GraphPinObj->GetName())
 			{
 				continue;
 			}
-			
+
 			// If the pin connected, check it instead since its class might be more specific
 			return (Pin->LinkedTo.IsEmpty() || Pin->LinkedTo[0] == nullptr) ? Pin : Pin->LinkedTo[0];
 		}
 	}
-	
+
 	return nullptr;
 }
 
@@ -266,9 +286,9 @@ UClass* SMDViewModelAssignmentReferenceGraphPin::GetConnectedObjectClass() const
 	{
 		return nullptr;
 	}
-	
+
 	UClass* ObjectClass = Cast<UClass>(WidgetPin->PinType.PinSubCategoryObject.Get());
-	
+
 	const UBlueprint* Blueprint = GraphPinObj->GetOwningNode()->GetTypedOuter<UBlueprint>();
 	if (Blueprint != nullptr && MDViewModelAssignmentReferenceCustomization_Private::IsSelfPin(*WidgetPin))
 	{
@@ -285,14 +305,14 @@ TSubclassOf<UMDViewModelBase> SMDViewModelAssignmentReferenceGraphPin::GetConnec
 	{
 		return nullptr;
 	}
-	
+
 	return Cast<UClass>(ViewModelPin->PinType.PinSubCategoryObject.Get());
 }
 
 TSharedRef<SWidget> SMDViewModelAssignmentReferenceGraphPin::MakeAssignmentMenu()
 {
 	FMenuBuilder MenuBuilder(true, nullptr);
-	
+
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
 	GetWidgetViewModelAssignments(ViewModelAssignments);
 
@@ -324,7 +344,7 @@ void SMDViewModelAssignmentReferenceGraphPin::SetSelectedAssignment(FMDViewModel
 		GraphPinObj->Modify();
 		GraphPinObj->GetSchema()->TrySetDefaultValue(*GraphPinObj, FinalValue);
 	}
-	
+
 	if (UEdGraphNode* OwningNode = GraphPinObj->GetOwningNode())
 	{
 		OwningNode->ReconstructNode();
@@ -366,18 +386,18 @@ void SMDViewModelAssignmentReferenceGraphPin::ValidateDefaultValue() const
 		AssignmentNotFound,
 		AssignmentNotCompatible
 	};
-	
+
 	const FMDViewModelAssignmentReference AssignmentReference = GetSelectedAssignment();
 	const TSubclassOf<UMDViewModelBase> ViewModelClass = GetConnectedViewModelClass();
 	const TSubclassOf<UMDViewModelBase> AssignedClass = AssignmentReference.ViewModelClass.LoadSynchronous();
-	
+
 	const EAssignmentErrorType ErrorType = [&]()
 	{
 		if (GraphPinObj->HasAnyConnections() || GraphPinObj->GetDefaultAsString().IsEmpty())
 		{
 			return EAssignmentErrorType::None;
 		}
-	
+
 		if (GraphPinObj->PinType.bIsReference && !UEdGraphSchema_K2::IsAutoCreateRefTerm(GraphPinObj))
 		{
 			return EAssignmentErrorType::None;
@@ -388,14 +408,14 @@ void SMDViewModelAssignmentReferenceGraphPin::ValidateDefaultValue() const
 		{
 			return EAssignmentErrorType::None;
 		}
-	
+
 		ObjectClass = GetConnectedObjectClass();
-	
+
 		if (ObjectClass == nullptr)
 		{
 			return EAssignmentErrorType::None;
 		}
-	
+
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
 		GetWidgetViewModelAssignments(ViewModelAssignments);
 
@@ -409,7 +429,7 @@ void SMDViewModelAssignmentReferenceGraphPin::ValidateDefaultValue() const
 				{
 					return EAssignmentErrorType::AssignmentNotCompatible;
 				}
-				
+
 				return EAssignmentErrorType::None;
 			}
 		}

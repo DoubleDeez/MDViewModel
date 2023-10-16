@@ -249,12 +249,46 @@ UMDVMNode_ViewModelChanged* FMDViewModelGraphStatics::FindExistingViewModelChang
 	return nullptr;
 }
 
-bool FMDViewModelGraphStatics::DoesBlueprintUseAssignment(UBlueprint* BP, const FMDViewModelAssignmentReference& Assignment)
+bool FMDViewModelGraphStatics::DoesBlueprintUseAssignment(UBlueprint* BP, const FMDViewModelAssignment& Assignment)
 {
-	if (!Assignment.IsAssignmentValid())
+	if (!Assignment.IsValid())
 	{
 		return false;
 	}
+
+	const FMDViewModelAssignmentReference AssignmentReference = FMDViewModelAssignmentReference(Assignment);
+	auto CheckForAssignmentRefs = [&AssignmentReference, &Assignment](const UStruct* Class, const void* Outer)
+	{
+		for (TFieldIterator<const FStructProperty> It(Class); It; ++It)
+		{
+			const FStructProperty* Prop = *It;
+			if (Prop == nullptr)
+			{
+				continue;
+			}
+
+			if (Prop->Struct == FMDViewModelAssignmentReference::StaticStruct())
+			{
+				FMDViewModelAssignmentReference PropAssignment;
+				Prop->GetValue_InContainer(Outer, &PropAssignment);
+				if (PropAssignment == AssignmentReference)
+				{
+					return true;
+				}
+			}
+			else if (Prop->Struct == FMDViewModelAssignment::StaticStruct())
+			{
+				FMDViewModelAssignment PropAssignment;
+				Prop->GetValue_InContainer(Outer, &PropAssignment);
+				if (PropAssignment == Assignment)
+				{
+					return true;
+				}
+			}
+		}
+
+		return false;
+	};
 
 	TArray<UBlueprint*> DependentBlueprints;
 	FBlueprintEditorUtils::FindDependentBlueprints(BP, DependentBlueprints);
@@ -267,81 +301,91 @@ bool FMDViewModelGraphStatics::DoesBlueprintUseAssignment(UBlueprint* BP, const 
 			continue;
 		}
 
-		TArray<UEdGraphNode*> GraphNodes;
-		FBlueprintEditorUtils::GetAllNodesOfClass(BP, GraphNodes);
-
-		for (const UEdGraphNode* Node : GraphNodes)
+		// Check other assignments
 		{
-			if (!IsValid(Node))
-			{
-				continue;
-			}
+			TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
+			GetViewModelAssignmentsForBlueprint(Blueprint, ViewModelAssignments);
 
-			// Check for FMDViewModelAssignmentReference or FMDViewModelAssignment Properties whose value reference the assignment
-			for (TFieldIterator<const FStructProperty> It(Node->GetClass()); It; ++It)
+			for (const TPair<FMDViewModelAssignment, FMDViewModelAssignmentData>& Pair : ViewModelAssignments)
 			{
-				const FStructProperty* Prop = *It;
-				if (Prop == nullptr)
+				if (Pair.Key == Assignment)
 				{
 					continue;
 				}
 
-				if (Prop->Struct == FMDViewModelAssignmentReference::StaticStruct())
+				if (Pair.Value.ProviderSettings.IsValid())
 				{
-					FMDViewModelAssignmentReference PropAssignment;
-					Prop->GetValue_InContainer(Node, &PropAssignment);
-					if (PropAssignment == Assignment)
+					if (CheckForAssignmentRefs(Pair.Value.ProviderSettings.GetScriptStruct(), Pair.Value.ProviderSettings.GetMemory()))
 					{
 						return true;
 					}
 				}
-				else if (Prop->Struct == FMDViewModelAssignment::StaticStruct())
+
+				if (Pair.Value.ViewModelSettings.IsValid())
 				{
-					FMDViewModelAssignment PropAssignment;
-					Prop->GetValue_InContainer(Node, &PropAssignment);
-					if (FMDViewModelAssignmentReference(PropAssignment) == Assignment)
+					if (CheckForAssignmentRefs(Pair.Value.ViewModelSettings.GetScriptStruct(), Pair.Value.ViewModelSettings.GetMemory()))
 					{
 						return true;
 					}
 				}
 			}
+		}
 
-			// Check for FMDViewModelAssignmentReference or FMDViewModelAssignment Pins whose default value references the assignment
-			for (const UEdGraphPin* Pin : Node->Pins)
+		// Check nodes
+		{
+			TArray<UEdGraphNode*> GraphNodes;
+			FBlueprintEditorUtils::GetAllNodesOfClass(BP, GraphNodes);
+
+			for (const UEdGraphNode* Node : GraphNodes)
 			{
-				if (Pin == nullptr || Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Struct || Pin->Direction != EGPD_Input || !Pin->LinkedTo.IsEmpty())
+				if (!IsValid(Node))
 				{
 					continue;
 				}
 
-				if (Pin->PinType.PinSubCategoryObject == FMDViewModelAssignmentReference::StaticStruct())
+				// Check for FMDViewModelAssignmentReference or FMDViewModelAssignment Properties whose value reference the assignment
+				if (CheckForAssignmentRefs(Node->GetClass(), Node))
 				{
-					FMDViewModelAssignmentReference PinAssignment;
-					const FString DefaultString = Pin->GetDefaultAsString();
-					if (!DefaultString.IsEmpty())
-					{
-						UScriptStruct* PinLiteralStructType = FMDViewModelAssignmentReference::StaticStruct();
-						PinLiteralStructType->ImportText(*DefaultString, &PinAssignment, nullptr, PPF_SerializedAsImportText, GError, PinLiteralStructType->GetName());
-					}
-
-					if (PinAssignment == Assignment)
-					{
-						return true;
-					}
+					return true;
 				}
-				else if (Pin->PinType.PinSubCategoryObject == FMDViewModelAssignment::StaticStruct())
+
+				// Check for FMDViewModelAssignmentReference or FMDViewModelAssignment Pins whose default value references the assignment
+				for (const UEdGraphPin* Pin : Node->Pins)
 				{
-					FMDViewModelAssignment PinAssignment;
-					const FString DefaultString = Pin->GetDefaultAsString();
-					if (!DefaultString.IsEmpty())
+					if (Pin == nullptr || Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Struct || Pin->Direction != EGPD_Input || !Pin->LinkedTo.IsEmpty())
 					{
-						UScriptStruct* PinLiteralStructType = FMDViewModelAssignment::StaticStruct();
-						PinLiteralStructType->ImportText(*DefaultString, &PinAssignment, nullptr, PPF_SerializedAsImportText, GError, PinLiteralStructType->GetName());
+						continue;
 					}
 
-					if (FMDViewModelAssignmentReference(PinAssignment) == Assignment)
+					if (Pin->PinType.PinSubCategoryObject == FMDViewModelAssignmentReference::StaticStruct())
 					{
-						return true;
+						FMDViewModelAssignmentReference PinAssignment;
+						const FString DefaultString = Pin->GetDefaultAsString();
+						if (!DefaultString.IsEmpty())
+						{
+							UScriptStruct* PinLiteralStructType = FMDViewModelAssignmentReference::StaticStruct();
+							PinLiteralStructType->ImportText(*DefaultString, &PinAssignment, nullptr, PPF_SerializedAsImportText, GError, PinLiteralStructType->GetName());
+						}
+
+						if (PinAssignment == AssignmentReference)
+						{
+							return true;
+						}
+					}
+					else if (Pin->PinType.PinSubCategoryObject == FMDViewModelAssignment::StaticStruct())
+					{
+						FMDViewModelAssignment PinAssignment;
+						const FString DefaultString = Pin->GetDefaultAsString();
+						if (!DefaultString.IsEmpty())
+						{
+							UScriptStruct* PinLiteralStructType = FMDViewModelAssignment::StaticStruct();
+							PinLiteralStructType->ImportText(*DefaultString, &PinAssignment, nullptr, PPF_SerializedAsImportText, GError, PinLiteralStructType->GetName());
+						}
+
+						if (PinAssignment == Assignment)
+						{
+							return true;
+						}
 					}
 				}
 			}

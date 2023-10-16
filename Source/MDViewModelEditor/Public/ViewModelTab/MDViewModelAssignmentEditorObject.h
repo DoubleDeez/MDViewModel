@@ -56,4 +56,6 @@ public:
 
 	UPROPERTY(Transient)
 	TSubclassOf<UObject> BPSkeletonClass = nullptr;
+
+	TWeakObjectPtr<UBlueprint> BlueprintPtr;
 };

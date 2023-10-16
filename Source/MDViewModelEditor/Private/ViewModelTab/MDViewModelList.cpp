@@ -208,6 +208,16 @@ TSharedPtr<SWidget> SMDViewModelList::OnContextMenuOpening()
 	ContextMenuBuilder.BeginSection("ViewModelList", INVTEXT("View Model List"));
 	{
 		ContextMenuBuilder.AddMenuEntry(
+			INVTEXT("Add Assignment"),
+			INVTEXT("Create a new view model assignment."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("EditableComboBox.Add")),
+			FUIAction(
+				FExecuteAction::CreateSP(this, &SMDViewModelList::AddViewModelAssignment),
+				FCanExecuteAction::CreateSP(this, &SMDViewModelList::CanAddViewModel)
+			)
+		);
+
+		ContextMenuBuilder.AddMenuEntry(
 			FGenericCommands::Get().Paste,
 			NAME_None,
 			INVTEXT("Paste Assignment"),
@@ -409,7 +419,7 @@ void SMDViewModelList::OnAssignmentsChanged(UBlueprint* Blueprint)
 	}
 }
 
-FReply SMDViewModelList::OnAddViewModel()
+void SMDViewModelList::AddViewModelAssignment()
 {
 	SMDViewModelAssignmentDialog::OpenAssignmentDialog(GetBlueprint());
 	if (const TSharedPtr<SMDViewModelAssignmentDialog> ActiveDialog = SMDViewModelAssignmentDialog::GetActiveDialog())
@@ -419,6 +429,11 @@ FReply SMDViewModelList::OnAddViewModel()
 			ActiveDialog->OnAssignmentAdded.AddSP(this, &SMDViewModelList::OnAssignmentAdded);
 		}
 	}
+}
+
+FReply SMDViewModelList::OnAddViewModel()
+{
+	AddViewModelAssignment();
 
 	return FReply::Handled();
 }
@@ -568,7 +583,7 @@ void SMDViewModelList::DeleteSelectedAssignment()
 {
 	if (const TSharedPtr<FMDViewModelEditorAssignment> Assignment = GetSelectedAssignment())
 	{
-		if (FMDViewModelGraphStatics::DoesBlueprintUseAssignment(GetBlueprint(), FMDViewModelAssignmentReference(Assignment->Assignment)))
+		if (FMDViewModelGraphStatics::DoesBlueprintUseAssignment(GetBlueprint(), Assignment->Assignment))
 		{
 			const EAppReturnType::Type ReturnType = FMessageDialog::Open(EAppMsgType::YesNo, INVTEXT("This view model is referenced in either this Blueprint or a dependent Blueprint.\nAre you sure you want to delete this view model assignment?"));
 			if (ReturnType != EAppReturnType::Yes)

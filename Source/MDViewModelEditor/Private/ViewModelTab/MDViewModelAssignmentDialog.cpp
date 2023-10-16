@@ -135,8 +135,9 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 	ParentWindow = InParentWindow;
 	EditorObject = TStrongObjectPtr<UMDViewModelAssignmentEditorObject>(NewObject<UMDViewModelAssignmentEditorObject>());
 
-	if (const UBlueprint* Blueprint = GetBlueprint())
+	if (UBlueprint* Blueprint = GetBlueprint())
 	{
+		EditorObject->BlueprintPtr = Blueprint;
 		EditorObject->BPSkeletonClass = Blueprint->SkeletonGeneratedClass;
 	}
 

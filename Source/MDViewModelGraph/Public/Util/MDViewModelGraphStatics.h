@@ -39,7 +39,7 @@ public:
 	static UMDVMNode_ViewModelChanged* FindExistingViewModelChangedNode(const UBlueprint* BP, const FMDViewModelAssignmentReference& Assignment);
 
 	// Slow - checks all pins and all properties on all graphs on the BP and all dependent BPs for the references to the assignment
-	static bool DoesBlueprintUseAssignment(UBlueprint* BP, const FMDViewModelAssignmentReference& Assignment);
+	static bool DoesBlueprintUseAssignment(UBlueprint* BP, const FMDViewModelAssignment& Assignment);
 
 	static IMDViewModelAssignableInterface* GetOrCreateAssignableInterface(UBlueprint* BP);
 	static IMDViewModelAssignableInterface* GetAssignableInterface(const UBlueprint* BP);
