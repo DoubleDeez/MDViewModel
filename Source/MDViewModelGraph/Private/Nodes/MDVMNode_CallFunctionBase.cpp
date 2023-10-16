@@ -65,6 +65,27 @@ void UMDVMNode_CallFunctionBase::GetMenuActions(FBlueprintActionDatabaseRegistra
 
 bool UMDVMNode_CallFunctionBase::IsActionFilteredOut(const FBlueprintActionFilter& Filter)
 {
+	for (const UEdGraphPin* Pin : Filter.Context.Pins)
+	{
+		if (Pin == nullptr || Pin->Direction != EGPD_Output)
+		{
+			continue;
+		}
+
+		if (Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Object && Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_SoftObject)
+		{
+			continue;
+		}
+
+		const UClass* PinClass = Cast<UClass>(Pin->PinType.PinSubCategoryObject.Get());
+		if (!IsValid(PinClass) || !PinClass->IsChildOf<UMDViewModelBase>())
+		{
+			continue;
+		}
+
+		return true;
+	}
+
 	for (const UBlueprint* Blueprint : Filter.Context.Blueprints)
 	{
 		const UBlueprint* WidgetBP = Cast<UBlueprint>(Blueprint);
@@ -141,12 +162,26 @@ void UMDVMNode_CallFunctionBase::AllocateDefaultPins()
 	const UEdGraphSchema_K2* Schema = GetDefault<UEdGraphSchema_K2>();
 	if (UEdGraphPin* SelfPin = Schema->FindSelfPin(*this, EGPD_Input))
 	{
+		SelfPin->BreakAllPinLinks(true);
+
 		SelfPin->bHidden = true;
 	}
 
 	if (Func != nullptr)
 	{
 		Func->FunctionFlags = OriginalFlags;
+	}
+}
+
+void UMDVMNode_CallFunctionBase::PinConnectionListChanged(UEdGraphPin* Pin)
+{
+	Super::PinConnectionListChanged(Pin);
+
+	const UEdGraphSchema_K2* Schema = GetDefault<UEdGraphSchema_K2>();
+	if (UEdGraphPin* SelfPin = Schema->FindSelfPin(*this, EGPD_Input))
+	{
+		SelfPin->BreakAllPinLinks(true);
+		SelfPin->bHidden = true;
 	}
 }
 

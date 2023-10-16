@@ -21,6 +21,7 @@ public:
 	virtual bool IncludeParentNodeContextMenu() const override { return true; }
 
 	virtual void AllocateDefaultPins() override;
+	virtual void PinConnectionListChanged(UEdGraphPin* Pin) override;
 
 	virtual bool IsNodePure() const override { return bIsSetPure; }
 

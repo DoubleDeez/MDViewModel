@@ -311,7 +311,7 @@ void UMDVMNode_GetProperty::UnbindAssignmentChanges()
 
 bool UMDVMNode_GetProperty::IsPropertyValidForNode(const FProperty* Property) const
 {
-	return Property != nullptr && Property->HasAnyPropertyFlags(CPF_BlueprintVisible);
+	return Property != nullptr && Property->HasAnyPropertyFlags(CPF_BlueprintVisible) && !Property->HasAnyPropertyFlags(CPF_BlueprintAssignable);
 }
 
 void UMDVMNode_GetProperty::ToggleValidation()
