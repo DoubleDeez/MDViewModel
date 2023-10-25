@@ -12,7 +12,7 @@ class UGameInstance;
 class ULocalPlayer;
 class UWorld;
 struct FInstancedStruct;
-	
+
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FMDVMOnViewModelSetDynamic, UMDViewModelBase*, OldViewModel, UMDViewModelBase*, NewViewModel);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FMDVMOnViewModelSet, UMDViewModelBase* /*OldViewModel*/, UMDViewModelBase* /*NewViewModel*/);
 
@@ -35,7 +35,7 @@ public:
 	virtual UWorld* ResolveWorld() const = 0;
 	virtual ULocalPlayer* ResolveOwningLocalPlayer() const = 0;
 	virtual APlayerController* ResolveOwningPlayer() const = 0;
-	
+
 	const TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& GetViewModels() const;
 
 	UMDViewModelBase* SetViewModel(UMDViewModelBase* ViewModel, const FMDViewModelAssignmentReference& Assignment);
@@ -46,7 +46,7 @@ public:
 	FDelegateHandle ListenForAnyViewModelChanged(FSimpleDelegate&& Delegate);
 	void StopListeningForAnyViewModelChanged(FDelegateHandle& Handle);
 	void StopListeningForAnyViewModelChanged(const void* BoundObject);
-	
+
 	FDelegateHandle ListenForChanges(FMDVMOnViewModelSet::FDelegate&& Delegate, const FMDViewModelAssignmentReference& Assignment);
 	void StopListeningForChanges(FDelegateHandle& Handle, const FMDViewModelAssignmentReference& Assignment);
 	void StopListeningForAllNativeViewModelsChanged(const void* BoundObject);
@@ -57,18 +57,20 @@ public:
 
 	bool IsListeningForChanges(const UObject* BoundObject, const FMDViewModelAssignmentReference& Assignment) const;
 
+	bool CanManuallySetViewModelForAssignment(const FMDViewModelAssignmentReference& Assignment) const;
+
 	TWeakInterfacePtr<IMDViewModelRuntimeInterface> MakeWeak() { return TWeakInterfacePtr<IMDViewModelRuntimeInterface>(this); }
 
 	FSimpleMulticastDelegate OnBeginDestroy;
 
 protected:
 	virtual TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& GetViewModels() = 0;
-	
+
 	void PopulateViewModels();
 	void CleanUpViewModels();
-	
+
 	void BroadcastViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, const FMDViewModelAssignmentReference& Assignment);
-	
+
 private:
 	FSimpleMulticastDelegate OnAnyViewModelSetDelegates;;
 	TMap<FMDViewModelAssignmentReference, FMDVMOnViewModelSet> OnViewModelSetDelegates;

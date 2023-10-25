@@ -99,7 +99,7 @@ FReply FMDVMDragAndDropViewModel::DroppedOnPin(FVector2D ScreenPosition, FVector
 {
 	FModifierKeysState ModifierKeys = FSlateApplication::Get().GetModifierKeys();
 	const bool bModifiedKeysActive = ModifierKeys.IsControlDown() || ModifierKeys.IsAltDown();
-	const bool bAutoCreateGetter = bModifiedKeysActive ? ModifierKeys.IsControlDown() : bControlDrag;
+	const bool bAutoCreateGetter = !bCanSet || (bModifiedKeysActive ? ModifierKeys.IsControlDown() : bControlDrag);
 	const bool bAutoCreateSetter = bModifiedKeysActive ? ModifierKeys.IsAltDown() : bAltDrag;
 
 	if (bAutoCreateGetter || bAutoCreateSetter)
@@ -202,6 +202,15 @@ FText FMDVMDragAndDropViewModel::GetNodeTitle() const
 {
 	const FText VMClassName = (VMAssignment.ViewModelClass.Get() != nullptr) ? VMAssignment.ViewModelClass.Get()->GetDisplayNameText() : INVTEXT("NULL");
 	return FText::Format(INVTEXT("{0} ({1})"), VMClassName, FText::FromName(VMAssignment.ViewModelName));
+}
+
+void FMDVMDragAndDropViewModel::SetCanSet(bool InCanSet)
+{
+	bCanSet = InCanSet;
+	if (!bCanSet)
+	{
+		bIsGetter = true;
+	}
 }
 
 void SMDViewModelListItem::Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwningTable, const TSharedPtr<FMDViewModelEditorAssignment>& Item, TWeakPtr<FBlueprintEditor> InBlueprintEditor)
@@ -401,10 +410,13 @@ FReply SMDViewModelListItem::OnDragDetected(const FGeometry& MyGeometry, const F
 
 	if (Assignment.IsValid())
 	{
+		const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(Assignment->Assignment.ProviderTag);
+		const bool bCanSetViewModel = IsValid(Provider) && Provider->DoesAllowManualSetting();
 		const FMDViewModelAssignmentReference AssignmentRef = { Assignment->Assignment.ViewModelClass.Get(), Assignment->Assignment.ViewModelName };
 		const TSharedRef<FMDVMDragAndDropViewModel> Action = FMDVMDragAndDropViewModel::Create(AssignmentRef);
 		Action->SetAltDrag(MouseEvent.IsAltDown());
 		Action->SetCtrlDrag(MouseEvent.IsLeftControlDown() || MouseEvent.IsRightControlDown());
+		Action->SetCanSet(bCanSetViewModel);
 		return FReply::Handled().BeginDragDrop(Action);
 	}
 

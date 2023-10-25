@@ -39,9 +39,11 @@ public:
 
 	void SetAltDrag(bool InIsAltDrag) {	bAltDrag = InIsAltDrag; }
 	void SetCtrlDrag(bool InIsCtrlDrag) { bControlDrag = InIsCtrlDrag; }
+	void SetCanSet(bool InCanSet);
 
 private:
 	TOptional<bool> bIsGetter;
+	bool bCanSet = true;
 	bool bControlDrag = false;
 	bool bAltDrag = false;
 };

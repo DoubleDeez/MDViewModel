@@ -20,6 +20,7 @@ public:
 	virtual UMDViewModelBase* SetViewModel(IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data) override;
 
 	virtual bool DoesSupportViewModelSettings() const override { return false; }
+	virtual bool DoesAllowManualSetting() const override { return true; }
 
 	virtual FGameplayTag GetProviderTag() const override { return TAG_MDVMProvider_Manual; }
 

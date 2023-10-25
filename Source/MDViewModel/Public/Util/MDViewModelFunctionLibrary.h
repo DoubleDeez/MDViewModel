@@ -35,7 +35,7 @@ public:
 
 	// Get a view model instance that's been assigned to a widget
 	UFUNCTION(BlueprintCallable, Category = "View Model", DisplayName = "Get View Model", meta = (DefaultToSelf = "Object", ExpandBoolAsExecs = "IsValid", AutoCreateRefTerm = "Assignment", BlueprintInternalUseOnly = "true"))
-	static UMDViewModelBase* BP_GetViewModel(UPARAM(meta = (VMAssignment = "Assignment")) UObject* Object, const FMDViewModelAssignmentReference& Assignment, bool& IsValid);
+	static UMDViewModelBase* BP_GetViewModel(UPARAM(meta = (VMAssignment = "Assignment")) UObject* Object, UPARAM(meta = (MDVMShowNonManual = "true")) const FMDViewModelAssignmentReference& Assignment, bool& IsValid);
 
 	UFUNCTION(BlueprintCallable, CustomThunk, Category = "View Model", meta = (AutoCreateRefTerm = "ViewModelSettings", DeterminesOutputType="ViewModelClass", WorldContext="WorldContextObject"))
 	static UMDViewModelBase* FindOrCreateCachedViewModel(const UObject* WorldContextObject, UObject* CacheContextObject, const FInstancedStruct& ViewModelSettings, TSubclassOf<UMDViewModelBase> ViewModelClass, FName CachedViewModelKey = TEXT("Default"));

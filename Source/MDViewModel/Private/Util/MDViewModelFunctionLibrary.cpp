@@ -1,9 +1,14 @@
 #include "Util/MDViewModelFunctionLibrary.h"
 
 #include "Blueprint/UserWidget.h"
+#include "Runtime/Launch/Resources/Version.h"
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
+#include "Logging/StructuredLog.h"
+#endif
 #include "UObject/Package.h"
 #include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelAssignmentReference.h"
+#include "Util/MDViewModelLog.h"
 #include "Util/MDViewModelUtils.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelProviders/MDViewModelProvider_Cached.h"
@@ -21,6 +26,20 @@ UMDViewModelBase* UMDViewModelFunctionLibrary::BP_SetViewModel(UObject* Object, 
 {
 	if (IMDViewModelRuntimeInterface* Interface = MDViewModelUtils::GetOrCreateViewModelRuntimeInterface(Object))
 	{
+		if (!Interface->CanManuallySetViewModelForAssignment(Assignment))
+		{
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
+			UE_LOGFMT(LogMDViewModel, Error, "Manually setting a View Model assignment [{Assignment}] with a non-manual provider (Object [{ObjectName}])",
+				("Assignment", Assignment),
+				("ObjectName", GetPathNameSafe(Object)));
+#else
+			UE_LOG(LogMDViewModel, Error, TEXT("Manually setting View Model assignment [%s (%s)] with a non-manual provider (Object [%s])"),
+				*GetNameSafe(Assignment.ViewModelClass.Get()),
+				*Assignment.ViewModelName.ToString(),
+				*GetPathNameSafe(Object));
+#endif
+		}
+
 		return Interface->SetViewModel(ViewModel, Assignment);
 	}
 

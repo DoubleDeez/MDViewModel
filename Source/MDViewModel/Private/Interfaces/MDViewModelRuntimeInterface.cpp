@@ -39,7 +39,7 @@ UMDViewModelBase* IMDViewModelRuntimeInterface::SetViewModel(UMDViewModelBase* V
 		*GetPathNameSafe(GetOwningObject()),
 		*GetPathNameSafe(GetViewModel(Assignment)));
 #endif
-	
+
 	if (!IsValid(ViewModel))
 	{
 		ClearViewModel(Assignment);
@@ -50,7 +50,7 @@ UMDViewModelBase* IMDViewModelRuntimeInterface::SetViewModel(UMDViewModelBase* V
 		{
 			return nullptr;
 		}
-			
+
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
 		MDViewModelUtils::SearchViewModelAssignments(GetOwningObjectClass(), Assignments, Assignment.ViewModelClass.Get(), FGameplayTag::EmptyTag, Assignment.ViewModelName);
 		if (Assignments.IsEmpty())
@@ -66,7 +66,7 @@ UMDViewModelBase* IMDViewModelRuntimeInterface::SetViewModel(UMDViewModelBase* V
 				*GetPathNameSafe(GetOwningObjectClass()));
 #endif
 		}
-			
+
 		UMDViewModelBase* OldViewModel = GetViewModels().FindRef(Assignment);
 		GetViewModels().FindOrAdd(Assignment) = ViewModel;
 
@@ -92,7 +92,7 @@ UMDViewModelBase* IMDViewModelRuntimeInterface::SetViewModelOfClass(const UObjec
 #else
 		const FName VMObjectName = NAME_None;
 #endif
-	
+
 #if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 		UE_LOGFMT(LogMDViewModel, Verbose, "Creating View Model for Assignment [{Assignment}] for Object [{ObjectName}]",
 			("Assignment", Assignment),
@@ -238,7 +238,7 @@ bool IMDViewModelRuntimeInterface::IsListeningForChanges(const UObject* BoundObj
 				return true;
 			}
 		}
-		
+
 		if (const TArray<FMDVMOnViewModelSetDynamic>* Delegates = OnViewModelSetDynamicDelegates.Find(Assignment))
 		{
 			for (const FMDVMOnViewModelSetDynamic& Delegate : *Delegates)
@@ -249,6 +249,25 @@ bool IMDViewModelRuntimeInterface::IsListeningForChanges(const UObject* BoundObj
 				}
 			}
 		}
+	}
+
+	return false;
+}
+
+bool IMDViewModelRuntimeInterface::CanManuallySetViewModelForAssignment(const FMDViewModelAssignmentReference& Assignment) const
+{
+	if (!Assignment.IsAssignmentValid())
+	{
+		return false;
+	}
+
+	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
+	MDViewModelUtils::SearchViewModelAssignments(GetOwningObjectClass(), ViewModelAssignments, Assignment.ViewModelClass.LoadSynchronous(), FGameplayTag::EmptyTag, Assignment.ViewModelName);
+
+	for (const auto& Pair : ViewModelAssignments)
+	{
+		const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(Pair.Key.ProviderTag);
+		return IsValid(Provider) && Provider->DoesAllowManualSetting();
 	}
 
 	return false;
@@ -286,7 +305,7 @@ void IMDViewModelRuntimeInterface::CleanUpViewModels()
 #else
 	UE_LOG(LogMDViewModel, Verbose, TEXT("Cleaning up View Models for Object [%s]"), *GetPathNameSafe(GetOwningObject()));
 #endif
-	
+
 	// Broadcast out that we're null-ing out view models
 	{
 		for (auto It = OnViewModelSetDelegates.CreateConstIterator(); It; ++It)

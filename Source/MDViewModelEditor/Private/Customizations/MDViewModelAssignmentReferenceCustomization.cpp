@@ -5,6 +5,7 @@
 #include "Engine/Blueprint.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "IDetailChildrenBuilder.h"
+#include "Logging/TokenizedMessage.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "PropertyHandle.h"
 #include "ScopedTransaction.h"
@@ -16,6 +17,8 @@
 #include "ViewModelTab/MDViewModelAssignmentEditorObject.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
+
+DECLARE_DELEGATE_OneParam(FMDVMAROnAssignmentSelected, FMDViewModelAssignment);
 
 namespace MDViewModelAssignmentReferenceCustomization_Private
 {
@@ -38,6 +41,76 @@ namespace MDViewModelAssignmentReferenceCustomization_Private
 		}
 
 		return false;
+	}
+
+	TSharedRef<SWidget> MakeAssignmentMenu(const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& ViewModelAssignments, bool bShowNonManualAssignments, FMDVMAROnAssignmentSelected&& Callback)
+	{
+		FMenuBuilder MenuBuilder(true, nullptr);
+
+
+			TArray<FMDViewModelAssignment> ManualAssignments;
+			TArray<FMDViewModelAssignment> NonManualAssignments;
+			for (const auto& Pair : ViewModelAssignments)
+			{
+				const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(Pair.Key.ProviderTag);
+				if (!IsValid(Provider))
+				{
+					continue;
+				}
+
+				if (Provider->DoesAllowManualSetting())
+				{
+					ManualAssignments.Add(Pair.Key);
+				}
+				else
+				{
+					NonManualAssignments.Add(Pair.Key);
+				}
+			}
+
+			auto SortFunc = [](const FMDViewModelAssignment& A, const FMDViewModelAssignment& B)
+			{
+				if (!IsValid(A.ViewModelClass) || !IsValid(B.ViewModelClass))
+				{
+					return IsValid(A.ViewModelClass);
+				}
+
+				const FText ADisplayName = FText::Format(INVTEXT("{0} ({1})"), A.ViewModelClass->GetDisplayNameText(), FText::FromName(A.ViewModelName));
+				const FText BDisplayName = FText::Format(INVTEXT("{0} ({1})"), B.ViewModelClass->GetDisplayNameText(), FText::FromName(B.ViewModelName));
+
+				return A.ViewModelClass->GetDisplayNameText().CompareTo(B.ViewModelClass->GetDisplayNameText()) < 0;
+			};
+			ManualAssignments.Sort(SortFunc);
+			NonManualAssignments.Sort(SortFunc);
+
+			auto PopulateMenu = [&MenuBuilder, Callback = MoveTemp(Callback)](const TArray<FMDViewModelAssignment>& Assignments)
+			{
+				for (const FMDViewModelAssignment& Assignment : Assignments)
+				{
+					MenuBuilder.AddMenuEntry(
+						FText::Format(INVTEXT("{0} ({1})"), Assignment.ViewModelClass->GetDisplayNameText(), FText::FromName(Assignment.ViewModelName)),
+						Assignment.ViewModelClass->GetToolTipText(),
+						FSlateIcon(),
+						FExecuteAction::CreateLambda([Assignment, Callback = MoveTemp(const_cast<FMDVMAROnAssignmentSelected&>(Callback))]()
+						{
+							Callback.ExecuteIfBound(Assignment);
+						})
+					);
+				}
+			};
+
+			MenuBuilder.BeginSection(TEXT("Manual"), INVTEXT("Manual Assignments"));
+			PopulateMenu(ManualAssignments);
+			MenuBuilder.EndSection();
+
+			if (bShowNonManualAssignments)
+			{
+				MenuBuilder.BeginSection(TEXT("NonManual"), INVTEXT("Non-Manual Assignments"));
+				PopulateMenu(NonManualAssignments);
+				MenuBuilder.EndSection();
+			}
+
+		return MenuBuilder.MakeWidget();
 	}
 }
 
@@ -109,7 +182,7 @@ UClass* FMDViewModelAssignmentReferenceCustomization::GetBoundObjectClass() cons
 
 TSharedRef<SWidget> FMDViewModelAssignmentReferenceCustomization::MakeAssignmentMenu()
 {
-	FMenuBuilder MenuBuilder(true, nullptr);
+	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
 	if (UClass* BoundObjectClass = GetBoundObjectClass())
 	{
 		TArray<UPackage*> AssignmentPackages;
@@ -124,7 +197,6 @@ TSharedRef<SWidget> FMDViewModelAssignmentReferenceCustomization::MakeAssignment
 		const bool bIsReferenceInSamePackage = IsValid(BoundBlueprint) && AssignmentPackages.Num() == 1 && BoundObjectClass->GetOuterUPackage() == AssignmentPackages[0];
 		const bool bIsReferenceFromEditorObjectInSamePackage = IsValid(EditorObject) && EditorObject->BlueprintPtr.Get() == BoundBlueprint;
 
-		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
 		if (bIsReferenceInSamePackage || bIsReferenceFromEditorObjectInSamePackage)
 		{
 			FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(BoundBlueprint, ViewModelAssignments);
@@ -133,19 +205,10 @@ TSharedRef<SWidget> FMDViewModelAssignmentReferenceCustomization::MakeAssignment
 		{
 			MDViewModelUtils::GetViewModelAssignments(BoundObjectClass, ViewModelAssignments);
 		}
-
-		for (const auto& Pair : ViewModelAssignments)
-		{
-			MenuBuilder.AddMenuEntry(
-				FText::Format(INVTEXT("{0} ({1})"), Pair.Key.ViewModelClass->GetDisplayNameText(), FText::FromName(Pair.Key.ViewModelName)),
-				Pair.Key.ViewModelClass->GetToolTipText(),
-				FSlateIcon(),
-				FExecuteAction::CreateSP(this, &FMDViewModelAssignmentReferenceCustomization::SetSelectedAssignment, Pair.Key)
-			);
-		}
 	}
 
-	return MenuBuilder.MakeWidget();
+	auto Delegate = FMDVMAROnAssignmentSelected::CreateSP(this, &FMDViewModelAssignmentReferenceCustomization::SetSelectedAssignment);
+	return MDViewModelAssignmentReferenceCustomization_Private::MakeAssignmentMenu(ViewModelAssignments, StructHandle->GetBoolMetaData(TEXT("MDVMShowNonManual")), MoveTemp(Delegate));
 }
 
 void FMDViewModelAssignmentReferenceCustomization::SetSelectedAssignment(FMDViewModelAssignment Assignment) const
@@ -316,17 +379,11 @@ TSharedRef<SWidget> SMDViewModelAssignmentReferenceGraphPin::MakeAssignmentMenu(
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
 	GetWidgetViewModelAssignments(ViewModelAssignments);
 
-	for (const auto& Pair : ViewModelAssignments)
-	{
-		MenuBuilder.AddMenuEntry(
-			FText::Format(INVTEXT("{0} ({1})"), Pair.Key.ViewModelClass->GetDisplayNameText(), FText::FromName(Pair.Key.ViewModelName)),
-			Pair.Key.ViewModelClass->GetToolTipText(),
-			FSlateIcon(),
-			FExecuteAction::CreateSP(this, &SMDViewModelAssignmentReferenceGraphPin::SetSelectedAssignment, Pair.Key)
-		);
-	}
+	const bool bShowNonManualAssignments = GraphPinObj != nullptr && GraphPinObj->GetOwningNode() != nullptr
+		&& GraphPinObj->GetOwningNode()->GetPinMetaData(GraphPinObj->GetFName(), TEXT("MDVMShowNonManual")).ToBool();
 
-	return MenuBuilder.MakeWidget();
+	auto Delegate = FMDVMAROnAssignmentSelected::CreateSP(this, &SMDViewModelAssignmentReferenceGraphPin::SetSelectedAssignment);
+	return MDViewModelAssignmentReferenceCustomization_Private::MakeAssignmentMenu(ViewModelAssignments, bShowNonManualAssignments, MoveTemp(Delegate));
 }
 
 void SMDViewModelAssignmentReferenceGraphPin::SetSelectedAssignment(FMDViewModelAssignment Assignment) const

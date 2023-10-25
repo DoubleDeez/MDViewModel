@@ -36,6 +36,12 @@ public:
 	// Override this to return false if your provider doesn't perform the actual assignment since your provider will not be able to pass along view model settings
 	virtual bool DoesSupportViewModelSettings() const { return true; }
 
+	// Override this to indicate that the user can manually set view model instances for assignments using this provider (using Set View Model, Create And Set View Model, MDVMDynamicEntryBox, etc)
+	virtual bool DoesAllowManualSetting() const { return false; }
+
+	// Called a view model instance is manually set for an assignment using this provider
+	virtual void OnAssignmentManuallySet() {}
+
 	virtual FGameplayTag GetProviderTag() const { PURE_VIRTUAL(UMDViewModelProviderBase::GetProviderTag, return FGameplayTag::EmptyTag;) }
 
 	// Set the view model on the object using the specified assignment and data
