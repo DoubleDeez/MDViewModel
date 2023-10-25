@@ -17,6 +17,8 @@ public:
 
 	virtual void GetMenuActions(FBlueprintActionDatabaseRegistrar& InActionRegistrar) const override;
 
+	virtual void AutowireNewNode(UEdGraphPin* FromPin) override;
+
 	virtual void AllocateDefaultPins() override;
 
 	void SetDefaultAssignment(const FMDViewModelAssignmentReference& Assignment);
