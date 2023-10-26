@@ -1,20 +1,30 @@
 #pragma once
 
+#include "Interfaces/MDViewModelSupportedInterface.h"
 #include "MDViewModelBase.h"
+#include "Util/MDViewModelAssignment.h"
+#include "Util/MDViewModelAssignmentData.h"
+#include "Util/MDViewModelAssignmentReference.h"
+
 #include "MDViewModelBlueprintBase.generated.h"
 
 /**
  * Base class for creating view model blueprints.
  */
 UCLASS(Abstract, Blueprintable)
-class MDVIEWMODEL_API UMDViewModelBlueprintBase : public UMDViewModelBase
+class MDVIEWMODEL_API UMDViewModelBlueprintBase : public UMDViewModelBase, public IMDViewModelSupportedInterface, public IMDVMCompiledAssignmentsInterface
 {
 	GENERATED_BODY()
 
 public:
+	virtual void BeginDestroy() override;
+
 	virtual UWorld* GetWorld() const override;
 
 	virtual void PostInitProperties() override;
+
+	virtual void SetAssignments(const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& InAssignments) override { Assignments = InAssignments; }
+	virtual const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& GetAssignments() const override { return Assignments; }
 
 	virtual const UE::FieldNotification::IClassDescriptor& GetFieldNotificationDescriptor() const override;
 
@@ -60,6 +70,8 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "View Model", meta = (AutoCreateRefTerm = "ViewModelSettings", DeterminesOutputType = "ViewModelClass"))
 	UMDViewModelBase* CreateSubViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, UObject* InContextObject, const FInstancedStruct& ViewModelSettings) const;
 
+	virtual TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& GetViewModels() override { return ViewModels; }
+
 #if WITH_EDITORONLY_DATA
 	// Specify the struct type to expose in the view model assignment editor
 	UPROPERTY(EditDefaultsOnly, Category = "View Model")
@@ -92,4 +104,12 @@ private:
 
 	UPROPERTY(Transient)
 	mutable TWeakObjectPtr<const UObject> CDOWorldContextObjectPtr;
+
+	// The compiled view model assignments for this object, only exists on the CDO
+	UPROPERTY(DuplicateTransient)
+	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> Assignments;
+
+	// The runtime view model instances for this object
+	UPROPERTY(Transient)
+	TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>> ViewModels;
 };

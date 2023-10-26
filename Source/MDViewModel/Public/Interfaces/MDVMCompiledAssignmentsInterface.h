@@ -21,8 +21,9 @@ class MDVIEWMODEL_API IMDVMCompiledAssignmentsInterface
 	GENERATED_BODY()
 
 public:
+	virtual void SetAssignments(const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& InAssignments) = 0;
 	virtual const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& GetAssignments() const = 0;
-	
+
 	bool HasAssignments() const;
 	void SearchAssignments(TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& OutViewModelAssignments, TSubclassOf<UMDViewModelBase> ViewModelClass = nullptr, const FGameplayTag& ProviderTag = FGameplayTag::EmptyTag, const FName& ViewModelName = NAME_None) const;
 

@@ -3,6 +3,7 @@
 #include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 #include "Components/MDViewModelAssignmentComponent.h"
 #include "Engine/SCS_Node.h"
+#include "Interfaces/MDViewModelSupportedInterface.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "Util/MDViewModelGraphStatics.h"
 #include "Util/MDViewModelUtils.h"
@@ -30,7 +31,12 @@ void UMDViewModelBlueprintCompilerExtension::ProcessBlueprintCompiled(const FKis
 		}
 		else if (IsValid(CompilationContext.NewClass) && CompilationContext.NewClass->IsChildOf<AActor>())
 		{
+			// TODO - Is this necessary? Can we get by with only FMDViewModelGraphModule::OnBlueprintPreCompile for actors?
 			HandleActorBlueprintCompiled(Extension, *Blueprint, CompilationContext);
+		}
+		else if (IsValid(CompilationContext.NewClass) && CompilationContext.NewClass->ImplementsInterface(UMDViewModelSupportedInterface::StaticClass()))
+		{
+			// Do nothing for general objects, compilation is handled by FMDViewModelGraphModule::OnBlueprintPreCompile
 		}
 	}
 }
@@ -42,7 +48,7 @@ void UMDViewModelBlueprintCompilerExtension::HandleActorBlueprintPreCompile(IMDV
 	{
 		return;
 	}
-	
+
 	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> CompiledAssignments;
 	FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(Blueprint, CompiledAssignments);
 	if (!CompiledAssignments.IsEmpty())
@@ -83,10 +89,31 @@ void UMDViewModelBlueprintCompilerExtension::HandleActorBlueprintPreCompile(IMDV
 	}
 }
 
+void UMDViewModelBlueprintCompilerExtension::HandleGeneralBlueprintPreCompile(IMDViewModelAssignableInterface* Extension, UBlueprintGeneratedClass* BPClass) const
+{
+	UBlueprint* Blueprint = UBlueprint::GetBlueprintFromClass(BPClass);
+	IMDVMCompiledAssignmentsInterface* CompiledAssignmentsInterface = MDViewModelUtils::GetCompiledAssignmentsInterface(BPClass);
+	if (!IsValid(Blueprint) || CompiledAssignmentsInterface == nullptr)
+	{
+		return;
+	}
+
+	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> CompiledAssignments;
+	FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(Blueprint, CompiledAssignments);
+
+	CompiledAssignmentsInterface->SetAssignments(CompiledAssignments);
+
+	if (CompiledAssignments.IsEmpty() && Extension != nullptr)
+	{
+		// No assignments, remove the extension
+		Blueprint->RemoveExtension(Cast<UBlueprintExtension>(Extension));
+	}
+}
+
 void UMDViewModelBlueprintCompilerExtension::HandleWidgetBlueprintCompiled(IMDViewModelAssignableInterface* Extension, UWidgetBlueprint& WidgetBP, const FKismetCompilerContext& CompilationContext) const
 {
 	const bool bHasPopulatedExtension = Extension != nullptr && Extension->HasAssignments();
-	
+
 	if (!bHasPopulatedExtension)
 	{
 		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ParentViewModelAssignments;
@@ -118,4 +145,9 @@ void UMDViewModelBlueprintCompilerExtension::HandleWidgetBlueprintCompiled(IMDVi
 void UMDViewModelBlueprintCompilerExtension::HandleActorBlueprintCompiled(IMDViewModelAssignableInterface* Extension, UBlueprint& Blueprint, const FKismetCompilerContext& CompilationContext) const
 {
 	HandleActorBlueprintPreCompile(Extension, CompilationContext.NewClass);
+}
+
+void UMDViewModelBlueprintCompilerExtension::HandleGeneralBlueprintCompiled(IMDViewModelAssignableInterface* Extension, UBlueprint& Blueprint, const FKismetCompilerContext& CompilationContext) const
+{
+	HandleGeneralBlueprintPreCompile(Extension, CompilationContext.NewClass);
 }

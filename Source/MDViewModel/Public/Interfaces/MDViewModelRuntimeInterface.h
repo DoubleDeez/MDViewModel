@@ -16,7 +16,7 @@ struct FInstancedStruct;
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FMDVMOnViewModelSetDynamic, UMDViewModelBase*, OldViewModel, UMDViewModelBase*, NewViewModel);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FMDVMOnViewModelSet, UMDViewModelBase* /*OldViewModel*/, UMDViewModelBase* /*NewViewModel*/);
 
-UINTERFACE()
+UINTERFACE(meta=(CannotImplementInterfaceInBlueprint))
 class UMDViewModelRuntimeInterface : public UInterface
 {
 	GENERATED_BODY()
@@ -72,7 +72,7 @@ protected:
 	void BroadcastViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, const FMDViewModelAssignmentReference& Assignment);
 
 private:
-	FSimpleMulticastDelegate OnAnyViewModelSetDelegates;;
+	FSimpleMulticastDelegate OnAnyViewModelSetDelegates;
 	TMap<FMDViewModelAssignmentReference, FMDVMOnViewModelSet> OnViewModelSetDelegates;
 	TMap<FMDViewModelAssignmentReference, TArray<FMDVMOnViewModelSetDynamic>> OnViewModelSetDynamicDelegates;
 };

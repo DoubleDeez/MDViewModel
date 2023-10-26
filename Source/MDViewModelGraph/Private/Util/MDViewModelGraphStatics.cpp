@@ -1,6 +1,6 @@
 #include "Util/MDViewModelGraphStatics.h"
 
-#include "BlueprintExtensions/MDViewModelActorBlueprintExtension.h"
+#include "BlueprintExtensions/MDViewModelSupportedBlueprintExtension.h"
 #include "BlueprintExtensions/MDViewModelAssignableInterface.h"
 #include "BlueprintExtensions/MDViewModelWidgetBlueprintExtension.h"
 #include "Components/MDViewModelAssignmentComponent.h"
@@ -9,6 +9,7 @@
 #include "Engine/SCS_Node.h"
 #include "Engine/SimpleConstructionScript.h"
 #include "GameFramework/Actor.h"
+#include "Interfaces/MDViewModelSupportedInterface.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Nodes/MDVMNode_ViewModelChanged.h"
@@ -405,11 +406,11 @@ IMDViewModelAssignableInterface* FMDViewModelGraphStatics::GetOrCreateAssignable
 			return Extension;
 		}
 	}
-	else if (IsValid(BP) && IsValid(BP->GeneratedClass) && BP->GeneratedClass->IsChildOf<AActor>())
+	else if (IsValid(BP) && IsValid(BP->GeneratedClass) && (BP->GeneratedClass->IsChildOf<AActor>() || BP->GeneratedClass->ImplementsInterface(UMDViewModelSupportedInterface::StaticClass())))
 	{
 		const TObjectPtr<UBlueprintExtension>* Extension = BP->GetExtensions().FindByPredicate([](const TObjectPtr<UBlueprintExtension>& Extension)
 		{
-			return IsValid(Extension) && Extension->IsA<UMDViewModelActorBlueprintExtension>();
+			return IsValid(Extension) && Extension->IsA<UMDViewModelSupportedBlueprintExtension>();
 		});
 
 		if (Extension != nullptr && IsValid(*Extension))
@@ -417,7 +418,7 @@ IMDViewModelAssignableInterface* FMDViewModelGraphStatics::GetOrCreateAssignable
 			return Cast<IMDViewModelAssignableInterface>(*Extension);
 		}
 
-		UMDViewModelActorBlueprintExtension* NewExtension = NewObject<UMDViewModelActorBlueprintExtension>(BP, NAME_None, RF_Transactional);
+		UMDViewModelSupportedBlueprintExtension* NewExtension = NewObject<UMDViewModelSupportedBlueprintExtension>(BP, NAME_None, RF_Transactional);
 		BP->AddExtension(NewExtension);
 		return NewExtension;
 	}
@@ -435,11 +436,11 @@ IMDViewModelAssignableInterface* FMDViewModelGraphStatics::GetAssignableInterfac
 			return Extension;
 		}
 	}
-	else if (IsValid(BP) && IsValid(BP->GeneratedClass) && BP->GeneratedClass->IsChildOf<AActor>())
+	else if (IsValid(BP) && IsValid(BP->GeneratedClass) && (BP->GeneratedClass->IsChildOf<AActor>() || BP->GeneratedClass->ImplementsInterface(UMDViewModelSupportedInterface::StaticClass())))
 	{
 		const TObjectPtr<UBlueprintExtension>* ExtensionPtr = BP->GetExtensions().FindByPredicate([](const TObjectPtr<UBlueprintExtension>& Extension)
 		{
-			return IsValid(Extension) && Extension->IsA<UMDViewModelActorBlueprintExtension>();
+			return IsValid(Extension) && Extension->IsA<UMDViewModelSupportedBlueprintExtension>();
 		});
 
 		IMDViewModelAssignableInterface* Extension = (ExtensionPtr != nullptr) ? Cast<IMDViewModelAssignableInterface>(*ExtensionPtr) : nullptr;
@@ -457,7 +458,7 @@ IMDViewModelAssignableInterface* FMDViewModelGraphStatics::GetAssignableInterfac
 
 UMDViewModelAssignmentComponent* FMDViewModelGraphStatics::GetOrCreateAssignmentComponentTemplate(UBlueprintGeneratedClass* BPClass)
 {
-	check(IsValid(BPClass) && BPClass->IsChildOf<AActor>());
+	//check(IsValid(BPClass) && BPClass->IsChildOf<AActor>());
 
 	TArray<UBlueprintGeneratedClass*> Hierarchy;
 	UBlueprint::GetBlueprintHierarchyFromClass(BPClass, Hierarchy);

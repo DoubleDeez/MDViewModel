@@ -11,6 +11,7 @@
 #include "Customizations/MDViewModelAssignmentReferenceCustomization.h"
 #include "EdGraphUtilities.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Interfaces/MDViewModelSupportedInterface.h"
 #include "ISettingsModule.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "MDViewModelEditorConfig.h"
@@ -37,7 +38,7 @@ void FMDViewModelEditorModule::StartupModule()
 {
 	IUMGEditorModule& UMGEditorModule = FModuleManager::LoadModuleChecked<IUMGEditorModule>("UMGEditor");
 	UMGEditorModule.OnRegisterTabsForEditor().AddRaw(this, &FMDViewModelEditorModule::HandleRegisterBlueprintEditorTab);
-	
+
 	FBlueprintEditorModule& BlueprintEditorModule = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet");
 	BlueprintEditorModule.OnRegisterTabsForEditor().AddRaw(this, &FMDViewModelEditorModule::RegisterBlueprintEditorTab);
 	BlueprintEditorModule.OnRegisterLayoutExtensions().AddRaw(this, &FMDViewModelEditorModule::RegisterBlueprintEditorLayout);
@@ -45,11 +46,11 @@ void FMDViewModelEditorModule::StartupModule()
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditorModule.RegisterCustomPropertyTypeLayout(FMDViewModelAssignmentReference::StaticStruct()->GetFName(), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FMDViewModelAssignmentReferenceCustomization::MakeInstance));
 	PropertyEditorModule.RegisterCustomClassLayout(UMDViewModelAssignmentComponent::StaticClass()->GetFName(), FOnGetDetailCustomizationInstance::CreateStatic(&FMDViewModelAssignmentComponentCustomization::MakeInstance));
-	
+
 	ISettingsModule& SettingsModule = FModuleManager::LoadModuleChecked<ISettingsModule>("Settings");
 	if (FSlateApplication::IsInitialized())
 	{
-		SettingsModule.RegisterSettings(TEXT("Project"), TEXT("Game"), TEXT("ViewModelConfig"), INVTEXT("View Model Config Properties"), INVTEXT("Set the values of Config properties on view model classes"), SAssignNew(ViewModelConfigEditor, SMDVMConfigEditor));	
+		SettingsModule.RegisterSettings(TEXT("Project"), TEXT("Game"), TEXT("ViewModelConfig"), INVTEXT("View Model Config Properties"), INVTEXT("Set the values of Config properties on view model classes"), SAssignNew(ViewModelConfigEditor, SMDVMConfigEditor));
 
 		FCoreDelegates::OnPreExit.AddLambda([]()
 		{
@@ -60,9 +61,9 @@ void FMDViewModelEditorModule::StartupModule()
 			}
 		});
 	}
-	
+
 	GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OnAssetEditorOpened().AddRaw(this, &FMDViewModelEditorModule::RegisterBlueprintEditorDrawer);
-	
+
 	ViewModelGraphPanelPinFactory = MakeShared<FMDViewModelGraphPanelPinFactory>();
 	FEdGraphUtilities::RegisterVisualPinFactory(ViewModelGraphPanelPinFactory);
 }
@@ -82,7 +83,7 @@ void FMDViewModelEditorModule::ShutdownModule()
 			AssetEditorSubsystem->OnAssetEditorOpened().RemoveAll(this);
 		}
 	}
-	
+
 	if (ViewModelGraphPanelPinFactory.IsValid())
 	{
 		FEdGraphUtilities::UnregisterVisualPinFactory(ViewModelGraphPanelPinFactory);
@@ -117,7 +118,7 @@ void FMDViewModelEditorModule::HandleRegisterBlueprintEditorTab(const FWidgetBlu
 	{
 		constexpr bool bIsDrawer = false;
 		TabFactories.RegisterFactory(MakeShared<FMDViewModelSummoner>(InApplicationMode.GetBlueprintEditor(), bIsDrawer));
-		
+
 		if (InApplicationMode.LayoutExtender)
 		{
 			const FName RelativeTab = InApplicationMode.GetModeName() == FWidgetBlueprintApplicationModes::DesignerMode
@@ -161,7 +162,7 @@ void FMDViewModelEditorModule::RegisterBlueprintEditorLayout(FLayoutExtender& Ex
 	{
 		return;
 	}
-	
+
 	Extender.ExtendLayout(FBlueprintEditorTabs::FindResultsID, ELayoutExtensionPosition::Before, FTabManager::FTab(FMDViewModelSummoner::TabID, ETabState::ClosedTab));
 }
 
@@ -171,7 +172,7 @@ void FMDViewModelEditorModule::RegisterBlueprintEditorTab(FWorkflowAllowedTabSet
 	{
 		return;
 	}
-	
+
 	if (!GetDefault<UMDViewModelEditorConfig>()->bEnableViewModelsInActorBlueprints || !BlueprintEditor.IsValid())
 	{
 		return;
@@ -182,8 +183,8 @@ void FMDViewModelEditorModule::RegisterBlueprintEditorTab(FWorkflowAllowedTabSet
 	{
 		return;
 	}
-	
-	if (!IsValid(Blueprint->GeneratedClass) || !Blueprint->GeneratedClass->IsChildOf<AActor>())
+
+	if (!IsValid(Blueprint->GeneratedClass) || (!Blueprint->GeneratedClass->IsChildOf<AActor>() && !Blueprint->GeneratedClass->ImplementsInterface(UMDViewModelSupportedInterface::StaticClass())))
 	{
 		return;
 	}
@@ -198,15 +199,15 @@ void FMDViewModelEditorModule::RegisterBlueprintEditorDrawer(UObject* Asset)
 	{
 		return;
 	}
-	
+
 	const UBlueprint* Blueprint = Cast<UBlueprint>(Asset);
 	UAssetEditorSubsystem* AssetEditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
 	if (!IsValid(AssetEditorSubsystem) || !IsValid(Blueprint))
 	{
 		return;
 	}
-	
-	if (!IsValid(Blueprint->GeneratedClass) || !Blueprint->GeneratedClass->IsChildOf<AActor>())
+
+	if (!IsValid(Blueprint->GeneratedClass) || (!Blueprint->GeneratedClass->IsChildOf<AActor>() && !Blueprint->GeneratedClass->ImplementsInterface(UMDViewModelSupportedInterface::StaticClass())))
 	{
 		return;
 	}
@@ -224,7 +225,7 @@ void FMDViewModelEditorModule::RegisterBlueprintEditorDrawer(UObject* Asset)
 	{
 		return;
 	}
-	
+
 	BlueprintEditor->RegisterDrawer(FMDViewModelSummoner::CreateDrawerConfig(BlueprintEditor));
 }
 

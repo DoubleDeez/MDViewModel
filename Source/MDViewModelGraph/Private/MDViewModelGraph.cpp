@@ -2,6 +2,7 @@
 #include "BlueprintExtensions/MDViewModelAssignableInterface.h"
 #include "BlueprintExtensions/MDViewModelBlueprintCompilerExtension.h"
 #include "Editor.h"
+#include "Interfaces/MDViewModelSupportedInterface.h"
 #include "Modules/ModuleManager.h"
 #include "Util/MDViewModelGraphStatics.h"
 
@@ -23,7 +24,7 @@ class FMDViewModelGraphModule : public IModuleInterface
 
 		FBlueprintCompilationManager::RegisterCompilerExtension(UBlueprint::StaticClass(), CompilerExtensionPtr.Get());
 	}
-	
+
 	virtual void ShutdownModule() override
 	{
 		FCoreDelegates::OnPostEngineInit.RemoveAll(this);
@@ -32,7 +33,7 @@ class FMDViewModelGraphModule : public IModuleInterface
 			GEditor->OnBlueprintPreCompile().Remove(PreCompileHandle);
 			PreCompileHandle.Reset();
 		}
-	
+
 		if (UMDViewModelBlueprintCompilerExtension* CompilerExtension = CompilerExtensionPtr.Get())
 		{
 			CompilerExtension->RemoveFromRoot();
@@ -42,7 +43,7 @@ class FMDViewModelGraphModule : public IModuleInterface
 
 	void OnBlueprintPreCompile(UBlueprint* Blueprint)
 	{
-		if (IsValid(Blueprint) && IsValid(Blueprint->ParentClass) && Blueprint->ParentClass->IsChildOf<AActor>())
+		if (IsValid(Blueprint) && IsValid(Blueprint->ParentClass))
 		{
 			if (const UMDViewModelBlueprintCompilerExtension* CompilerExtension = CompilerExtensionPtr.Get())
 			{
@@ -52,7 +53,14 @@ class FMDViewModelGraphModule : public IModuleInterface
 					return;
 				}
 
-				CompilerExtension->HandleActorBlueprintPreCompile(Extension, Cast<UBlueprintGeneratedClass>(Blueprint->GeneratedClass));
+				if (Blueprint->ParentClass->IsChildOf<AActor>())
+				{
+					CompilerExtension->HandleActorBlueprintPreCompile(Extension, Cast<UBlueprintGeneratedClass>(Blueprint->GeneratedClass));
+				}
+				else if (Blueprint->ParentClass->ImplementsInterface(UMDViewModelSupportedInterface::StaticClass()))
+				{
+					CompilerExtension->HandleGeneralBlueprintPreCompile(Extension, Cast<UBlueprintGeneratedClass>(Blueprint->GeneratedClass));
+				}
 			}
 		}
 	}

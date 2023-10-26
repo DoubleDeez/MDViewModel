@@ -1,6 +1,6 @@
-#include "BlueprintExtensions/MDViewModelActorBlueprintExtension.h"
+#include "BlueprintExtensions/MDViewModelSupportedBlueprintExtension.h"
 
-void UMDViewModelActorBlueprintExtension::PostLoad()
+void UMDViewModelSupportedBlueprintExtension::PostLoad()
 {
 	Super::PostLoad();
 

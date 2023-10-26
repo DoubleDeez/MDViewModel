@@ -18,15 +18,15 @@ class MDVIEWMODEL_API UMDViewModelAssignmentComponent : public UActorComponent, 
 
 public:
 	virtual void BeginDestroy() override;
-	
+
 	virtual UObject* GetOwningObject() const override;
 
 	virtual UGameInstance* ResolveGameInstance() const override;
 	virtual UWorld* ResolveWorld() const override;
 	virtual ULocalPlayer* ResolveOwningLocalPlayer() const override;
 	virtual APlayerController* ResolveOwningPlayer() const override;
-	
-	void SetAssignments(const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& InAssignments);
+
+	virtual void SetAssignments(const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& InAssignments) override;
 	virtual const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& GetAssignments() const override;
 
 protected:

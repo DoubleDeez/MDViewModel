@@ -1,13 +1,13 @@
 #include "Bindings/MDVMBlueprintBindingBase.h"
 
-#include "Blueprint/UserWidget.h"
+#include "GameFramework/Actor.h"
 #include "Interfaces/MDViewModelRuntimeInterface.h"
 #include "Util/MDViewModelUtils.h"
 
 void UMDVMBlueprintBindingBase::BindViewModelDelegates(IMDViewModelRuntimeInterface& Object) const
 {
 	Object.StopListeningForAllNativeViewModelsChanged(this);
-		
+
 	TWeakObjectPtr<UObject> WeakObject = Object.GetOwningObject();
 	for (int32 i = 0; i < GetNumEntries(); ++i)
 	{
@@ -26,8 +26,8 @@ void UMDVMBlueprintBindingBase::UnbindViewModelDelegates(IMDViewModelRuntimeInte
 
 void UMDVMBlueprintBindingBase::BindDynamicDelegates(UObject* InInstance) const
 {
-	// Only Widgets bind here, actors will bind from UMDViewModelAssignmentComponent::BeginPlay
-	if (IsValid(InInstance) && InInstance->IsA<UUserWidget>())
+	// Only Widgets and other objects bind here, actors will bind from UMDViewModelAssignmentComponent::BeginPlay
+	if (IsValid(InInstance) && !InInstance->IsA<AActor>())
 	{
 		if (IMDViewModelRuntimeInterface* Object = MDViewModelUtils::GetOrCreateViewModelRuntimeInterface(InInstance))
 		{
@@ -38,8 +38,8 @@ void UMDVMBlueprintBindingBase::BindDynamicDelegates(UObject* InInstance) const
 
 void UMDVMBlueprintBindingBase::UnbindDynamicDelegates(UObject* InInstance) const
 {
-	// Only Widgets unbind here, actors will unbind from UMDViewModelAssignmentComponent::EndPlay
-	if (IsValid(InInstance) && InInstance->IsA<UUserWidget>())
+	// Only Widgets and other objects unbind here, actors will unbind from UMDViewModelAssignmentComponent::EndPlay
+	if (IsValid(InInstance) && !InInstance->IsA<AActor>())
 	{
 		if (IMDViewModelRuntimeInterface* Object = MDViewModelUtils::GetOrCreateViewModelRuntimeInterface(InInstance))
 		{

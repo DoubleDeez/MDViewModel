@@ -23,7 +23,7 @@ public:
 	virtual void Construct(UUserWidget* UserWidget) override;
 #endif
 
-	void SetAssignments(const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& InAssignments);
+	virtual void SetAssignments(const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& InAssignments) override;
 	virtual const TMap<FMDViewModelAssignment, FMDViewModelAssignmentData>& GetAssignments() const override { return Assignments; }
 
 	// Used to listen for changes before the specified widget's viewmodel extension is created

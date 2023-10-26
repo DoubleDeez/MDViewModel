@@ -5,6 +5,13 @@
 #include "Engine/World.h"
 #include "Misc/DataValidation.h"
 
+void UMDViewModelBlueprintBase::BeginDestroy()
+{
+	OnBeginDestroy.Broadcast();
+
+	Super::BeginDestroy();
+}
+
 UWorld* UMDViewModelBlueprintBase::GetWorld() const
 {
 	const UObject* WorldContext = CDOWorldContextObjectPtr.Get();
@@ -125,6 +132,8 @@ UObject* UMDViewModelBlueprintBase::CDORedirectCachedContextObject(const UObject
 
 void UMDViewModelBlueprintBase::InitializeViewModel()
 {
+	InitializeViewModelSupport();
+
 	Super::InitializeViewModel();
 
 	if (bImplements_InitializeViewModel)

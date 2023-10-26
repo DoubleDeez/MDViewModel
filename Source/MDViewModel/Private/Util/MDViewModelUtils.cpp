@@ -71,19 +71,19 @@ namespace MDViewModelUtils
 			return WBPGC->GetExtension<UMDViewModelWidgetClassExtension>(false);
 #endif
 		}
-		else
+		else if (ObjectClass->IsChildOf<AActor>())
 		{
 			auto FindPred = [](const UActorComponent* ComponentTemplate)
 			{
-				return IsValid(ComponentTemplate) && ComponentTemplate->Implements<UMDVMCompiledAssignmentsInterface>();
+				return IsValid(ComponentTemplate) && ComponentTemplate->IsA<UMDViewModelAssignmentComponent>();
 			};
-			
-			// Actors can have assignments inherited from their parent without having their own UMDVMCompiledAssignmentsInterface so we have to climb the hierarchy
+
+			// Actors can have assignments inherited from their parent without having their own UMDViewModelAssignmentComponent so we have to climb the hierarchy
 			while (UBlueprintGeneratedClass* BPGC = Cast<UBlueprintGeneratedClass>(ObjectClass))
 			{
 				if (const TObjectPtr<UActorComponent>* ComponentPtr = BPGC->ComponentTemplates.FindByPredicate(FindPred))
 				{
-					return Cast<IMDVMCompiledAssignmentsInterface>(*ComponentPtr);
+					return Cast<UMDViewModelAssignmentComponent>(*ComponentPtr);
 				}
 
 				const USCS_Node* const* NodePtr = IsValid(BPGC->SimpleConstructionScript) ? BPGC->SimpleConstructionScript->GetAllNodes().FindByPredicate([&FindPred](const USCS_Node* Node)
@@ -93,7 +93,7 @@ namespace MDViewModelUtils
 
 				if (NodePtr != nullptr)
 				{
-					return Cast<IMDVMCompiledAssignmentsInterface>((*NodePtr)->ComponentTemplate);
+					return Cast<UMDViewModelAssignmentComponent>((*NodePtr)->ComponentTemplate);
 				}
 
 				const UInheritableComponentHandler* IHC = BPGC->GetInheritableComponentHandler();
@@ -103,12 +103,16 @@ namespace MDViewModelUtils
 					IHC->GetAllTemplates(ComponentTemplates);
 					if (UActorComponent* const* ComponentPtr = ComponentTemplates.FindByPredicate(FindPred))
 					{
-						return Cast<IMDVMCompiledAssignmentsInterface>(*ComponentPtr);
+						return Cast<UMDViewModelAssignmentComponent>(*ComponentPtr);
 					}
 				}
-				
+
 				ObjectClass = BPGC->GetSuperClass();
 			}
+		}
+		else if (IsValid(ObjectClass) && ObjectClass->ImplementsInterface(UMDVMCompiledAssignmentsInterface::StaticClass()))
+		{
+			return Cast<IMDVMCompiledAssignmentsInterface>(ObjectClass->GetDefaultObject());
 		}
 
 		return nullptr;
@@ -140,7 +144,7 @@ namespace MDViewModelUtils
 			return Interface;
 		}
 
-		return nullptr;
+		return Cast<IMDViewModelRuntimeInterface>(Object);
 	}
 
 	IMDViewModelRuntimeInterface* GetViewModelRuntimeInterface(const UObject* Object)
@@ -154,6 +158,6 @@ namespace MDViewModelUtils
 			return Actor->FindComponentByClass<UMDViewModelAssignmentComponent>();
 		}
 
-		return nullptr;
+		return Cast<IMDViewModelRuntimeInterface>(const_cast<UObject*>(Object));
 	}
 }
