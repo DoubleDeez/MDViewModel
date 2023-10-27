@@ -32,6 +32,10 @@ public:
 
 	virtual void PostInitProperties() override;
 
+	virtual void PostCDOContruct() override;
+
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+
 	// How the view model classes are displayed in the class selection list
 	UPROPERTY(EditDefaultsOnly, Config, Category = "View Model Dialog")
 	EMDVMClassViewerNameTypeToDisplay NameTypeToDisplay = EMDVMClassViewerNameTypeToDisplay::DisplayName;
@@ -54,5 +58,11 @@ public:
 	UPROPERTY(EditDefaultsOnly, Config, Category = "View Model Debugger")
 	bool bEnableReturnValuePreviewing = true;
 
+	// If true, new View Model blueprints will pre-populate with the Initialize and Shutdown event nodes
+	UPROPERTY(EditDefaultsOnly, Config, Category = "View Model Blueprints")
+	bool bAutoCreateDefaultEvents = true;
+
 	EClassViewerNameTypeToDisplay GetNameTypeToDisplay() const;
+
+	void UpdateViewModelBPDefaultEventNodes() const;
 };

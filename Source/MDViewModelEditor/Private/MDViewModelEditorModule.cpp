@@ -66,6 +66,8 @@ void FMDViewModelEditorModule::StartupModule()
 
 	ViewModelGraphPanelPinFactory = MakeShared<FMDViewModelGraphPanelPinFactory>();
 	FEdGraphUtilities::RegisterVisualPinFactory(ViewModelGraphPanelPinFactory);
+
+	GetDefault<UMDViewModelEditorConfig>()->UpdateViewModelBPDefaultEventNodes();
 }
 
 void FMDViewModelEditorModule::ShutdownModule()
