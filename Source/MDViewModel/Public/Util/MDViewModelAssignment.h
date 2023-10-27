@@ -36,6 +36,8 @@ public:
 
 	bool IsValid() const;
 
+	void PostSerialize(const FArchive& Ar);
+
 	bool operator==(const FMDViewModelAssignment& Other) const;
 
 	bool operator!=(const FMDViewModelAssignment& Other) const
@@ -50,5 +52,14 @@ inline uint32 GetTypeHash(const FMDViewModelAssignment& Assignment)
 		HashCombine(GetTypeHash(Assignment.ViewModelClass), GetTypeHash(Assignment.ProviderTag)),
 		GetTypeHash(Assignment.ViewModelName));
 }
+
+template<>
+struct TStructOpsTypeTraits<FMDViewModelAssignment> : public TStructOpsTypeTraitsBase2<FMDViewModelAssignment>
+{
+	enum
+	{
+		WithPostSerialize = true
+	};
+};
 
 MDVIEWMODEL_API FCbWriter& operator<<(FCbWriter& Writer, const FMDViewModelAssignment& Assignment);

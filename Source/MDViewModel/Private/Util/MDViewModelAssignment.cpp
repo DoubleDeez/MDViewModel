@@ -19,6 +19,17 @@ bool FMDViewModelAssignment::IsValid() const
 	return ::IsValid(ViewModelClass) && ProviderTag.IsValid() && ViewModelName.IsValid();
 }
 
+void FMDViewModelAssignment::PostSerialize(const FArchive& Ar)
+{
+	if (Ar.IsSaving() && IsValid())
+	{
+		// Save broad and specific references
+		Ar.MarkSearchableName(StaticStruct(), ViewModelClass->GetFName());
+		Ar.MarkSearchableName(StaticStruct(), *FString::Printf(TEXT("%s.%s"), *ViewModelClass->GetFName().ToString(), *ViewModelName.ToString()));
+		Ar.MarkSearchableName(StaticStruct(), *FString::Printf(TEXT("%s.%s.%s"), *ViewModelClass->GetFName().ToString(), *ViewModelName.ToString(), *ProviderTag.ToString()));
+	}
+}
+
 bool FMDViewModelAssignment::operator==(const FMDViewModelAssignment& Other) const
 {
 #if WITH_EDITORONLY_DATA

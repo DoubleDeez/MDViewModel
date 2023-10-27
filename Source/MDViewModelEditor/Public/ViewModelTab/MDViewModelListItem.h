@@ -78,6 +78,9 @@ private:
 	FReply OnContextButtonClicked();
 
 	void OnFindReferencesClicked() const;
+	void OnClassReferenceViewerClicked() const;
+	void OnAssignmentReferenceViewerClicked() const;
+	void OnProviderReferenceViewerClicked() const;
 	void OnOpenOwnerAssetClicked() const;
 	bool CanOpenOwnerAsset() const;
 

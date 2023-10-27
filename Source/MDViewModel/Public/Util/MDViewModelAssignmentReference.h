@@ -21,7 +21,7 @@ public:
 	FMDViewModelAssignmentReference() = default;
 	explicit FMDViewModelAssignmentReference(const FMDViewModelAssignment& Assignment);
 	FMDViewModelAssignmentReference(TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);
-	
+
 	// The view model class to reference
 	UPROPERTY(EditAnywhere, Category = "View Model")
 	TSoftClassPtr<UMDViewModelBase> ViewModelClass;
@@ -31,6 +31,8 @@ public:
 	FName ViewModelName = MDViewModelUtils::DefaultViewModelName;
 
 	bool IsAssignmentValid() const;
+
+	void PostSerialize(const FArchive& Ar);
 
 #if WITH_EDITOR
 	// Only used for editor customization
@@ -73,6 +75,7 @@ struct TStructOpsTypeTraits<FMDViewModelAssignmentReference> : public TStructOps
 	enum
 	{
 		WithCopy = true,
+		WithPostSerialize = true
 	};
 };
 

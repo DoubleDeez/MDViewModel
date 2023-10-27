@@ -21,6 +21,16 @@ bool FMDViewModelAssignmentReference::IsAssignmentValid() const
 	return !ViewModelClass.IsNull() && ViewModelName != NAME_None;
 }
 
+void FMDViewModelAssignmentReference::PostSerialize(const FArchive& Ar)
+{
+	if (Ar.IsSaving() && IsAssignmentValid())
+	{
+		// Save broad and specific references
+		Ar.MarkSearchableName(FMDViewModelAssignment::StaticStruct(), *ViewModelClass.GetAssetName());
+		Ar.MarkSearchableName(FMDViewModelAssignment::StaticStruct(), *FString::Printf(TEXT("%s.%s"), *ViewModelClass.GetAssetName(), *ViewModelName.ToString()));
+	}
+}
+
 FMDViewModelAssignmentReference& FMDViewModelAssignmentReference::operator=(const FMDViewModelAssignmentReference& Other)
 {
 	ViewModelClass = Other.ViewModelClass;

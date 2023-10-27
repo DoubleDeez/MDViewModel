@@ -477,15 +477,6 @@ void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder
 
 	ContextMenuBuilder.BeginSection(TEXT("ViewModelTools"), INVTEXT("View Model Tools"));
 	{
-		ContextMenuBuilder.AddMenuEntry(
-			INVTEXT("Find References"),
-			INVTEXT("Search for references to this view model in this blueprint."),
-			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Find")),
-			FUIAction(
-				FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnFindReferencesClicked)
-			)
-		);
-
 		ContextMenuBuilder.AddMenuEntry(FMDViewModelEditorCommands::Get().GoToDefinition);
 
 		ContextMenuBuilder.AddMenuEntry(
@@ -495,6 +486,44 @@ void SMDViewModelListItem::OnContextMenuOpening(FMenuBuilder& ContextMenuBuilder
 			FUIAction(
 				FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnOpenOwnerAssetClicked),
 				FCanExecuteAction::CreateSP(this, &SMDViewModelListItem::CanOpenOwnerAsset)
+			)
+		);
+
+		ContextMenuBuilder.AddSeparator();
+
+		ContextMenuBuilder.AddMenuEntry(
+			INVTEXT("Find References"),
+			INVTEXT("Search for references to this view model in this blueprint."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Find")),
+			FUIAction(
+				FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnFindReferencesClicked)
+			)
+		);
+
+		ContextMenuBuilder.AddMenuEntry(
+			INVTEXT("Open Class Reference Viewer"),
+			INVTEXT("Display references to view model assignments with the same view model class."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Find")),
+			FUIAction(
+				FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnClassReferenceViewerClicked)
+			)
+		);
+
+		ContextMenuBuilder.AddMenuEntry(
+			INVTEXT("Open Assignment Reference Viewer"),
+			INVTEXT("Display references to view model assignments with the same view model class and name."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Find")),
+			FUIAction(
+				FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnAssignmentReferenceViewerClicked)
+			)
+		);
+
+		ContextMenuBuilder.AddMenuEntry(
+			INVTEXT("Open Provider Reference Viewer"),
+			INVTEXT("Display references to view model assignments with the same view model class, name, and provider."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Find")),
+			FUIAction(
+				FExecuteAction::CreateSP(this, &SMDViewModelListItem::OnProviderReferenceViewerClicked)
 			)
 		);
 	}
@@ -577,6 +606,36 @@ void SMDViewModelListItem::OnFindReferencesClicked() const
 		}
 
 		BPEditor->SummonSearchUI(true, GenerateSearchString());
+	}
+}
+
+void SMDViewModelListItem::OnClassReferenceViewerClicked() const
+{
+	if (Assignment.IsValid() && Assignment->Assignment.IsValid())
+	{
+		TArray<FAssetIdentifier> AssetIdentifiers;
+		AssetIdentifiers.Add(FAssetIdentifier(FMDViewModelAssignment::StaticStruct(), Assignment->Assignment.ViewModelClass->GetFName()));
+		FEditorDelegates::OnOpenReferenceViewer.Broadcast(AssetIdentifiers, FReferenceViewerParams());
+	}
+}
+
+void SMDViewModelListItem::OnAssignmentReferenceViewerClicked() const
+{
+	if (Assignment.IsValid() && Assignment->Assignment.IsValid())
+	{
+		TArray<FAssetIdentifier> AssetIdentifiers;
+		AssetIdentifiers.Add(FAssetIdentifier(FMDViewModelAssignment::StaticStruct(), *FString::Printf(TEXT("%s.%s"), *Assignment->Assignment.ViewModelClass->GetFName().ToString(), *Assignment->Assignment.ViewModelName.ToString())));
+		FEditorDelegates::OnOpenReferenceViewer.Broadcast(AssetIdentifiers, FReferenceViewerParams());
+	}
+}
+
+void SMDViewModelListItem::OnProviderReferenceViewerClicked() const
+{
+	if (Assignment.IsValid() && Assignment->Assignment.IsValid())
+	{
+		TArray<FAssetIdentifier> AssetIdentifiers;
+		AssetIdentifiers.Add(FAssetIdentifier(FMDViewModelAssignment::StaticStruct(), *FString::Printf(TEXT("%s.%s.%s"), *Assignment->Assignment.ViewModelClass->GetFName().ToString(), *Assignment->Assignment.ViewModelName.ToString(), *Assignment->Assignment.ProviderTag.ToString())));
+		FEditorDelegates::OnOpenReferenceViewer.Broadcast(AssetIdentifiers, FReferenceViewerParams());
 	}
 }
 
