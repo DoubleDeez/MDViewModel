@@ -44,7 +44,8 @@ public:
 	void InitializeViewModelWithContext(UObject* InContextObject, const UObject* WorldContext = nullptr);
 	void InitializeViewModelWithContext(const UObject* InContextObject, const UObject* WorldContext = nullptr);
 
-	// Called by view model providers when they stop referencing the view model object
+	// Called by view model providers/owners when they stop referencing the view model object
+	UFUNCTION(BlueprintCallable, Category = "View Model")
 	void ShutdownViewModelFromProvider();
 
 	virtual UWorld* GetWorld() const override;
