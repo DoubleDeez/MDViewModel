@@ -208,6 +208,10 @@ protected:
 	// Iterates a map of View Model keys and/or values, shuts them down and resets the map
 	template<typename T, typename U>
 	static void ShutdownSubViewModels(TMap<T, U>& ViewModels);
+	template<typename T, typename U>
+	static void ShutdownSubViewModelKeyValues(TMap<T, U>& ViewModels);
+	template<typename T, typename U>
+	static void ShutdownSubViewModelMapValues(TMap<T, U>& ViewModels);
 
 #if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
 	virtual void BroadcastFieldValueChanged(UE::FieldNotification::FFieldId InFieldId) override;
@@ -377,6 +381,32 @@ void UMDViewModelBase::ShutdownSubViewModels(TMap<T, U>& ViewModels)
 		{
 			ShutdownSubViewModel(Pair.Value);
 		}
+	}
+
+	ViewModels.Reset();
+}
+
+template <typename T, typename U>
+void UMDViewModelBase::ShutdownSubViewModelKeyValues(TMap<T, U>& ViewModels)
+{	
+	static_assert(std::is_convertible_v<T, UMDViewModelBase*>|| std::is_convertible_v<T, TWeakObjectPtr<UMDViewModelBase>>, "The Map Key type must be a View Model object type");
+	
+	for (TTuple<T, U>& Pair : ViewModels)
+	{
+		ShutdownSubViewModel(Pair.Value);
+	}
+
+	ViewModels.Reset();
+}
+
+template <typename T, typename U>
+void UMDViewModelBase::ShutdownSubViewModelMapValues(TMap<T, U>& ViewModels)
+{
+	static_assert(std::is_convertible_v<U, UMDViewModelBase*> || std::is_convertible_v<U, TWeakObjectPtr<UMDViewModelBase>>, "The Map Value type must be a View Model object type");
+	
+	for (TTuple<T, U>& Pair : ViewModels)
+	{
+		ShutdownSubViewModel(Pair.Value);
 	}
 
 	ViewModels.Reset();
