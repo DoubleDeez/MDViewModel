@@ -6,7 +6,11 @@
 
 void UMDViewModelBase::BeginDestroy()
 {
-	ensureAlwaysMsgf(!bIsInitialized, TEXT("View Model [%s] is being destroyed without having been shutdown."), *GetName());
+	if (!ensureAlwaysMsgf(!bIsInitialized, TEXT("View Model [%s] is being destroyed without having been shutdown."), *GetName()))
+	{
+		ShutdownViewModelFromProvider();
+	}
+	
 	Super::BeginDestroy();
 }
 
