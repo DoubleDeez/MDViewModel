@@ -47,68 +47,67 @@ namespace MDViewModelAssignmentReferenceCustomization_Private
 	{
 		FMenuBuilder MenuBuilder(true, nullptr);
 
-
-			TArray<FMDViewModelAssignment> ManualAssignments;
-			TArray<FMDViewModelAssignment> NonManualAssignments;
-			for (const auto& Pair : ViewModelAssignments)
+		TArray<FMDViewModelAssignment> ManualAssignments;
+		TArray<FMDViewModelAssignment> NonManualAssignments;
+		for (const auto& Pair : ViewModelAssignments)
+		{
+			const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(Pair.Key.ProviderTag);
+			if (!IsValid(Provider))
 			{
-				const UMDViewModelProviderBase* Provider = MDViewModelUtils::FindViewModelProvider(Pair.Key.ProviderTag);
-				if (!IsValid(Provider))
-				{
-					continue;
-				}
-
-				if (Provider->DoesAllowManualSetting())
-				{
-					ManualAssignments.Add(Pair.Key);
-				}
-				else
-				{
-					NonManualAssignments.Add(Pair.Key);
-				}
+				continue;
 			}
 
-			auto SortFunc = [](const FMDViewModelAssignment& A, const FMDViewModelAssignment& B)
+			if (Provider->DoesAllowManualSetting())
 			{
-				if (!IsValid(A.ViewModelClass) || !IsValid(B.ViewModelClass))
-				{
-					return IsValid(A.ViewModelClass);
-				}
-
-				const FText ADisplayName = FText::Format(INVTEXT("{0} ({1})"), A.ViewModelClass->GetDisplayNameText(), FText::FromName(A.ViewModelName));
-				const FText BDisplayName = FText::Format(INVTEXT("{0} ({1})"), B.ViewModelClass->GetDisplayNameText(), FText::FromName(B.ViewModelName));
-
-				return A.ViewModelClass->GetDisplayNameText().CompareTo(B.ViewModelClass->GetDisplayNameText()) < 0;
-			};
-			ManualAssignments.Sort(SortFunc);
-			NonManualAssignments.Sort(SortFunc);
-
-			auto PopulateMenu = [&MenuBuilder, Callback = MoveTemp(Callback)](const TArray<FMDViewModelAssignment>& Assignments)
+				ManualAssignments.Add(Pair.Key);
+			}
+			else
 			{
-				for (const FMDViewModelAssignment& Assignment : Assignments)
-				{
-					MenuBuilder.AddMenuEntry(
-						FText::Format(INVTEXT("{0} ({1})"), Assignment.ViewModelClass->GetDisplayNameText(), FText::FromName(Assignment.ViewModelName)),
-						Assignment.ViewModelClass->GetToolTipText(),
-						FSlateIcon(),
-						FExecuteAction::CreateLambda([Assignment, Callback = MoveTemp(const_cast<FMDVMAROnAssignmentSelected&>(Callback))]()
-						{
-							Callback.ExecuteIfBound(Assignment);
-						})
-					);
-				}
-			};
+				NonManualAssignments.Add(Pair.Key);
+			}
+		}
 
-			MenuBuilder.BeginSection(TEXT("Manual"), INVTEXT("Manual Assignments"));
-			PopulateMenu(ManualAssignments);
+		auto SortFunc = [](const FMDViewModelAssignment& A, const FMDViewModelAssignment& B)
+		{
+			if (!IsValid(A.ViewModelClass) || !IsValid(B.ViewModelClass))
+			{
+				return IsValid(A.ViewModelClass);
+			}
+
+			const FText ADisplayName = FText::Format(INVTEXT("{0} ({1})"), A.ViewModelClass->GetDisplayNameText(), FText::FromName(A.ViewModelName));
+			const FText BDisplayName = FText::Format(INVTEXT("{0} ({1})"), B.ViewModelClass->GetDisplayNameText(), FText::FromName(B.ViewModelName));
+
+			return A.ViewModelClass->GetDisplayNameText().CompareTo(B.ViewModelClass->GetDisplayNameText()) < 0;
+		};
+		ManualAssignments.Sort(SortFunc);
+		NonManualAssignments.Sort(SortFunc);
+
+		auto PopulateMenu = [&MenuBuilder, Callback = MoveTemp(Callback)](const TArray<FMDViewModelAssignment>& Assignments)
+		{
+			for (const FMDViewModelAssignment& Assignment : Assignments)
+			{
+				MenuBuilder.AddMenuEntry(
+					FText::Format(INVTEXT("{0} ({1})"), Assignment.ViewModelClass->GetDisplayNameText(), FText::FromName(Assignment.ViewModelName)),
+					Assignment.ViewModelClass->GetToolTipText(),
+					FSlateIcon(),
+					FExecuteAction::CreateLambda([Assignment, Callback]()
+					{
+						Callback.ExecuteIfBound(Assignment);
+					})
+				);
+			}
+		};
+
+		MenuBuilder.BeginSection(TEXT("Manual"), INVTEXT("Manual Assignments"));
+		PopulateMenu(ManualAssignments);
+		MenuBuilder.EndSection();
+
+		if (bShowNonManualAssignments)
+		{
+			MenuBuilder.BeginSection(TEXT("NonManual"), INVTEXT("Non-Manual Assignments"));
+			PopulateMenu(NonManualAssignments);
 			MenuBuilder.EndSection();
-
-			if (bShowNonManualAssignments)
-			{
-				MenuBuilder.BeginSection(TEXT("NonManual"), INVTEXT("Non-Manual Assignments"));
-				PopulateMenu(NonManualAssignments);
-				MenuBuilder.EndSection();
-			}
+		}
 
 		return MenuBuilder.MakeWidget();
 	}
