@@ -758,6 +758,12 @@ const IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveActorCache
 
 IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCache(UObject* Object, const UObject* WorldContextObject) const
 {
+	// Use the object VM cache system for template objects since we can't modify them
+	if (IsValid(Object) && Object->IsTemplate())
+	{
+		return UMDObjectViewModelCacheSystem::ResolveCacheForObject(Object, WorldContextObject);
+	}
+	
 	if (const UGameInstance* GameInstance = Cast<UGameInstance>(Object))
 	{
 		return ResolveGlobalCache(GameInstance);
