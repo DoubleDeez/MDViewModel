@@ -4,6 +4,7 @@
 #include "EdGraphSchema_K2.h"
 #include "K2Node_FunctionEntry.h"
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "Kismet2/CompilerResultsLog.h"
 #include "Util/MDViewModelAssignment.h"
 #include "Util/MDViewModelAssignmentData.h"
 #include "Util/MDViewModelGraphStatics.h"
