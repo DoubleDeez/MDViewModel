@@ -293,7 +293,7 @@ const FProperty* UMDVMNode_ViewModelFieldNotify::ResolveFieldNotifyPropertyType(
 	}
 	else if (const UFunction* Function = Field.Get<UFunction>())
 	{
-		return Function->GetReturnProperty();
+		return MDViewModelUtils::GetFunctionReturnProperty(Function);
 	}
 
 	return nullptr;

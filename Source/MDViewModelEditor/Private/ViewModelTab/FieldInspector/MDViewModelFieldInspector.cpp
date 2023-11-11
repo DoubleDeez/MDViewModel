@@ -192,7 +192,7 @@ void SMDViewModelFieldInspector::GetDragAndDropCreatorForFunction(const UFunctio
 
 	if (InspectorType == EMDViewModelFieldInspectorType::Properties)
 	{
-		if (bIsFieldNotify || (Func.GetReturnProperty() != nullptr && Func.NumParms == 1 && bIsPure))
+		if (bIsFieldNotify || (MDViewModelUtils::GetFunctionReturnProperty(&Func) != nullptr && Func.NumParms == 1 && bIsPure))
 		{
 			DragAndDropCreatorFunc = FMDVMDragAndDropCreatorFunc::CreateStatic(&CreateMDVMDragAndDrop<FMDVMInspectorDragAndDropGetter>);
 		}
@@ -211,7 +211,7 @@ void SMDViewModelFieldInspector::GetDragAndDropCreatorForFunction(const UFunctio
 	else if (InspectorType == EMDViewModelFieldInspectorType::Helpers)
 	{
 		// Skip anything that's a "Getter"
-		if (bIsPure && !bIsFieldNotify && (Func.GetReturnProperty() == nullptr || Func.NumParms != 1))
+		if (bIsPure && !bIsFieldNotify && (MDViewModelUtils::GetFunctionReturnProperty(&Func) == nullptr || Func.NumParms != 1))
 		{
 			DragAndDropCreatorFunc = FMDVMDragAndDropCreatorFunc::CreateStatic(&CreateMDVMDragAndDrop<FMDVMInspectorDragAndDropHelper>);
 		}

@@ -1,5 +1,6 @@
 #include "Bindings/MDViewModelFieldNotifyBinding.h"
 
+#include "Util/MDViewModelUtils.h"
 #include "ViewModel/MDViewModelBase.h"
 
 void UMDViewModelFieldNotifyBinding::OnViewModelChanged(UMDViewModelBase* OldViewModel, UMDViewModelBase* NewViewModel, int32 EntryIndex, TWeakObjectPtr<UObject> BoundObject) const
@@ -57,7 +58,7 @@ void UMDViewModelFieldNotifyBinding::OnFieldValueChanged(UObject* ViewModel, UE:
 		}
 		else if (UFunction* Func = FindUField<UFunction>(BoundViewModel->GetClass(), Field.GetName()))
 		{
-			const FProperty* ReturnProp = Func->GetReturnProperty();
+			const FProperty* ReturnProp = MDViewModelUtils::GetFunctionReturnProperty(Func);
 			check(ReturnProp != nullptr && Func->NumParms == 1);
 
 			AllocatedParamPtr = FMemory::Malloc(ReturnProp->GetSize(), ReturnProp->GetMinAlignment());

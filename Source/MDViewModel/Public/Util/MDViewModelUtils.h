@@ -29,4 +29,6 @@ namespace MDViewModelUtils
 	MDVIEWMODEL_API IMDVMCompiledAssignmentsInterface* GetCompiledAssignmentsInterface(UClass* ObjectClass);
 	MDVIEWMODEL_API IMDViewModelRuntimeInterface* GetViewModelRuntimeInterface(const UObject* Object);
 	MDVIEWMODEL_API IMDViewModelRuntimeInterface* GetOrCreateViewModelRuntimeInterface(UObject* Object);
+
+	MDVIEWMODEL_API const FProperty* GetFunctionReturnProperty(const UFunction* Function);
 }

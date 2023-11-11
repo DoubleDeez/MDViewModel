@@ -14,7 +14,7 @@ bool UMDVMNode_CallGetter::IsFunctionValidForNode(const UFunction& Func) const
 		return false;
 	}
 
-	return Super::IsFunctionValidForNode(Func) && Func.NumParms == 1 && Func.GetReturnProperty() != nullptr;
+	return Super::IsFunctionValidForNode(Func) && Func.NumParms == 1 && MDViewModelUtils::GetFunctionReturnProperty(&Func) != nullptr;
 }
 
 UBlueprintNodeSpawner* UMDVMNode_CallGetter::CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const UFunction* Function, const UBlueprint* Blueprint) const

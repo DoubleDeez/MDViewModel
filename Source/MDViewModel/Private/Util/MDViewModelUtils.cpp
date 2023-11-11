@@ -147,6 +147,29 @@ namespace MDViewModelUtils
 		return Cast<IMDViewModelRuntimeInterface>(Object);
 	}
 
+	const FProperty* GetFunctionReturnProperty(const UFunction* Function)
+	{
+		if (!IsValid(Function))
+		{
+			return nullptr;
+		}
+
+		if (const FProperty* Result = Function->GetReturnProperty())
+		{
+			return Result;
+		}
+
+		for (TFieldIterator<FProperty> It(Function); It; ++It)
+		{
+			if (It->HasAllPropertyFlags(CPF_Parm | CPF_OutParm) && !It->HasAnyPropertyFlags(CPF_ReferenceParm))
+			{
+				return *It;
+			}
+		}
+
+		return nullptr;
+	}
+
 	IMDViewModelRuntimeInterface* GetViewModelRuntimeInterface(const UObject* Object)
 	{
 		if (const UUserWidget* Widget = Cast<UUserWidget>(Object))

@@ -136,7 +136,7 @@ TArray<FName> UMDViewModelAssignmentEditorObject::GetRelativePropertyNames() con
 				{
 					if (FieldNotifySupportedNames.Contains(Func->GetFName()))
 					{
-						if (const FObjectPropertyBase* ReturnProperty = CastField<FObjectPropertyBase>(Func->GetReturnProperty()))
+						if (const FObjectPropertyBase* ReturnProperty = CastField<FObjectPropertyBase>(MDViewModelUtils::GetFunctionReturnProperty(Func)))
 						{
 							Result.Add(ReturnProperty->GetFName());
 						}

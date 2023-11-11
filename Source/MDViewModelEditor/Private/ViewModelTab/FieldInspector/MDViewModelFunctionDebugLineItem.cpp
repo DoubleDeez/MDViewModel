@@ -29,7 +29,7 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GetNameIcon()
 	{
 		FLinearColor ReturnValueColor = FLinearColor::White;
 		FText ToolTipText = Function->GetToolTipText();
-		if (const FProperty* ReturnProperty = Function->GetReturnProperty())
+		if (const FProperty* ReturnProperty = MDViewModelUtils::GetFunctionReturnProperty(Function))
 		{
 			const UEdGraphSchema_K2* K2Schema = GetDefault<UEdGraphSchema_K2>();
 			FEdGraphPinType PinType;
@@ -125,7 +125,7 @@ void FMDViewModelFunctionDebugLineItem::UpdateCachedChildren() const
 			{
 				if (!CachedPropertyItems.Contains(ParamProp->GetFName()))
 				{
-					void* ValuePtr = (ParamProp == Function->GetReturnProperty()) ? GetterReturnValuePtr : nullptr;
+					void* ValuePtr = (ParamProp == MDViewModelUtils::GetFunctionReturnProperty(Function)) ? GetterReturnValuePtr : nullptr;
 					TSharedPtr<FMDViewModelFieldDebugLineItem> Item = MakeShared<FMDViewModelFieldDebugLineItem>(BlueprintEditorPtr, Assignment, ParamProp, ValuePtr);
 					Item->SetDisplayText(ParamProp->GetDisplayNameText(), ParamProp->GetToolTipText());
 					Item->UpdateDebugging(bIsDebugging, DebugViewModel);
@@ -137,7 +137,7 @@ void FMDViewModelFunctionDebugLineItem::UpdateCachedChildren() const
 					Item->UpdateDebugging(bIsDebugging, DebugViewModel);
 					Item->UpdateViewModel(Assignment);
 
-					if (Item->GetValuePtr() != GetterReturnValuePtr && ParamProp == Function->GetReturnProperty())
+					if (Item->GetValuePtr() != GetterReturnValuePtr && ParamProp == MDViewModelUtils::GetFunctionReturnProperty(Function))
 					{
 						Item->UpdateValuePtr(GetterReturnValuePtr);
 					}
@@ -207,7 +207,7 @@ FText FMDViewModelFunctionDebugLineItem::GetDisplayValue() const
 	TryUpdateGetterReturnValue();
 
 	const UFunction* Function = GetFunction();
-	const FProperty* Property = IsValid(Function) ? Function->GetReturnProperty() : nullptr;
+	const FProperty* Property = IsValid(Function) ? MDViewModelUtils::GetFunctionReturnProperty(Function) : nullptr;
 
 	if (Property != nullptr && GetterReturnValuePtr != nullptr)
 	{
@@ -230,7 +230,7 @@ bool FMDViewModelFunctionDebugLineItem::CanDisplayReturnValue() const
 		return false;
 	}
 
-	if (Function->GetReturnProperty() == nullptr || Function->NumParms != 1)
+	if (MDViewModelUtils::GetFunctionReturnProperty(Function) == nullptr || Function->NumParms != 1)
 	{
 		return false;
 	}
@@ -296,7 +296,7 @@ void FMDViewModelFunctionDebugLineItem::TryUpdateGetterReturnValue() const
 		return;
 	}
 
-	const FProperty* ReturnProp = Function->GetReturnProperty();
+	const FProperty* ReturnProp = MDViewModelUtils::GetFunctionReturnProperty(Function);
 	if (ReturnProp == nullptr)
 	{
 		CleanUpGetterReturnValue();

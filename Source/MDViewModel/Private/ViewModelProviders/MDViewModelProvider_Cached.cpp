@@ -385,7 +385,7 @@ void UMDViewModelProvider_Cached::GetExpectedContextObjectType(const FMDViewMode
 	{
 		const FMemberReference& Reference = ProviderSettings.RelativePropertyReference;
 		const UFunction* Function = Reference.ResolveMember<UFunction>(AssignedObjectClass);
-		const FObjectPropertyBase* Property = CastField<FObjectPropertyBase>(IsValid(Function) ? Function->GetReturnProperty() : Reference.ResolveMember<FProperty>(AssignedObjectClass));
+		const FObjectPropertyBase* Property = CastField<FObjectPropertyBase>(IsValid(Function) ? MDViewModelUtils::GetFunctionReturnProperty(Function) : Reference.ResolveMember<FProperty>(AssignedObjectClass));
 
 		if (Property != nullptr)
 		{
@@ -397,7 +397,7 @@ void UMDViewModelProvider_Cached::GetExpectedContextObjectType(const FMDViewMode
 		UClass* RelativeVMClass = ProviderSettings.RelativeViewModel.ViewModelClass.LoadSynchronous();
 		const FMemberReference& Reference = ProviderSettings.RelativePropertyReference;
 		const UFunction* Function = Reference.ResolveMember<UFunction>(RelativeVMClass);
-		const FObjectPropertyBase* Property = CastField<FObjectPropertyBase>(IsValid(Function) ? Function->GetReturnProperty() : Reference.ResolveMember<FProperty>(RelativeVMClass));
+		const FObjectPropertyBase* Property = CastField<FObjectPropertyBase>(IsValid(Function) ? MDViewModelUtils::GetFunctionReturnProperty(Function) : Reference.ResolveMember<FProperty>(RelativeVMClass));
 
 		if (Property != nullptr)
 		{
@@ -763,7 +763,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCache(UObj
 	{
 		return UMDObjectViewModelCacheSystem::ResolveCacheForObject(Object, WorldContextObject);
 	}
-	
+
 	if (const UGameInstance* GameInstance = Cast<UGameInstance>(Object))
 	{
 		return ResolveGlobalCache(GameInstance);
@@ -1081,7 +1081,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveFieldCacheAndBin
 	}
 	else if (Function != nullptr)
 	{
-		const FObjectPropertyBase* ReturnProp = CastField<FObjectPropertyBase>(Function->GetReturnProperty());
+		const FObjectPropertyBase* ReturnProp = CastField<FObjectPropertyBase>(MDViewModelUtils::GetFunctionReturnProperty(Function));
 		checkf(ReturnProp != nullptr && Function->NumParms == 1 && Function->ParmsSize == sizeof(PropertyValue),
 			TEXT("Function [%s] on [%s] is no longer a valid RelativeProperty function, update the view model assignment to fix this"), *Function->GetName(), *Owner->GetName());
 		Owner->ProcessEvent(Function, &PropertyValue);
