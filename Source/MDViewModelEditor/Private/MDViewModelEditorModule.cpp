@@ -186,7 +186,7 @@ void FMDViewModelEditorModule::RegisterBlueprintEditorTab(FWorkflowAllowedTabSet
 		return;
 	}
 
-	if (!IsValid(Blueprint->GeneratedClass) || (!Blueprint->GeneratedClass->IsChildOf<AActor>() && !Blueprint->GeneratedClass->ImplementsInterface(UMDViewModelSupportedInterface::StaticClass())))
+	if (!IsValid(Blueprint->GeneratedClass) || (!FBlueprintEditorUtils::SupportsConstructionScript(Blueprint) && !Blueprint->GeneratedClass->ImplementsInterface(UMDViewModelSupportedInterface::StaticClass())))
 	{
 		return;
 	}
@@ -209,7 +209,7 @@ void FMDViewModelEditorModule::RegisterBlueprintEditorDrawer(UObject* Asset)
 		return;
 	}
 
-	if (!IsValid(Blueprint->GeneratedClass) || (!Blueprint->GeneratedClass->IsChildOf<AActor>() && !Blueprint->GeneratedClass->ImplementsInterface(UMDViewModelSupportedInterface::StaticClass())))
+	if (!IsValid(Blueprint->GeneratedClass) || (!FBlueprintEditorUtils::SupportsConstructionScript(Blueprint) && !Blueprint->GeneratedClass->ImplementsInterface(UMDViewModelSupportedInterface::StaticClass())))
 	{
 		return;
 	}
