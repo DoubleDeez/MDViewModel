@@ -519,5 +519,5 @@ UMDViewModelAssignmentComponent* FMDViewModelGraphStatics::GetOrCreateAssignment
 		BPClass->SimpleConstructionScript->AddNode(ComponentNode);
 	}
 
-	return Cast<UMDViewModelAssignmentComponent>(ComponentNode->ComponentTemplate);
+	return IsValid(ComponentNode) ? Cast<UMDViewModelAssignmentComponent>(ComponentNode->ComponentTemplate) : nullptr;
 }
