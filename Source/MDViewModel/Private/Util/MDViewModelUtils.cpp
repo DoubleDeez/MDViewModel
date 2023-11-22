@@ -71,7 +71,7 @@ namespace MDViewModelUtils
 			return WBPGC->GetExtension<UMDViewModelWidgetClassExtension>(false);
 #endif
 		}
-		else if (ObjectClass->IsChildOf<AActor>())
+		else if (IsValid(ObjectClass) && ObjectClass->IsChildOf<AActor>())
 		{
 			auto FindPred = [](const UActorComponent* ComponentTemplate)
 			{
