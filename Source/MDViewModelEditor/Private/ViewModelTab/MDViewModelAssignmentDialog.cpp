@@ -213,9 +213,9 @@ void SMDViewModelAssignmentDialog::Construct(const FArguments& InArgs, const TSh
 				.HAlign(HAlign_Center)
 				.OnClicked_Lambda([WeakWindow = TWeakPtr<SWindow>(ParentWindow)]()
 				{
-					if (const TSharedPtr<SWindow> ParentWindow = WeakWindow.Pin())
+					if (const TSharedPtr<SWindow> PinnedWindow = WeakWindow.Pin())
 					{
-						ParentWindow->RequestDestroyWindow();
+						PinnedWindow->RequestDestroyWindow();
 					}
 
 					return FReply::Handled();
