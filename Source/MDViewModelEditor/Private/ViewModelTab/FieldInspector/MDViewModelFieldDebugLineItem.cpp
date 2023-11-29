@@ -413,7 +413,12 @@ bool FMDViewModelFieldDebugLineItem::CanDrag() const
 {
 	if (const FProperty* Property = GetProperty())
 	{
-		return Property->GetOwnerVariant().IsA<UClass>() && Property->GetOwnerVariant().Get<UClass>()->IsChildOf(Assignment.ViewModelClass.Get());
+		const UClass* PropertyOwnerClass = Property->GetOwnerVariant().Get<UClass>();
+		const UClass* AssignmentClass = Assignment.ViewModelClass.Get();
+		if (IsValid(PropertyOwnerClass) && IsValid(AssignmentClass))
+		{
+			return PropertyOwnerClass->IsChildOf(AssignmentClass) || AssignmentClass->IsChildOf(PropertyOwnerClass);
+		}
 	}
 
 	return false;
