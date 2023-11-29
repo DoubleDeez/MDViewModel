@@ -1,16 +1,14 @@
 #pragma once
 
-#include "K2Node_VariableGet.h"
+#include "K2Node_VariableSet.h"
 #include "Util/MDViewModelAssignmentReference.h"
-#include "MDVMNode_GetProperty.generated.h"
-
-class UBlueprint;
+#include "MDVMNode_SetProperty.generated.h"
 
 /**
- * Custom node for getting a variable from a view model with built-in view model validation
+ * Custom node for setting a variable on a view model with built-in view model validation
  */
 UCLASS()
-class MDVIEWMODELGRAPH_API UMDVMNode_GetProperty : public UK2Node_VariableGet
+class MDVIEWMODELGRAPH_API UMDVMNode_SetProperty : public UK2Node_Variable
 {
 	GENERATED_BODY()
 
@@ -24,7 +22,6 @@ public:
 
 	virtual bool DrawNodeAsVariable() const override { return false; }
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
-	virtual void GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const override;
 
 	virtual void ExpandNode(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph) override;
 	virtual void ValidateNodeDuringCompilation(FCompilerResultsLog& MessageLog) const override;
@@ -40,8 +37,6 @@ private:
 	void UnbindAssignmentChanges();
 
 	bool IsPropertyValidForNode(const FProperty* Property) const;
-
-	void ToggleValidation();
 
 	UPROPERTY()
 	FMDViewModelAssignmentReference Assignment;

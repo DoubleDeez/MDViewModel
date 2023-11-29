@@ -55,7 +55,7 @@ void UMDVMNode_GetProperty::BeginDestroy()
 void UMDVMNode_GetProperty::GetMenuActions(FBlueprintActionDatabaseRegistrar& InActionRegistrar) const
 {
 	const UBlueprint* Blueprint = Cast<UBlueprint>(InActionRegistrar.GetActionKeyFilter());
-	if (Blueprint == nullptr || (Blueprint->GeneratedClass == nullptr && Blueprint->SkeletonGeneratedClass == nullptr))
+	if (Blueprint == nullptr || !InActionRegistrar.IsOpenForRegistration(Blueprint) || (Blueprint->GeneratedClass == nullptr && Blueprint->SkeletonGeneratedClass == nullptr))
 	{
 		return;
 	}
@@ -76,16 +76,13 @@ void UMDVMNode_GetProperty::GetMenuActions(FBlueprintActionDatabaseRegistrar& In
 
 				if (IsPropertyValidForNode(Prop))
 				{
-					if (InActionRegistrar.IsOpenForRegistration(Blueprint))
-					{
-						FMDViewModelAssignmentReference AssignmentReference;
-						AssignmentReference.ViewModelClass = It.Key().ViewModelClass;
-						AssignmentReference.ViewModelName = It.Key().ViewModelName;
+					FMDViewModelAssignmentReference AssignmentReference;
+					AssignmentReference.ViewModelClass = It.Key().ViewModelClass;
+					AssignmentReference.ViewModelName = It.Key().ViewModelName;
 
-						if (UBlueprintNodeSpawner* NodeSpawner = CreateNodeSpawner(AssignmentReference, Prop, Blueprint))
-						{
-							InActionRegistrar.AddBlueprintAction(Blueprint, NodeSpawner);
-						}
+					if (UBlueprintNodeSpawner* NodeSpawner = CreateNodeSpawner(AssignmentReference, Prop, Blueprint))
+					{
+						InActionRegistrar.AddBlueprintAction(Blueprint, NodeSpawner);
 					}
 				}
 			}
@@ -272,7 +269,7 @@ void UMDVMNode_GetProperty::InitializeViewModelPropertyParams(const FMDViewModel
 
 UBlueprintNodeSpawner* UMDVMNode_GetProperty::CreateNodeSpawner(const FMDViewModelAssignmentReference& AssignmentReference, const FProperty* Property, const UBlueprint* Blueprint) const
 {
-	return UMDViewModelNodeSpawner::Create(UMDVMNode_GetProperty::StaticClass(), INVTEXT("View Model Properties"), AssignmentReference, Property, Blueprint);
+	return UMDViewModelNodeSpawner::Create(UMDVMNode_GetProperty::StaticClass(), INVTEXT("View Model Properties"), AssignmentReference, Property, Blueprint, INVTEXT("Get {0}"));
 }
 
 void UMDVMNode_GetProperty::BindAssignmentChanges()

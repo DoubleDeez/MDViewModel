@@ -6,9 +6,10 @@
 #include "K2Node_Variable.h"
 #include "Nodes/MDVMNode_CallFunctionBase.h"
 #include "Nodes/MDVMNode_GetProperty.h"
+#include "Nodes/MDVMNode_SetProperty.h"
 #include "ViewModel/MDViewModelBase.h"
 
-UMDViewModelNodeSpawner* UMDViewModelNodeSpawner::Create(TSubclassOf<UEdGraphNode> NodeClass, const FText& Category, const FMDViewModelAssignmentReference& Assignment, FFieldVariant Field, const UBlueprint* Blueprint)
+UMDViewModelNodeSpawner* UMDViewModelNodeSpawner::Create(TSubclassOf<UEdGraphNode> NodeClass, const FText& Category, const FMDViewModelAssignmentReference& Assignment, FFieldVariant Field, const UBlueprint* Blueprint, const FText& NameFormat)
 {
 	UMDViewModelNodeSpawner* Spawner = NewObject<UMDViewModelNodeSpawner>();
 	Spawner->SetField(Field);
@@ -16,12 +17,12 @@ UMDViewModelNodeSpawner* UMDViewModelNodeSpawner::Create(TSubclassOf<UEdGraphNod
 	Spawner->Assignment = Assignment;
 	Spawner->BlueprintPtr = Blueprint;
 
-	const FText VMClassDisplayName = Assignment.ViewModelClass != nullptr ? Assignment.ViewModelClass->GetDisplayNameText() : FText::GetEmpty(); 
+	const FText VMClassDisplayName = Assignment.ViewModelClass != nullptr ? Assignment.ViewModelClass->GetDisplayNameText() : FText::GetEmpty();
 
 	FBlueprintActionUiSpec& MenuSignature = Spawner->DefaultMenuSignature;
 	if (const UFunction* Function = Field.Get<const UFunction>())
 	{
-		MenuSignature.MenuName = UK2Node_CallFunction::GetUserFacingFunctionName(Function);
+		MenuSignature.MenuName = FText::Format(NameFormat, UK2Node_CallFunction::GetUserFacingFunctionName(Function));
 		MenuSignature.Category = FText::Format(INVTEXT("{0}|{1} ({2})"), Category, VMClassDisplayName, FText::FromName(Assignment.ViewModelName));
 		MenuSignature.Tooltip = FText::FromString(UK2Node_CallFunction::GetDefaultTooltipForFunction(Function));
 		MenuSignature.Keywords = UK2Node_CallFunction::GetKeywordsForFunction(Function);
@@ -32,8 +33,8 @@ UMDViewModelNodeSpawner* UMDViewModelNodeSpawner::Create(TSubclassOf<UEdGraphNod
 		FEdGraphPinType VarType;
 		UEdGraphSchema_K2 const* K2Schema = GetDefault<UEdGraphSchema_K2>();
 		K2Schema->ConvertPropertyToPinType(Property, VarType);
-		
-		MenuSignature.MenuName = Property->GetDisplayNameText();
+
+		MenuSignature.MenuName = FText::Format(NameFormat, Property->GetDisplayNameText());
 		MenuSignature.Category = FText::Format(INVTEXT("{0}|{1} ({2})"), Category, VMClassDisplayName, FText::FromName(Assignment.ViewModelName));
 		MenuSignature.Tooltip = Property->GetToolTipText();
 		MenuSignature.Icon = UK2Node_Variable::GetVarIconFromPinType(VarType, MenuSignature.IconTint);
@@ -49,7 +50,7 @@ UMDViewModelNodeSpawner* UMDViewModelNodeSpawner::Create(TSubclassOf<UEdGraphNod
 
 FBlueprintNodeSignature UMDViewModelNodeSpawner::GetSpawnerSignature() const
 {
-	FBlueprintNodeSignature SpawnerSignature = Super::GetSpawnerSignature();
+	FBlueprintNodeSignature SpawnerSignature = FBlueprintNodeSignature(NodeClass);//Super::GetSpawnerSignature();
 	SpawnerSignature.AddSubObject(Assignment.ViewModelClass.Get());
 	SpawnerSignature.AddNamedValue(TEXT("ViewModelName"), Assignment.ViewModelName.ToString());
 
@@ -64,9 +65,13 @@ UEdGraphNode* UMDViewModelNodeSpawner::Invoke(UEdGraph* ParentGraph, const FBind
 		{
 			CommandNode->InitializeViewModelFunctionParams(VMAssignment, InField.Get<const UFunction>(), Blueprint);
 		}
-		else if (UMDVMNode_GetProperty* PropertyNode = Cast<UMDVMNode_GetProperty>(NewNode))
+		else if (UMDVMNode_GetProperty* GetPropertyNode = Cast<UMDVMNode_GetProperty>(NewNode))
 		{
-			PropertyNode->InitializeViewModelPropertyParams(VMAssignment, InField.Get<const FProperty>(), Blueprint);
+			GetPropertyNode->InitializeViewModelPropertyParams(VMAssignment, InField.Get<const FProperty>(), Blueprint);
+		}
+		else if (UMDVMNode_SetProperty* SetPropertyNode = Cast<UMDVMNode_SetProperty>(NewNode))
+		{
+			SetPropertyNode->InitializeViewModelPropertyParams(VMAssignment, InField.Get<const FProperty>(), Blueprint);
 		}
 	};
 

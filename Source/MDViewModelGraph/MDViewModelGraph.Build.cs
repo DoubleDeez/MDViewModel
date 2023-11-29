@@ -15,6 +15,10 @@ public class MDViewModelGraph : ModuleRules
             }
         );
 
+#if UE_5_3_OR_LATER
+	    PrivateDependencyModuleNames.Add("FieldNotification");
+#endif
+
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {

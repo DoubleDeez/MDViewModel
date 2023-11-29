@@ -12,8 +12,8 @@ class MDVIEWMODELGRAPH_API UMDViewModelNodeSpawner : public UBlueprintFieldNodeS
 	GENERATED_BODY()
 
 public:
-	static UMDViewModelNodeSpawner* Create(TSubclassOf<UEdGraphNode> NodeClass, const FText& Category, const FMDViewModelAssignmentReference& Assignment, FFieldVariant Field, const UBlueprint* Blueprint);
-	
+	static UMDViewModelNodeSpawner* Create(TSubclassOf<UEdGraphNode> NodeClass, const FText& Category, const FMDViewModelAssignmentReference& Assignment, FFieldVariant Field, const UBlueprint* Blueprint, const FText& NameFormat = INVTEXT("{0}"));
+
 	virtual FBlueprintNodeSignature GetSpawnerSignature() const override;
 	virtual UEdGraphNode* Invoke(UEdGraph* ParentGraph, const FBindingSet& Bindings, const FVector2D Location) const override;
 
