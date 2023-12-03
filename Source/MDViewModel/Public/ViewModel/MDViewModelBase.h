@@ -15,6 +15,7 @@
 #include "InstancedStruct.h"
 #include "UObject/Object.h"
 #include "UObject/Package.h"
+#include "Templates/SubclassOf.h"
 #include "Util/MDViewModelMetaUtils.h"
 #include "MDViewModelBase.generated.h"
 
@@ -388,9 +389,9 @@ void UMDViewModelBase::ShutdownSubViewModels(TMap<T, U>& ViewModels)
 
 template <typename T, typename U>
 void UMDViewModelBase::ShutdownSubViewModelKeyValues(TMap<T, U>& ViewModels)
-{	
+{
 	static_assert(std::is_convertible_v<T, UMDViewModelBase*>|| std::is_convertible_v<T, TWeakObjectPtr<UMDViewModelBase>>, "The Map Key type must be a View Model object type");
-	
+
 	for (TTuple<T, U>& Pair : ViewModels)
 	{
 		ShutdownSubViewModel(Pair.Value);
@@ -403,7 +404,7 @@ template <typename T, typename U>
 void UMDViewModelBase::ShutdownSubViewModelMapValues(TMap<T, U>& ViewModels)
 {
 	static_assert(std::is_convertible_v<U, UMDViewModelBase*> || std::is_convertible_v<U, TWeakObjectPtr<UMDViewModelBase>>, "The Map Value type must be a View Model object type");
-	
+
 	for (TTuple<T, U>& Pair : ViewModels)
 	{
 		ShutdownSubViewModel(Pair.Value);
