@@ -16,6 +16,14 @@ void UMDVMDynamicEntryBox::PostInitProperties()
 #endif
 }
 
+TSharedRef<SWidget> UMDVMDynamicEntryBox::RebuildWidget()
+{
+	TSharedRef<SWidget> Result = Super::RebuildWidget();
+	bUsePendingList = false;
+	PendingViewModels.Reset();
+	return Result;
+}
+
 #if WITH_EDITOR
 const FText UMDVMDynamicEntryBox::GetPaletteCategory()
 {
@@ -38,6 +46,12 @@ void UMDVMDynamicEntryBox::PopulateItems(const TArray<UMDViewModelBase*>& ViewMo
 	const int32 NumVMs = ViewModels.Num();
 	const int32 NumEntries = FMath::Max(NumVMs, MinimumEntriesToDisplay);
 	const int32 StartNumItems = GetNumEntries();
+
+	if (!MyPanelWidget.IsValid())
+	{
+		Algo::Transform(ViewModels, PendingViewModels, [](UMDViewModelBase* ViewModel){ return MakeWeakObjectPtr(ViewModel); });
+		bUsePendingList = true;
+	}
 
 	// Remove entries we don't need
 	for (int32 i = StartNumItems - 1; i >= NumEntries; --i)
@@ -108,8 +122,17 @@ void UMDVMDynamicEntryBox::PopulateEntryWidget(UUserWidget* EntryWidget) const
 		return;
 	}
 
-	// Null view model entries are supported, but we make sure we clear it on the entry widget
 	UMDViewModelBase* ViewModel = CurrentViewModel.Get();
+	if (bUsePendingList)
+	{
+		const int32 EntryIndex = GetAllEntries().IndexOfByKey(EntryWidget);
+		if (PendingViewModels.IsValidIndex(EntryIndex))
+		{
+			ViewModel = PendingViewModels[EntryIndex].Get();
+		}
+	}
+
+	// Null view model entries are supported, but we make sure we clear it on the entry widget
 	if (IsValid(ViewModel))
 	{
 		UMDViewModelFunctionLibrary::BP_SetViewModel(EntryWidget, ViewModel, ViewModelAssignment);

@@ -18,6 +18,7 @@ public:
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEntryDynamicEvent, UUserWidget*, Widget, UMDViewModelBase*, ViewModel);
 
 	virtual void PostInitProperties() override;
+	virtual TSharedRef<SWidget> RebuildWidget() override;
 
 #if WITH_EDITOR
 	virtual const FText GetPaletteCategory() override;
@@ -57,5 +58,9 @@ private:
 
 	// The current view model being constructed, for injecting set view models before Entry Widget construction in AddEntryChild
 	TWeakObjectPtr<UMDViewModelBase> CurrentViewModel;
+
+	// View models that were populated before the slate widget was constructed
+	TArray<TWeakObjectPtr<UMDViewModelBase>> PendingViewModels;
+	bool bUsePendingList = false;
 
 };
