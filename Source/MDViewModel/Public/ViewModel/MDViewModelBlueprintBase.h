@@ -67,7 +67,7 @@ protected:
 	virtual void ShutdownViewModel() override;
 
 	// Creates and initializes a view model instance that is intended to be owned by this view model. Passes along this view model's World Context Object
-	UFUNCTION(BlueprintCallable, Category = "View Model", meta = (AutoCreateRefTerm = "ViewModelSettings", DeterminesOutputType = "ViewModelClass"))
+	UFUNCTION(BlueprintCallable, BlueprintPure = false, Category = "View Model", meta = (AutoCreateRefTerm = "ViewModelSettings", DeterminesOutputType = "ViewModelClass"))
 	UMDViewModelBase* CreateSubViewModel(TSubclassOf<UMDViewModelBase> ViewModelClass, UObject* InContextObject, const FInstancedStruct& ViewModelSettings) const;
 
 	virtual TMap<FMDViewModelAssignmentReference, TObjectPtr<UMDViewModelBase>>& GetViewModels() override { return ViewModels; }
