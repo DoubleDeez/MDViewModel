@@ -12,8 +12,32 @@ void UMDVMDynamicEntryBox::PostInitProperties()
 	Super::PostInitProperties();
 
 #if WITH_EDITOR
-	ViewModelAssignment.OnGetBoundObjectClass.BindUObject(this, &UMDVMDynamicEntryBox::GetEditorTimeEntryWidgetClass);
+	if (ViewModelAssignments.IsEmpty())
+	{
+		ViewModelAssignments.AddDefaulted();
+	}
+
+	for (FMDViewModelAssignmentReference& VMRef : ViewModelAssignments)
+	{
+		VMRef.OnGetBoundObjectClass.BindUObject(this, &UMDVMDynamicEntryBox::GetEditorTimeEntryWidgetClass);
+	}
 #endif
+}
+
+void UMDVMDynamicEntryBox::PostLoad()
+{
+	Super::PostLoad();
+
+	if (ViewModelAssignment.IsAssignmentValid())
+	{
+#if WITH_EDITOR
+		ViewModelAssignment.OnGetBoundObjectClass.BindUObject(this, &UMDVMDynamicEntryBox::GetEditorTimeEntryWidgetClass);
+#endif
+
+		ViewModelAssignments.Reset();
+		ViewModelAssignments.Emplace(MoveTemp(ViewModelAssignment));
+		ViewModelAssignment = {};
+	}
 }
 
 TSharedRef<SWidget> UMDVMDynamicEntryBox::RebuildWidget()
@@ -34,9 +58,25 @@ void UMDVMDynamicEntryBox::ValidateCompiledDefaults(IWidgetCompilerLog& CompileL
 {
 	Super::ValidateCompiledDefaults(CompileLog);
 
-	if (!ViewModelAssignment.IsAssignmentValid())
+	for (const FMDViewModelAssignmentReference& VMRef : ViewModelAssignments)
 	{
-		CompileLog.Error(FText::Format(INVTEXT("{0} needs a valid view model assignment."), FText::FromString(GetName())));
+		if (!VMRef.IsAssignmentValid())
+		{
+			CompileLog.Error(FText::Format(INVTEXT("{0} contains an invalid view model assignment."), FText::FromString(GetName())));
+		}
+	}
+}
+
+void UMDVMDynamicEntryBox::PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeChainProperty(PropertyChangedEvent);
+
+	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(UMDVMDynamicEntryBox, ViewModelAssignments))
+	{
+		for (FMDViewModelAssignmentReference& VMRef : ViewModelAssignments)
+		{
+			VMRef.OnGetBoundObjectClass.BindUObject(this, &UMDVMDynamicEntryBox::GetEditorTimeEntryWidgetClass);
+		}
 	}
 }
 #endif
@@ -63,10 +103,26 @@ void UMDVMDynamicEntryBox::PopulateItems(const TArray<UMDViewModelBase*>& ViewMo
 			if (OnEntryRemoved.IsBound())
 			{
 				bool bIsValid = false;
-				OnEntryRemoved.Broadcast(Widget, UMDViewModelFunctionLibrary::BP_GetViewModel(Widget, ViewModelAssignment, bIsValid));
+
+				UMDViewModelBase* ViewModel = nullptr;
+				for (const FMDViewModelAssignmentReference& VMRef : ViewModelAssignments)
+				{
+					ViewModel = UMDViewModelFunctionLibrary::BP_GetViewModel(Widget, VMRef, bIsValid);
+
+					if (IsValid(ViewModel))
+					{
+						break;
+					}
+				}
+
+				OnEntryRemoved.Broadcast(Widget, ViewModel);
 			}
 
-			UMDViewModelFunctionLibrary::BP_ClearViewModel(Widget, ViewModelAssignment);
+			for (const FMDViewModelAssignmentReference& VMRef : ViewModelAssignments)
+			{
+				UMDViewModelFunctionLibrary::BP_ClearViewModel(Widget, VMRef);
+			}
+
 			RemoveEntry(Widget);
 		}
 	}
@@ -132,20 +188,21 @@ void UMDVMDynamicEntryBox::PopulateEntryWidget(UUserWidget* EntryWidget) const
 		}
 	}
 
-	// Null view model entries are supported, but we make sure we clear it on the entry widget
-	if (IsValid(ViewModel))
+	for (const FMDViewModelAssignmentReference& VMRef : ViewModelAssignments)
 	{
-		UMDViewModelFunctionLibrary::BP_SetViewModel(EntryWidget, ViewModel, ViewModelAssignment);
-	}
-	else
-	{
-		UMDViewModelFunctionLibrary::BP_ClearViewModel(EntryWidget, ViewModelAssignment);
+		if (IsValid(ViewModel) && VMRef.IsAssignmentValid() && ViewModel->IsA(VMRef.ViewModelClass.Get()))
+		{
+			UMDViewModelFunctionLibrary::BP_SetViewModel(EntryWidget, ViewModel, VMRef);
+		}
+		else
+		{
+			UMDViewModelFunctionLibrary::BP_ClearViewModel(EntryWidget, VMRef);
+		}
 	}
 
 	// Notify of the entry widget being generated
 	if (OnEntryGenerated.IsBound())
 	{
-		bool bIsValid = false;
-		OnEntryGenerated.Broadcast(EntryWidget, UMDViewModelFunctionLibrary::BP_GetViewModel(EntryWidget, ViewModelAssignment, bIsValid));
+		OnEntryGenerated.Broadcast(EntryWidget, ViewModel);
 	}
 }

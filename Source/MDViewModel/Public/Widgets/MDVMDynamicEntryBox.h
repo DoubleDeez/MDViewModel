@@ -18,11 +18,13 @@ public:
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEntryDynamicEvent, UUserWidget*, Widget, UMDViewModelBase*, ViewModel);
 
 	virtual void PostInitProperties() override;
+	virtual void PostLoad() override;
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 
 #if WITH_EDITOR
 	virtual const FText GetPaletteCategory() override;
 	virtual void ValidateCompiledDefaults(class IWidgetCompilerLog& CompileLog) const override;
+	virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent) override;
 #endif
 
 	UFUNCTION(BlueprintCallable, Category = "DynamicEntryBox")
@@ -40,9 +42,14 @@ protected:
 	virtual void SynchronizeProperties() override;
 	virtual void AddEntryChild(UUserWidget& ChildWidget) override;
 
-	// The view model to set on the entry widgets when populating this list
-	UPROPERTY(EditAnywhere, Category = "EntryLayout", meta = (DisplayAfter = "EntryWidgetClass"))
+	UPROPERTY()
 	FMDViewModelAssignmentReference ViewModelAssignment;
+
+	// The view model(s) to set on the entry widgets when populating this list
+	// If multiple are specified, the assignments that match the view model instance's class will be set and the rest will be cleared
+	// If the view model instance is nullptr, all of these assignments will be cleared on it
+	UPROPERTY(EditAnywhere, Category = "EntryLayout", meta = (DisplayAfter = "EntryWidgetClass", TitleProperty = "{ViewModelClass} ({ViewModelName})"))
+	TArray<FMDViewModelAssignmentReference> ViewModelAssignments;
 
 	// At least this many widgets will display when calling PopulateItems, setting null view models to make up the difference in items if necessary
 	// Also acts as a lower limit for `NumDesignerPreviewEntries`

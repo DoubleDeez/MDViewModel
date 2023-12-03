@@ -131,7 +131,13 @@ void FMDViewModelAssignmentReferenceCustomization::CustomizeChildren(TSharedRef<
 	const FMDViewModelAssignmentReference* Reference = GetAssignmentReference();
 	if (Reference != nullptr && Reference->GetBoundObjectClass() != nullptr)
 	{
+		FUIAction CopyAction;
+		FUIAction PasteAction;
+		PropertyHandle->CreateDefaultPropertyCopyPasteActions(CopyAction, PasteAction);
+
 		ChildBuilder.AddCustomRow(FText::GetEmpty())
+		.CopyAction(CopyAction)
+		.PasteAction(PasteAction)
 		.NameContent()
 		[
 			StructHandle->CreatePropertyNameWidget()
@@ -145,6 +151,10 @@ void FMDViewModelAssignmentReferenceCustomization::CustomizeChildren(TSharedRef<
 				SNew(STextBlock)
 				.Text(this, &FMDViewModelAssignmentReferenceCustomization::GetSelectedAssignmentText)
 			]
+		]
+		.ExtensionContent()
+		[
+			PropertyHandle->CreateDefaultPropertyButtonWidgets()
 		];
 	}
 	else
