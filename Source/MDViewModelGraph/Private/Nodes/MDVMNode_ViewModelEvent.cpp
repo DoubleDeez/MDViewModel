@@ -122,6 +122,7 @@ void UMDVMNode_ViewModelEvent::HandleVariableRenamed(UBlueprint* InBlueprint, UC
 		{
 			Modify();
 			DelegatePropertyName = InNewVarName;
+			ReconstructNode();
 		}
 	}
 }

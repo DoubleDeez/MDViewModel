@@ -1,6 +1,15 @@
 #include "ViewModelTab/MDViewModelEditor.h"
 
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "BlueprintEditor.h"
+#include "Kismet2/BlueprintEditorUtils.h"
+#include "Nodes/MDVMNode_CallFunctionBase.h"
+#include "Nodes/MDVMNode_DynamicBindingBase.h"
+#include "Nodes/MDVMNode_GetProperty.h"
+#include "Nodes/MDVMNode_GetViewModel.h"
+#include "Nodes/MDVMNode_SetProperty.h"
+#include "Nodes/MDVMNode_SetViewModel.h"
+#include "Nodes/MDVMNode_SetViewModelOfClass.h"
 #include "Util/MDViewModelEditorAssignment.h"
 #include "Util/MDViewModelFunctionLibrary.h"
 #include "ViewModel/MDViewModelBase.h"
@@ -10,6 +19,20 @@
 #include "Widgets/Layout/SSplitter.h"
 
 
+SMDViewModelEditor::~SMDViewModelEditor()
+{
+	if (const FAssetRegistryModule* AssetRegistryModulePtr = FModuleManager::GetModulePtr<FAssetRegistryModule>(AssetRegistryConstants::ModuleName))
+	{
+		if (IAssetRegistry* AssetRegistryPtr = AssetRegistryModulePtr->TryGet())
+		{
+			AssetRegistryPtr->OnAssetRemoved().RemoveAll(this);
+			AssetRegistryPtr->OnAssetRenamed().RemoveAll(this);
+		}
+	}
+
+	FBlueprintEditorUtils::OnRenameVariableReferencesEvent.RemoveAll(this);
+}
+
 void SMDViewModelEditor::Construct(const FArguments& InArgs, const TSharedPtr<FBlueprintEditor>& BlueprintEditor)
 {
 	UBlueprint* Blueprint = BlueprintEditor->GetBlueprintObj();
@@ -18,7 +41,14 @@ void SMDViewModelEditor::Construct(const FArguments& InArgs, const TSharedPtr<FB
 		return;
 	}
 
+	EditedBlueprintPtr = Blueprint;
 	Blueprint->OnSetObjectBeingDebugged().AddSP(this, &SMDViewModelEditor::OnSetObjectBeingDebugged);
+
+	IAssetRegistry& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(AssetRegistryConstants::ModuleName).Get();
+	AssetRegistry.OnAssetRemoved().AddSP(this, &SMDViewModelEditor::OnAssetRemoved);
+	AssetRegistry.OnAssetRenamed().AddSP(this, &SMDViewModelEditor::OnAssetRenamed);
+
+	FBlueprintEditorUtils::OnRenameVariableReferencesEvent.AddSP(this, &SMDViewModelEditor::OnRenameVariable);
 
 	TArray<UBlueprint*> Hierarchy;
 	UBlueprint::GetBlueprintHierarchyFromClass(Blueprint->GeneratedClass, Hierarchy);
@@ -49,18 +79,12 @@ void SMDViewModelEditor::Construct(const FArguments& InArgs, const TSharedPtr<FB
 
 void SMDViewModelEditor::PostUndo(bool bSuccess)
 {
-	if (ViewModelListWidget.IsValid())
-	{
-		ViewModelListWidget->RefreshList();
-	}
+	RefreshEditor(false);
 }
 
 void SMDViewModelEditor::PostRedo(bool bSuccess)
 {
-	if (ViewModelListWidget.IsValid())
-	{
-		ViewModelListWidget->RefreshList();
-	}
+	RefreshEditor(false);
 }
 
 void SMDViewModelEditor::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
@@ -80,7 +104,7 @@ void SMDViewModelEditor::OnSetObjectBeingDebugged(UObject* Object)
 	{
 		VMRuntime->StopListeningForAnyViewModelChanged(this);
 	}
-	
+
 	ObjectBeingDebugged = Object;
 
 	bIsDebugging = ObjectBeingDebugged.IsValid();
@@ -121,11 +145,76 @@ void SMDViewModelEditor::OnViewModelChanged()
 
 void SMDViewModelEditor::OnBlueprintCompiled(UBlueprint* BP)
 {
+	RefreshEditor(true);
+}
+
+void SMDViewModelEditor::OnAssetRemoved(const FAssetData& AssetData)
+{
+	RefreshEditor(true);
+}
+
+void SMDViewModelEditor::OnAssetRenamed(const FAssetData& AssetData, const FString& OldName)
+{
+	RefreshEditor(true);
+}
+
+void SMDViewModelEditor::OnRenameVariable(UBlueprint* Blueprint, UClass* VariableClass, const FName& OldVariableName, const FName& NewVariableName)
+{
+	if (IsValid(VariableClass) && EditedBlueprintPtr.IsValid() && EditedBlueprintPtr.Get() != Blueprint && VariableClass->IsChildOf<UMDViewModelBase>())
+	{
+		TArray<UEdGraph*> AllGraphs;
+		EditedBlueprintPtr->GetAllGraphs(AllGraphs);
+
+		auto IsMDVMNode = [](const UEdGraphNode* Node)
+		{
+			static TSet<UClass*> NodeClasses = {
+				UMDVMNode_DynamicBindingBase::StaticClass(),
+				UMDVMNode_CallFunctionBase::StaticClass(),
+				UMDVMNode_GetProperty::StaticClass(),
+				UMDVMNode_SetProperty::StaticClass(),
+				UMDVMNode_GetViewModel::StaticClass(),
+				UMDVMNode_SetViewModel::StaticClass(),
+				UMDVMNode_SetViewModelOfClass::StaticClass()
+			};
+
+			for (const UClass* Class : NodeClasses)
+			{
+				if (IsValid(Node) && Node->GetClass()->IsChildOf(Class))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		};
+
+		for (UEdGraph* CurrentGraph : AllGraphs)
+		{
+			if (IsValid(CurrentGraph))
+			{
+				for (UEdGraphNode* Node : CurrentGraph->Nodes)
+				{
+					if (IsMDVMNode(Node))
+					{
+						Cast<UK2Node>(Node)->HandleVariableRenamed(Blueprint, VariableClass, CurrentGraph, OldVariableName, NewVariableName);
+					}
+				}
+			}
+		}
+
+		RefreshEditor(true);
+	}
+}
+
+void SMDViewModelEditor::RefreshEditor(bool bRefreshDetails)
+{
 	if (ViewModelListWidget.IsValid())
 	{
 		ViewModelListWidget->RefreshList();
 	}
 
-	// Force a refresh
-	OnViewModelChanged();
+	if (bRefreshDetails)
+	{
+		OnViewModelChanged();
+	}
 }

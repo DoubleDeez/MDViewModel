@@ -156,12 +156,13 @@ void UMDVMNode_ViewModelFieldNotify::RegisterDynamicBinding(UDynamicBlueprintBin
 void UMDVMNode_ViewModelFieldNotify::HandleVariableRenamed(UBlueprint* InBlueprint, UClass* InVariableClass, UEdGraph* InGraph, const FName& InOldVarName,
 	const FName& InNewVarName)
 {
-	if (InVariableClass && InVariableClass->IsChildOf(Assignment.ViewModelClass.Get()))
+	if (Assignment.IsAssignmentValid() && Assignment.ViewModelClass.Get()->IsChildOf(InVariableClass))
 	{
 		if (InOldVarName == FieldNotifyName)
 		{
 			Modify();
 			FieldNotifyName = InNewVarName;
+			ReconstructNode();
 		}
 	}
 }

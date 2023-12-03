@@ -23,6 +23,8 @@ public:
 
 	SLATE_END_ARGS()
 
+	virtual ~SMDViewModelEditor() override;
+
 	void Construct(const FArguments& InArgs, const TSharedPtr<FBlueprintEditor>& BlueprintEditor);
 
 	virtual void PostUndo(bool bSuccess) override;
@@ -37,6 +39,13 @@ private:
 	void OnViewModelChanged();
 	void OnBlueprintCompiled(UBlueprint* BP);
 
+	void OnAssetRemoved(const FAssetData& AssetData);
+	void OnAssetRenamed(const FAssetData& AssetData, const FString& OldName);
+
+	void OnRenameVariable(UBlueprint* Blueprint, UClass* VariableClass, const FName& OldVariableName, const FName& NewVariableName);
+
+	void RefreshEditor(bool bRefreshDetails);
+
 	bool bIsDebugging = false;
 
 	TWeakObjectPtr<UObject> ObjectBeingDebugged;
@@ -44,4 +53,6 @@ private:
 
 	TSharedPtr<SMDViewModelList> ViewModelListWidget;
 	TSharedPtr<SMDViewModelDetails> ViewModelDetailsWidget;
+
+	TWeakObjectPtr<UBlueprint> EditedBlueprintPtr;
 };
