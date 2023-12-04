@@ -186,6 +186,7 @@ void UMDVMNode_SetProperty::ExpandNode(FKismetCompilerContext& CompilerContext, 
 
 	FProperty* VariableProperty = GetPropertyForVariable();
 
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 3
 	// VariableSet doesn't broadcast Native Field Notify properties, so we'll do it here manually
 	// IsFieldNotifyProperty() and HasFieldNotificationBroadcast() only check BP properties
 	// See: https://github.com/EpicGames/UnrealEngine/pull/11166
@@ -197,6 +198,7 @@ void UMDVMNode_SetProperty::ExpandNode(FKismetCompilerContext& CompilerContext, 
 		CompilerContext.MovePinLinksToIntermediate(*ThenPin, *ExecThenPins.Get<1>());
 	}
 	else
+#endif
 	{
 		// Connect GetViewModel return value to VariableSet node self pin
 		UEdGraphPin* VariableSetNodeSelfPin = Schema->FindSelfPin(*VariableSetNode, EGPD_Input);
