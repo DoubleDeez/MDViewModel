@@ -108,7 +108,8 @@ void FMDViewModelDebugLineItemBase::GatherChildrenBase(TArray<FDebugTreeItemPtr>
 
 TSharedRef<SWidget> FMDViewModelDebugLineItemBase::GenerateNameWidget(TSharedPtr<FString> InSearchString)
 {
-	return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelDebugLineItemBase>(AsShared()))
+	return SNew(SMDVMDragAndDropWrapperButton)
+		.OnGetDragAndDropAction(this, &FMDViewModelDebugLineItemBase::CreateDragAndDropAction)
 		.bCanDrag(this, &FMDViewModelDebugLineItemBase::CanDrag)
 		[
 			SNew(PropertyInfoViewStyle::STextHighlightOverlay)

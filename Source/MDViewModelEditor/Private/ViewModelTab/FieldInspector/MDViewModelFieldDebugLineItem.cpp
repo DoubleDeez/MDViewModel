@@ -6,6 +6,7 @@
 #include "Util/MDViewModelGraphStatics.h"
 #include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMDragAndDropWrapperButton.h"
+#include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropFieldNotify.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropProperty.h"
 #include "Widgets/Images/SLayeredImage.h"
 #include "Widgets/Input/SButton.h"
@@ -33,7 +34,8 @@ TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GetNameIcon()
 			SecondaryColor
 		);
 
-		return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFieldDebugLineItem>(AsShared()))
+		return SNew(SMDVMDragAndDropWrapperButton)
+			.OnGetDragAndDropAction(this, &FMDViewModelFieldDebugLineItem::CreateDragAndDropAction)
 			.bCanDrag(this, &FMDViewModelFieldDebugLineItem::CanDrag)
 			[
 				SNew(SLayeredImage, SecondaryIcon, SecondaryColor)
@@ -48,37 +50,43 @@ TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GetNameIcon()
 
 TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GenerateValueWidget(TSharedPtr<FString> InSearchString)
 {
-	return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFieldDebugLineItem>(AsShared()))
-		.bCanDrag(this, &FMDViewModelFieldDebugLineItem::CanDrag)
+	return SNew(SWidgetSwitcher)
+		.WidgetIndex(this, &FMDViewModelFieldDebugLineItem::GetShouldDisplayFieldNotifyIndex)
+		+SWidgetSwitcher::Slot()
 		[
-			SNew(SWidgetSwitcher)
-			.WidgetIndex(this, &FMDViewModelFieldDebugLineItem::GetShouldDisplayFieldNotifyIndex)
-			+SWidgetSwitcher::Slot()
-			[
-				SNew(SButton)
+			SNew(SMDVMDragAndDropWrapperButton)
+			.bCanDrag(this, &FMDViewModelFieldDebugLineItem::CanAddBoundFunction)
+			.OnGetDragAndDropAction(this, &FMDViewModelFieldDebugLineItem::CreateBindingDragAndDropAction)
+			.ButtonArguments(
+				SButton::FArguments()
 				.ContentPadding(FMargin(3.0, 2.0))
 				.OnClicked(this, &FMDViewModelFieldDebugLineItem::OnAddOrViewBoundFunctionClicked)
 				.IsEnabled(this, &FMDViewModelFieldDebugLineItem::CanCreateNodes)
+			)
+			[
+				SNew(SWidgetSwitcher)
+				.WidgetIndex(this, &FMDViewModelFieldDebugLineItem::GetAddOrViewBoundFunctionIndex)
+				+SWidgetSwitcher::Slot()
 				[
-					SNew(SWidgetSwitcher)
-					.WidgetIndex(this, &FMDViewModelFieldDebugLineItem::GetAddOrViewBoundFunctionIndex)
-					+SWidgetSwitcher::Slot()
-					[
-						SNew(SImage)
-						.ColorAndOpacity(FSlateColor::UseForeground())
-						.Image(FAppStyle::Get().GetBrush("Icons.SelectInViewport"))
-						.ToolTipText(INVTEXT("Focus the existing bound function."))
-					]
-					+SWidgetSwitcher::Slot()
-					[
-						SNew(SImage)
-						.ColorAndOpacity(FSlateColor::UseForeground())
-						.Image(FAppStyle::Get().GetBrush("Icons.Plus"))
-						.ToolTipText(INVTEXT("Create a BP event bound to this view model field notify property"))
-					]
+					SNew(SImage)
+					.ColorAndOpacity(FSlateColor::UseForeground())
+					.Image(FAppStyle::Get().GetBrush("Icons.SelectInViewport"))
+					.ToolTipText(INVTEXT("Focus the existing bound function."))
+				]
+				+SWidgetSwitcher::Slot()
+				[
+					SNew(SImage)
+					.ColorAndOpacity(FSlateColor::UseForeground())
+					.Image(FAppStyle::Get().GetBrush("Icons.Plus"))
+					.ToolTipText(INVTEXT("Create a BP event bound to this view model field notify property"))
 				]
 			]
-			+SWidgetSwitcher::Slot()
+		]
+		+SWidgetSwitcher::Slot()
+		[
+			SNew(SMDVMDragAndDropWrapperButton)
+			.OnGetDragAndDropAction(this, &FMDViewModelFieldDebugLineItem::CreateDragAndDropAction)
+			.bCanDrag(this, &FMDViewModelFieldDebugLineItem::CanDrag)
 			[
 				SNew(STextBlock)
 				.Text(this, &FMDViewModelFieldDebugLineItem::GetDisplayValue)
@@ -91,6 +99,14 @@ TSharedRef<FMDVMInspectorDragAndDropActionBase> FMDViewModelFieldDebugLineItem::
 {
 	return FMDVMInspectorDragAndDropProperty::Create(
 		PropertyPtr,
+		GetViewModelAssignmentReference()
+	);
+}
+
+TSharedRef<FMDVMInspectorDragAndDropActionBase> FMDViewModelFieldDebugLineItem::CreateBindingDragAndDropAction() const
+{
+	return FMDVMInspectorDragAndDropFieldNotify::Create(
+		PropertyPtr.Get(),
 		GetViewModelAssignmentReference()
 	);
 }
@@ -377,12 +393,16 @@ FReply FMDViewModelFieldDebugLineItem::OnAddOrViewBoundFunctionClicked() const
 	return FReply::Handled();
 }
 
+bool FMDViewModelFieldDebugLineItem::CanAddBoundFunction() const
+{
+	return (PropertyPtr.IsValid() && !FMDViewModelGraphStatics::DoesBlueprintBindToViewModelFieldNotify(BlueprintPtr.Get(), PropertyPtr->GetFName(), Assignment));
+}
+
 int32 FMDViewModelFieldDebugLineItem::GetAddOrViewBoundFunctionIndex() const
 {
 	check(bIsFieldNotify);
 
-	return (!PropertyPtr.IsValid() || FMDViewModelGraphStatics::DoesBlueprintBindToViewModelFieldNotify(BlueprintPtr.Get(), PropertyPtr->GetFName(), Assignment))
-		? 0 : 1;
+	return CanAddBoundFunction() ? 1 : 0;
 }
 
 void FMDViewModelFieldDebugLineItem::UpdateValuePtr(void* InValuePtr)

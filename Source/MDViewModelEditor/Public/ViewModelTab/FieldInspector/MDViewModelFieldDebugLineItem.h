@@ -31,6 +31,8 @@ public:
 
 	virtual TSharedRef<FMDVMInspectorDragAndDropActionBase> CreateDragAndDropAction() const override;
 
+	TSharedRef<FMDVMInspectorDragAndDropActionBase> CreateBindingDragAndDropAction() const;
+
 	FText GetDisplayValue() const;
 
 	const FProperty* GetProperty() const { return PropertyPtr.Get(); }
@@ -56,6 +58,7 @@ protected:
 private:
 	int32 GetShouldDisplayFieldNotifyIndex() const;
 	FReply OnAddOrViewBoundFunctionClicked() const;
+	bool CanAddBoundFunction() const;
 	int32 GetAddOrViewBoundFunctionIndex() const;
 
 	TWeakFieldPtr<const FProperty> PropertyPtr;

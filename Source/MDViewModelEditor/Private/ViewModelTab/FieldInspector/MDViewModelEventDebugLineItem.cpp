@@ -2,6 +2,7 @@
 
 #include "Nodes/MDVMNode_ViewModelEvent.h"
 #include "Util/MDViewModelGraphStatics.h"
+#include "ViewModelTab/FieldInspector/DragAndDrop/MDVMDragAndDropWrapperButton.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropEvent.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
@@ -16,28 +17,33 @@ FMDViewModelEventDebugLineItem::FMDViewModelEventDebugLineItem(const TWeakPtr<FB
 
 TSharedRef<SWidget> FMDViewModelEventDebugLineItem::GenerateValueWidget(TSharedPtr<FString> InSearchString)
 {
-	return SNew(SButton)
-	.ContentPadding(FMargin(3.0, 2.0))
-	.OnClicked(this, &FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked)
-	.IsEnabled(this, &FMDViewModelEventDebugLineItem::CanCreateNodes)
-	[
-		SNew(SWidgetSwitcher)
-		.WidgetIndex(this, &FMDViewModelEventDebugLineItem::GetAddOrViewBoundFunctionIndex)
-		+ SWidgetSwitcher::Slot()
+	return SNew(SMDVMDragAndDropWrapperButton)
+		.OnGetDragAndDropAction(this, &FMDViewModelEventDebugLineItem::CreateDragAndDropAction)
+		.bCanDrag(this, &FMDViewModelEventDebugLineItem::CanDrag)
+		.ButtonArguments(
+			SButton::FArguments()
+			.ContentPadding(FMargin(3.0, 2.0))
+			.OnClicked(this, &FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked)
+			.IsEnabled(this, &FMDViewModelEventDebugLineItem::CanCreateNodes)
+		)
 		[
-			SNew(SImage)
-			.ColorAndOpacity(FSlateColor::UseForeground())
-			.Image(FAppStyle::Get().GetBrush("Icons.SelectInViewport"))
-			.ToolTipText(INVTEXT("Focus the existing bound function."))
-		]
-		+ SWidgetSwitcher::Slot()
-		[
-			SNew(SImage)
-			.ColorAndOpacity(FSlateColor::UseForeground())
-			.Image(FAppStyle::Get().GetBrush("Icons.Plus"))
-			.ToolTipText(INVTEXT("Create a BP event bound to this view model event"))
-		]
-	];
+			SNew(SWidgetSwitcher)
+			.WidgetIndex(this, &FMDViewModelEventDebugLineItem::GetAddOrViewBoundFunctionIndex)
+			+ SWidgetSwitcher::Slot()
+			[
+				SNew(SImage)
+				.ColorAndOpacity(FSlateColor::UseForeground())
+				.Image(FAppStyle::Get().GetBrush("Icons.SelectInViewport"))
+				.ToolTipText(INVTEXT("Focus the existing bound function."))
+			]
+			+ SWidgetSwitcher::Slot()
+			[
+				SNew(SImage)
+				.ColorAndOpacity(FSlateColor::UseForeground())
+				.Image(FAppStyle::Get().GetBrush("Icons.Plus"))
+				.ToolTipText(INVTEXT("Create a BP event bound to this view model event"))
+			]
+		];
 }
 
 FDebugLineItem* FMDViewModelEventDebugLineItem::Duplicate() const

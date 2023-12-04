@@ -34,6 +34,8 @@ public:
 
 	virtual TSharedRef<FMDVMInspectorDragAndDropActionBase> CreateDragAndDropAction() const override;
 
+	TSharedRef<FMDVMInspectorDragAndDropActionBase> CreateBindingDragAndDropAction() const;
+
 	const UFunction* GetFunction() const { return FunctionPtr.Get(); }
 
 protected:
@@ -60,6 +62,7 @@ protected:
 private:
 	int32 GetShouldDisplayFieldNotifyIndex() const;
 	FReply OnAddOrViewBoundFieldNotifyFunctionClicked() const;
+	bool CanAddBoundFieldNotifyFunction() const;
 	int32 GetAddOrViewBoundFieldNotifyFunctionIndex() const;
 
 	void TryUpdateGetterReturnValue() const;
