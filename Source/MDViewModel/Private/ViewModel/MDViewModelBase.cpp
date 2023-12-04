@@ -4,13 +4,17 @@
 #include "Engine/World.h"
 #include "InstancedStruct.h"
 
+#if WITH_EDITOR
+bool GIsInDebugViewModelContext = false;
+#endif
+
 void UMDViewModelBase::BeginDestroy()
 {
 	if (!ensureAlwaysMsgf(!bIsInitialized, TEXT("View Model [%s] is being destroyed without having been shutdown."), *GetName()))
 	{
 		ShutdownViewModelFromProvider();
 	}
-	
+
 	Super::BeginDestroy();
 }
 

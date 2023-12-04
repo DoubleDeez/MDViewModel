@@ -23,6 +23,9 @@ struct FMDViewModelAssignment;
 
 #if WITH_EDITOR
 class UBlueprint;
+
+// Set by the view model editor when it is fetching data to display in the debugger
+extern MDVIEWMODEL_API bool GIsInDebugViewModelContext;
 #endif
 
 /**
@@ -64,6 +67,12 @@ public:
 	virtual void GetSupportedContextObjectTypes(const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, TArray<TSubclassOf<UObject>>& OutClasses) const {};
 	// If the types gathered in GetSupportedContextObjectTypes differs from the type of the ContextObject being stored (due to RedirectContextObject), overridden this to report the types that will be stored
 	virtual void GetStoredContextObjectTypes(const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, TArray<TSubclassOf<UObject>>& OutClasses) const { GetSupportedContextObjectTypes(ViewModelSettings, Blueprint, OutClasses); };
+#endif
+
+#if WITH_EDITOR
+	static inline bool IsInViewModelDebugContext() { return GIsInDebugViewModelContext; }
+#else
+	static constexpr bool IsInViewModelDebugContext() { return false; }
 #endif
 
 	struct MDVIEWMODEL_API FFieldNotificationClassDescriptor : public ::UE::FieldNotification::IClassDescriptor

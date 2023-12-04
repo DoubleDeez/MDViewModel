@@ -325,7 +325,10 @@ void FMDViewModelFunctionDebugLineItem::TryUpdateGetterReturnValue() const
 		ReturnProp->InitializeValue(GetterReturnValuePtr);
 	}
 
-	ViewModel->ProcessEvent(Function, GetterReturnValuePtr);
+	{
+		TGuardValue<bool> DebugGuard(GIsInDebugViewModelContext, true);
+		ViewModel->ProcessEvent(Function, GetterReturnValuePtr);
+	}
 
 	for (const TPair<FName, FDebugTreeItemPtr>& Pair : CachedPropertyItems)
 	{
