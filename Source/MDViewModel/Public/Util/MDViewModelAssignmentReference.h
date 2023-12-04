@@ -57,6 +57,8 @@ public:
 
 		return nullptr;
 	}
+
+	FText GetDisplayText() const;
 #endif
 
 	FMDViewModelAssignmentReference& operator=(const FMDViewModelAssignmentReference& Other);

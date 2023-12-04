@@ -46,15 +46,6 @@ TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GetNameIcon()
 	return FDebugLineItem::GetNameIcon();
 }
 
-TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GenerateNameWidget(TSharedPtr<FString> InSearchString)
-{
-	return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFieldDebugLineItem>(AsShared()))
-		.bCanDrag(this, &FMDViewModelFieldDebugLineItem::CanDrag)
-		[
-			FMDViewModelDebugLineItemBase::GenerateNameWidget(InSearchString)
-		];
-}
-
 TSharedRef<SWidget> FMDViewModelFieldDebugLineItem::GenerateValueWidget(TSharedPtr<FString> InSearchString)
 {
 	return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFieldDebugLineItem>(AsShared()))

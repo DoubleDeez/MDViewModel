@@ -236,9 +236,9 @@ FText FMDViewModelAssignmentReferenceCustomization::GetSelectedAssignmentText() 
 {
 	if (const FMDViewModelAssignmentReference* VMAssignment = GetAssignmentReference())
 	{
-		if (!VMAssignment->ViewModelClass.IsNull() && IsValid(VMAssignment->ViewModelClass.Get()))
+		if (VMAssignment->IsAssignmentValid())
 		{
-			return FText::Format(INVTEXT("{0} ({1})"), VMAssignment->ViewModelClass->GetDisplayNameText(), FText::FromName(VMAssignment->ViewModelName));
+			return VMAssignment->GetDisplayText();
 		}
 	}
 

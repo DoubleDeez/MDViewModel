@@ -37,6 +37,8 @@ public:
 
 	virtual TSharedRef<FMDVMInspectorDragAndDropActionBase> CreateDragAndDropAction() const;
 
+	virtual bool CanDrag() const;
+
 	const FMDViewModelAssignmentReference& GetViewModelAssignmentReference() const { return Assignment; }
 
 protected:

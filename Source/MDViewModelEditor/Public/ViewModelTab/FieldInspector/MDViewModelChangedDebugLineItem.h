@@ -17,6 +17,10 @@ public:
 
 	virtual TSharedRef<SWidget> GenerateValueWidget(TSharedPtr<FString> InSearchString) override;
 
+	virtual bool CanDrag() const override;
+
+	virtual TSharedRef<FMDVMInspectorDragAndDropActionBase> CreateDragAndDropAction() const override;
+
 protected:
 	virtual FDebugLineItem* Duplicate() const override;
 

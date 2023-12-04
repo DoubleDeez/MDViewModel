@@ -11,6 +11,7 @@
 #include "Kismet2/KismetEditorUtilities.h"
 #include "PropertyInfoViewStyle.h"
 #include "SourceCodeNavigation.h"
+#include "ViewModelTab/FieldInspector/DragAndDrop/MDVMDragAndDropWrapperButton.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropActionBase.h"
 #include "WidgetBlueprint.h"
 
@@ -48,6 +49,11 @@ void FMDViewModelDebugLineItemBase::SetDisplayText(const FText& Name, const FTex
 TSharedRef<FMDVMInspectorDragAndDropActionBase> FMDViewModelDebugLineItemBase::CreateDragAndDropAction() const
 {
 	return {};
+}
+
+bool FMDViewModelDebugLineItemBase::CanDrag() const
+{
+	return false;
 }
 
 bool FMDViewModelDebugLineItemBase::HasChildren() const
@@ -102,13 +108,17 @@ void FMDViewModelDebugLineItemBase::GatherChildrenBase(TArray<FDebugTreeItemPtr>
 
 TSharedRef<SWidget> FMDViewModelDebugLineItemBase::GenerateNameWidget(TSharedPtr<FString> InSearchString)
 {
-	return SNew(PropertyInfoViewStyle::STextHighlightOverlay)
-		.FullText(this, &FMDViewModelDebugLineItemBase::GetDisplayName)
-		.HighlightText(this, &FDebugLineItem::GetHighlightText, InSearchString)
+	return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelDebugLineItemBase>(AsShared()))
+		.bCanDrag(this, &FMDViewModelDebugLineItemBase::CanDrag)
 		[
-			SNew(STextBlock)
-				.ToolTipText(this, &FDebugLineItem::GetDescription)
-				.Text(this, &FMDViewModelDebugLineItemBase::GetDisplayName)
+			SNew(PropertyInfoViewStyle::STextHighlightOverlay)
+			.FullText(this, &FMDViewModelDebugLineItemBase::GetDisplayName)
+			.HighlightText(this, &FDebugLineItem::GetHighlightText, InSearchString)
+			[
+				SNew(STextBlock)
+					.ToolTipText(this, &FDebugLineItem::GetDescription)
+					.Text(this, &FMDViewModelDebugLineItemBase::GetDisplayName)
+			]
 		];
 }
 

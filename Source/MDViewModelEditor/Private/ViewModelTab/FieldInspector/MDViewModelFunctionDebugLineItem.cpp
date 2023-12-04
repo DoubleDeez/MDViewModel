@@ -42,7 +42,7 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GetNameIcon()
 		}
 
 		return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFunctionDebugLineItem>(AsShared()))
-			.bCanDrag(DragAndDropCreator.IsBound())
+			.bCanDrag(this, &FMDViewModelFunctionDebugLineItem::CanDrag)
 			[
 				SNew(SImage)
 				.Image(FAppStyle::Get().GetBrush(TEXT("GraphEditor.Function_16x")))
@@ -54,19 +54,10 @@ TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GetNameIcon()
 	return FDebugLineItem::GetNameIcon();
 }
 
-TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GenerateNameWidget(TSharedPtr<FString> InSearchString)
-{
-	return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFunctionDebugLineItem>(AsShared()))
-		.bCanDrag(DragAndDropCreator.IsBound())
-		[
-			FMDViewModelDebugLineItemBase::GenerateNameWidget(InSearchString)
-		];
-}
-
 TSharedRef<SWidget> FMDViewModelFunctionDebugLineItem::GenerateValueWidget(TSharedPtr<FString> InSearchString)
 {
 	return SNew(SMDVMDragAndDropWrapperButton, StaticCastSharedRef<FMDViewModelFunctionDebugLineItem>(AsShared()))
-		.bCanDrag(DragAndDropCreator.IsBound())
+		.bCanDrag(this, &FMDViewModelFunctionDebugLineItem::CanDrag)
 		[
 			SNew(SWidgetSwitcher)
 			.WidgetIndex(this, &FMDViewModelFunctionDebugLineItem::GetShouldDisplayFieldNotifyIndex)
@@ -246,6 +237,11 @@ bool FMDViewModelFunctionDebugLineItem::CanDisplayReturnValue() const
 void FMDViewModelFunctionDebugLineItem::OnDebuggingChanged()
 {
 	TryUpdateGetterReturnValue();
+}
+
+bool FMDViewModelFunctionDebugLineItem::CanDrag() const
+{
+	return DragAndDropCreator.IsBound();
 }
 
 int32 FMDViewModelFunctionDebugLineItem::GetShouldDisplayFieldNotifyIndex() const

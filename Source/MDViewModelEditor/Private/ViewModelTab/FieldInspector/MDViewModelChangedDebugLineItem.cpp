@@ -1,6 +1,7 @@
 #include "ViewModelTab/FieldInspector/MDViewModelChangedDebugLineItem.h"
 
 #include "Util/MDViewModelGraphStatics.h"
+#include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropChanged.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
@@ -48,6 +49,18 @@ TSharedRef<SWidget> FMDViewModelChangedDebugLineItem::GenerateValueWidget(TShare
 			.ToolTipText(INVTEXT("Create a BP event bound to this view model changing"))
 		]
 	];
+}
+
+bool FMDViewModelChangedDebugLineItem::CanDrag() const
+{
+	return !FMDViewModelGraphStatics::DoesBlueprintBindToViewModelChanged(BlueprintPtr.Get(), Assignment);
+}
+
+TSharedRef<FMDVMInspectorDragAndDropActionBase> FMDViewModelChangedDebugLineItem::CreateDragAndDropAction() const
+{
+	check(CanDrag());
+
+	return FMDVMInspectorDragAndDropChanged::Create(GetViewModelAssignmentReference());
 }
 
 FDebugLineItem* FMDViewModelChangedDebugLineItem::Duplicate() const

@@ -38,6 +38,10 @@ protected:
 
 	virtual bool CanDisplayReturnValue() const override { return false; }
 
+	virtual bool CanDrag() const override;
+
+	virtual TSharedRef<FMDVMInspectorDragAndDropActionBase> CreateDragAndDropAction() const override;
+
 private:
 	FReply OnAddOrViewBoundFunctionClicked() const;
 	int32 GetAddOrViewBoundFunctionIndex() const;

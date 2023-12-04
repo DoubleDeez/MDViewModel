@@ -2,6 +2,7 @@
 
 #include "Nodes/MDVMNode_ViewModelEvent.h"
 #include "Util/MDViewModelGraphStatics.h"
+#include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropEvent.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
@@ -72,6 +73,21 @@ FString FMDViewModelEventDebugLineItem::GenerateSearchString() const
 FFieldVariant FMDViewModelEventDebugLineItem::GetFieldForDefinitionNavigation() const
 {
 	return FFieldVariant(WeakDelegateProp.Get());
+}
+
+bool FMDViewModelEventDebugLineItem::CanDrag() const
+{
+	return WeakDelegateProp.IsValid() && !FMDViewModelGraphStatics::DoesBlueprintBindToViewModelEvent(BlueprintPtr.Get(), WeakDelegateProp->GetFName(), Assignment);
+}
+
+TSharedRef<FMDVMInspectorDragAndDropActionBase> FMDViewModelEventDebugLineItem::CreateDragAndDropAction() const
+{
+	check(CanDrag());
+
+	return FMDVMInspectorDragAndDropEvent::Create(
+		WeakDelegateProp,
+		GetViewModelAssignmentReference()
+	);
 }
 
 FReply FMDViewModelEventDebugLineItem::OnAddOrViewBoundFunctionClicked() const

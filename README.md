@@ -39,6 +39,7 @@ Check out the [Getting Started page](https://github.com/DoubleDeez/MDViewModel/w
 ## Future Features
 
 - Integration with UMG's Preview Mode for quick iteration
-- Support caching view models relative to TSharedPtrs
+- View Model Blackboard (Global view model storage, keyed by gameplay tag with strict typing)
+- View Model Instance Viewer (A window to browser all view model instances and their properties)
 
 https://github.com/DoubleDeez/MDViewModel/assets/1893819/59474726-c86b-42c8-8fce-4a7af77a8931

@@ -31,6 +31,18 @@ void FMDViewModelAssignmentReference::PostSerialize(const FArchive& Ar)
 	}
 }
 
+#if WITH_EDITOR
+FText FMDViewModelAssignmentReference::GetDisplayText() const
+{
+	if (IsAssignmentValid())
+	{
+		return FText::Format(INVTEXT("{0} ({1})"), ViewModelClass.LoadSynchronous()->GetDisplayNameText(), FText::FromName(ViewModelName));
+	}
+
+	return INVTEXT("Invalid Assignment");
+}
+#endif
+
 FMDViewModelAssignmentReference& FMDViewModelAssignmentReference::operator=(const FMDViewModelAssignmentReference& Other)
 {
 	ViewModelClass = Other.ViewModelClass;
