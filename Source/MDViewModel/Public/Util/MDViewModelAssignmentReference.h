@@ -18,7 +18,10 @@ struct MDVIEWMODEL_API FMDViewModelAssignmentReference
 	GENERATED_BODY()
 
 public:
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	FMDViewModelAssignmentReference() = default;
+	FMDViewModelAssignmentReference(const FMDViewModelAssignmentReference& Other) = default;
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	explicit FMDViewModelAssignmentReference(const FMDViewModelAssignment& Assignment);
 	FMDViewModelAssignmentReference(TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& ViewModelName);
 

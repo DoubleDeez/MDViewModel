@@ -119,6 +119,12 @@ struct MDVIEWMODEL_API FMDViewModelProvider_Cached_Settings
 	GENERATED_BODY()
 
 public:
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
+	FMDViewModelProvider_Cached_Settings() = default;
+	FMDViewModelProvider_Cached_Settings(const FMDViewModelProvider_Cached_Settings& Other) = default;
+	FMDViewModelProvider_Cached_Settings& operator=(const FMDViewModelProvider_Cached_Settings& Other) = default;
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
 	UPROPERTY(EditAnywhere, Category = "Provider", meta = (InlineEditConditionToggle))
 	bool bOverrideCachedViewModelKey = false;
 
