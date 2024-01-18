@@ -99,7 +99,7 @@ void FMDViewModelEditorModule::ShutdownModule()
 	if (FPropertyEditorModule* PropertyEditorModule = FModuleManager::GetModulePtr<FPropertyEditorModule>("PropertyEditor"))
 	{
 		PropertyEditorModule->UnregisterCustomPropertyTypeLayout(FMDViewModelAssignmentReference::StaticStruct()->GetFName());
-		PropertyEditorModule->UnregisterCustomPropertyTypeLayout(UMDViewModelAssignmentComponent::StaticClass()->GetFName());
+		PropertyEditorModule->UnregisterCustomClassLayout(UMDViewModelAssignmentComponent::StaticClass()->GetFName());
 	}
 }
 
