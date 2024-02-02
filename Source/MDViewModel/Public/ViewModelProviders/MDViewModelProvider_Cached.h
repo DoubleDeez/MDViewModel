@@ -142,7 +142,7 @@ public:
 	EMDViewModelProvider_CacheLifetime ViewModelLifetime = EMDViewModelProvider_CacheLifetime::Invalid;
 
 	// For Relative lifetime, this view model's lifetime and context object will be tied to the view model assignment selected here
-	UPROPERTY(EditAnywhere, Category = "Provider|Relative", meta = (EditConditionLifetime = "MDVM.Provider.Cached.Lifetimes.Relative,MDVM.Provider.Cached.Lifetimes.RelativeViewModelProperty"))
+	UPROPERTY(EditAnywhere, Category = "Provider|Relative", meta = (MDVMShowNonManual="true", EditConditionLifetime = "MDVM.Provider.Cached.Lifetimes.Relative,MDVM.Provider.Cached.Lifetimes.RelativeViewModelProperty"))
 	FMDViewModelAssignmentReference RelativeViewModel;
 
 	// For World Actor lifetime, the first actor in the world that passes this filter will be the view model's cache and context object
