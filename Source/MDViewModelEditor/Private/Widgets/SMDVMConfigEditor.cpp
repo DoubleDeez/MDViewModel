@@ -63,17 +63,6 @@ public:
 
 void SMDVMConfigEditor::Construct(const FArguments& InArgs)
 {
-	FClassViewerInitializationOptions ClassPickerOptions;
-	ClassPickerOptions.bShowNoneOption = false;
-	ClassPickerOptions.bShowUnloadedBlueprints = true;
-	ClassPickerOptions.bExpandAllNodes = true;
-	ClassPickerOptions.DisplayMode = EClassViewerDisplayMode::TreeView;
-	ClassPickerOptions.ClassFilters.Add(MakeShared<FMDViewModelClassFilter>(true));
-	ClassPickerOptions.NameTypeToDisplay = GetDefault<UMDViewModelEditorConfig>()->GetNameTypeToDisplay();
-
-	FClassViewerModule& ClassViewerModule = FModuleManager::LoadModuleChecked<FClassViewerModule>("ClassViewer");
-	const TSharedRef<SWidget> ClassViewer = ClassViewerModule.CreateClassViewer(ClassPickerOptions, FOnClassPicked::CreateSP(this, &SMDVMConfigEditor::OnClassPicked));
-
 	FDetailsViewArgs DetailsViewArgs;
 	DetailsViewArgs.bAllowSearch = true;
 	DetailsViewArgs.bShowPropertyMatrixButton = false;
@@ -92,13 +81,7 @@ void SMDVMConfigEditor::Construct(const FArguments& InArgs)
 		SNew(SVerticalBox)
 		+SVerticalBox::Slot()
 		.AutoHeight()
-		[
-			SNew(SBox)
-			.HeightOverride(400.f)
-			[
-				ClassViewer
-			]
-		]
+		.Expose(ClassViewerSlot)
 		+SVerticalBox::Slot()
 		.FillHeight(1.f)
 		[
@@ -117,6 +100,36 @@ void SMDVMConfigEditor::NotifyPostChange(const FPropertyChangedEvent& PropertyCh
 			MDVMEditorUtils::SaveViewModelConfig(ViewModelCDO);
 		}
 	}
+}
+
+int32 SMDVMConfigEditor::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry,
+	const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
+{
+	// Don't init the class viewer until we paint
+	if (ClassViewerSlot != nullptr && ClassViewerSlot->GetWidget() == SNullWidget::NullWidget)
+	{
+		FClassViewerInitializationOptions ClassPickerOptions;
+		ClassPickerOptions.bShowNoneOption = false;
+		ClassPickerOptions.bShowUnloadedBlueprints = true;
+		ClassPickerOptions.bExpandAllNodes = true;
+		ClassPickerOptions.DisplayMode = EClassViewerDisplayMode::TreeView;
+		ClassPickerOptions.ClassFilters.Add(MakeShared<FMDViewModelClassFilter>(true));
+		ClassPickerOptions.NameTypeToDisplay = GetDefault<UMDViewModelEditorConfig>()->GetNameTypeToDisplay();
+
+		FClassViewerModule& ClassViewerModule = FModuleManager::LoadModuleChecked<FClassViewerModule>("ClassViewer");
+		const TSharedRef<SWidget> ClassViewer = ClassViewerModule.CreateClassViewer(ClassPickerOptions, FOnClassPicked::CreateSP(const_cast<SMDVMConfigEditor*>(this), &SMDVMConfigEditor::OnClassPicked));
+
+		(*ClassViewerSlot)
+		[
+			SNew(SBox)
+			.HeightOverride(400.f)
+			[
+				ClassViewer
+			]
+		];
+	}
+	
+	return SCompoundWidget::OnPaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
 }
 
 void SMDVMConfigEditor::OnClassPicked(UClass* Class)

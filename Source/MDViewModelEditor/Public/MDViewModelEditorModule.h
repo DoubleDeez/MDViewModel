@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Templates/SubclassOf.h"
 #include "Modules/ModuleManager.h"
@@ -30,6 +30,8 @@ private:
 	void RegisterBlueprintEditorLayout(FLayoutExtender& Extender);
 	void RegisterBlueprintEditorTab(FWorkflowAllowedTabSet& TabFactories, FName InModeName, TSharedPtr<FBlueprintEditor> BlueprintEditor);
 	void RegisterBlueprintEditorDrawer(UObject* Asset);
+
+	void RegisterConfigEditor();
 	
 	TSharedPtr<FMDViewModelGraphPanelPinFactory> ViewModelGraphPanelPinFactory;
 	TSharedPtr<SMDVMConfigEditor> ViewModelConfigEditor;
