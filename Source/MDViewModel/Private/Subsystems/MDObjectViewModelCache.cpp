@@ -89,10 +89,6 @@ IMDViewModelCacheInterface* UMDObjectViewModelCacheSystem::ResolveCacheForObject
 		return nullptr;
 	}
 
-	FCbWriter Writer;
-
-	Writer << NAME_None;
-
 	return CacheSystem->ObjectCacheMap.Find(Object);
 }
 

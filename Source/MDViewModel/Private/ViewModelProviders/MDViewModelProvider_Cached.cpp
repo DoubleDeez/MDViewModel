@@ -133,6 +133,22 @@ UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(const
 	return nullptr;
 }
 
+UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(const UObject* WorldContextObject, const UObject* CacheContextObject, const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
+{
+	return FindOrCreateCachedViewModel(WorldContextObject, CacheContextObject, ViewModelClass, CachedViewModelKey, ViewModelSettings);
+}
+
+UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel(const UObject* WorldContextObject, const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey, const FInstancedStruct& ViewModelSettings)
+{
+	UMDViewModelProvider_Cached* Provider = IsValid(GEngine) ? GEngine->GetEngineSubsystem<UMDViewModelProvider_Cached>() : nullptr;
+	if (IsValid(Provider))
+	{
+		return Provider->FindOrCreateCachedViewModel_Internal(WorldContextObject, CacheContextObject, CachedViewModelKey, ViewModelClass, ViewModelSettings);
+	}
+
+	return nullptr;
+}
+
 UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel(const UObject* WorldContextObject, const UObject* CacheContextObject, TSubclassOf<UMDViewModelBase> ViewModelClass, const FName& CachedViewModelKey)
 {
 	const UMDViewModelProvider_Cached* Provider = IsValid(GEngine) ? GEngine->GetEngineSubsystem<UMDViewModelProvider_Cached>() : nullptr;
@@ -501,6 +517,23 @@ UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel_Inter
 	return nullptr;
 }
 
+UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel_Internal(const UObject* WorldContextObject, const UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass, const FInstancedStruct& ViewModelSettings)
+{
+	if (ensureAlwaysMsgf(IsValid(CacheContextObject), TEXT("Attempting to Find or Create a Cached View Model on an invalid CacheContextObject")))
+	{
+		if (IMDViewModelCacheInterface* ViewModelCache = const_cast<IMDViewModelCacheInterface*>(ResolveObjectCache(CacheContextObject, WorldContextObject)))
+		{
+			ViewModelCache = RedirectCache(WorldContextObject, ViewModelCache, ViewModelClass, ViewModelSettings);
+			if (ensureAlwaysMsgf(ViewModelCache != nullptr, TEXT("Failed to redirect View Model Cache for context [%s] with View Model Class [%s]"), *GetNameSafe(CacheContextObject), *GetNameSafe(ViewModelClass)))
+			{
+				return ViewModelCache->GetOrCreateViewModel(WorldContextObject, ViewModelName, ViewModelClass, ViewModelSettings);
+			}
+		}
+	}
+
+	return nullptr;
+}
+
 UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel_Internal(const UObject* WorldContextObject, const UObject* CacheContextObject, const FName& ViewModelName, TSubclassOf<UMDViewModelBase> ViewModelClass) const
 {
 	if (IsValid(CacheContextObject))
@@ -804,7 +837,15 @@ const IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCach
 	}
 	else if (const AActor* Actor = Cast<AActor>(Object))
 	{
-		return ResolveActorCache(Actor);
+		// const actors can have caches added to them, so fallback to an Object-style cache if the actor doesn't have a cache
+		if (const IMDViewModelCacheInterface* ExistingCache = ResolveActorCache(Actor))
+		{
+			return ExistingCache;
+		}
+		else
+		{
+			return UMDObjectViewModelCacheSystem::ResolveCacheForObject(Object, WorldContextObject);
+		}
 	}
 	else if (IsValid(Object))
 	{
