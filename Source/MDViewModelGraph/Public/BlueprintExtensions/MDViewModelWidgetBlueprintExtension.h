@@ -22,13 +22,6 @@ public:
 	virtual TArray<FMDViewModelEditorAssignment>& GetAssignments() override { return Assignments; }
 
 protected:
-	virtual void HandleBeginCompilation(FWidgetBlueprintCompilerContext& InCreationContext) override;
-	virtual void HandleFinishCompilingClass(UWidgetBlueprintGeneratedClass* Class) override;
-	virtual void HandleEndCompilation() override;
-
 	UPROPERTY()
 	TArray<FMDViewModelEditorAssignment> Assignments;
-
-private:
-	FWidgetBlueprintCompilerContext* CompilerContext = nullptr;
 };

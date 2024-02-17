@@ -112,32 +112,27 @@ void UMDViewModelBlueprintCompilerExtension::HandleGeneralBlueprintPreCompile(IM
 
 void UMDViewModelBlueprintCompilerExtension::HandleWidgetBlueprintCompiled(IMDViewModelAssignableInterface* Extension, UWidgetBlueprint& WidgetBP, const FKismetCompilerContext& CompilationContext) const
 {
-	const bool bHasPopulatedExtension = Extension != nullptr && Extension->HasAssignments();
+	TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ViewModelAssignments;
+	FMDViewModelGraphStatics::GetViewModelAssignmentsForBlueprint(&WidgetBP, ViewModelAssignments);
 
-	if (!bHasPopulatedExtension)
+	if (ViewModelAssignments.IsEmpty())
 	{
-		TMap<FMDViewModelAssignment, FMDViewModelAssignmentData> ParentViewModelAssignments;
-		MDViewModelUtils::GetViewModelAssignments(WidgetBP.ParentClass, ParentViewModelAssignments);
-		if (ParentViewModelAssignments.IsEmpty())
+		// No assignments, remove the extension (if it exists)
+		WidgetBP.RemoveExtension(Cast<UBlueprintExtension>(Extension));
+	}
+	else
+	{
+		if (UWidgetBlueprintGeneratedClass* WidgetClass = Cast<UWidgetBlueprintGeneratedClass>(CompilationContext.NewClass))
 		{
-			// No assignments, remove the extension
-			WidgetBP.RemoveExtension(Cast<UBlueprintExtension>(Extension));
-		}
-		else
-		{
-			if (UWidgetBlueprintGeneratedClass* WidgetClass = Cast<UWidgetBlueprintGeneratedClass>(CompilationContext.NewClass))
-			{
-				// We can't add a blueprint extension since we're mid-compile here
-				// So instead we want to add a Class extension, but we need a non-const FWidgetBlueprintCompilerContext to do that
-				// which is why we end up with this gross-ness
-				FWidgetBlueprintCompilerContext& WidgetCompilationContext = const_cast<FWidgetBlueprintCompilerContext&>(
-					static_cast<const FWidgetBlueprintCompilerContext&>(CompilationContext)
-				);
+			// We want to add a Class extension here, but we need a non-const FWidgetBlueprintCompilerContext to do that
+			// which is why we end up with this gross-ness
+			FWidgetBlueprintCompilerContext& WidgetCompilationContext = const_cast<FWidgetBlueprintCompilerContext&>(
+				static_cast<const FWidgetBlueprintCompilerContext&>(CompilationContext)
+			);
 
-				UMDViewModelWidgetClassExtension* ClassExtension = NewObject<UMDViewModelWidgetClassExtension>(WidgetClass);
-				ClassExtension->SetAssignments(ParentViewModelAssignments);
-				WidgetCompilationContext.AddExtension(WidgetClass, ClassExtension);
-			}
+			UMDViewModelWidgetClassExtension* ClassExtension = NewObject<UMDViewModelWidgetClassExtension>(WidgetClass);
+			ClassExtension->SetAssignments(ViewModelAssignments);
+			WidgetCompilationContext.AddExtension(WidgetClass, ClassExtension);
 		}
 	}
 }
