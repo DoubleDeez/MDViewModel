@@ -811,7 +811,15 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCache(UObj
 	}
 	else if (AActor* Actor = Cast<AActor>(Object))
 	{
-		return ResolveActorCache(Actor);
+		// Actor templates can't have caches added to them, so fallback to an Object-style cache if the actor doesn't have a cache
+		if (Actor->IsTemplate())
+		{
+			return UMDObjectViewModelCacheSystem::ResolveCacheForObject(Object, WorldContextObject);
+		}
+		else
+		{
+			return ResolveActorCache(Actor);
+		}
 	}
 	else if (IsValid(Object))
 	{
@@ -837,7 +845,7 @@ const IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCach
 	}
 	else if (const AActor* Actor = Cast<AActor>(Object))
 	{
-		// const actors can have caches added to them, so fallback to an Object-style cache if the actor doesn't have a cache
+		// const actors can't have caches added to them, so fallback to an Object-style cache if the actor doesn't have a cache
 		if (const IMDViewModelCacheInterface* ExistingCache = ResolveActorCache(Actor))
 		{
 			return ExistingCache;
