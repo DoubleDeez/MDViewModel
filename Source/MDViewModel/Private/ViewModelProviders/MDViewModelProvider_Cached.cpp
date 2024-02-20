@@ -521,7 +521,7 @@ UMDViewModelBase* UMDViewModelProvider_Cached::FindOrCreateCachedViewModel_Inter
 {
 	if (ensureAlwaysMsgf(IsValid(CacheContextObject), TEXT("Attempting to Find or Create a Cached View Model on an invalid CacheContextObject")))
 	{
-		if (IMDViewModelCacheInterface* ViewModelCache = const_cast<IMDViewModelCacheInterface*>(ResolveObjectCache(CacheContextObject, WorldContextObject)))
+		if (IMDViewModelCacheInterface* ViewModelCache = ResolveObjectCache(const_cast<UObject*>(CacheContextObject), WorldContextObject))
 		{
 			ViewModelCache = RedirectCache(WorldContextObject, ViewModelCache, ViewModelClass, ViewModelSettings);
 			if (ensureAlwaysMsgf(ViewModelCache != nullptr, TEXT("Failed to redirect View Model Cache for context [%s] with View Model Class [%s]"), *GetNameSafe(CacheContextObject), *GetNameSafe(ViewModelClass)))
@@ -845,15 +845,7 @@ const IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveObjectCach
 	}
 	else if (const AActor* Actor = Cast<AActor>(Object))
 	{
-		// const actors can't have caches added to them, so fallback to an Object-style cache if the actor doesn't have a cache
-		if (const IMDViewModelCacheInterface* ExistingCache = ResolveActorCache(Actor))
-		{
-			return ExistingCache;
-		}
-		else
-		{
-			return UMDObjectViewModelCacheSystem::ResolveCacheForObject(Object, WorldContextObject);
-		}
+		return ResolveActorCache(Actor);
 	}
 	else if (IsValid(Object))
 	{
