@@ -125,9 +125,16 @@ FText UMDVMNode_GetProperty::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
 	if (TitleCache.IsOutOfDate(this))
 	{
-		const FProperty* Property = GetPropertyForVariable();
-		const FText DisplayName = Property != nullptr ? Property->GetDisplayNameText() : INVTEXT("NONE");
-		TitleCache.SetCachedText(FText::Format(INVTEXT("Get {0}\nProperty on {1} ({2})"), DisplayName, Assignment.ViewModelClass.Get()->GetDisplayNameText(), FText::FromName(Assignment.ViewModelName)), this);
+		if (!Assignment.IsAssignmentValid())
+		{
+			TitleCache.SetCachedText(INVTEXT("INVALID"), this);
+		}
+		else
+		{
+			const FProperty* Property = GetPropertyForVariable();
+			const FText DisplayName = Property != nullptr ? Property->GetDisplayNameText() : INVTEXT("NONE");
+			TitleCache.SetCachedText(FText::Format(INVTEXT("Get {0}\nProperty on {1} ({2})"), DisplayName, Assignment.ViewModelClass.LoadSynchronous()->GetDisplayNameText(), FText::FromName(Assignment.ViewModelName)), this);
+		}
 	}
 
 	return TitleCache.GetCachedText();

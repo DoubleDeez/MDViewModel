@@ -140,16 +140,23 @@ FText UMDVMNode_SetProperty::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
 	if (TitleCache.IsOutOfDate(this))
 	{
-		const FProperty* Property = GetPropertyForVariable();
-		const FText DisplayName = Property != nullptr ? Property->GetDisplayNameText() : INVTEXT("NONE");
-		TitleCache.SetCachedText(
-			FText::Format(
-				INVTEXT("Set {0}{1}\nProperty on {2} ({3})"),
-				DisplayName,
-				(MDVMNSP_Private::IsPropertyNativeFieldNotify(GetPropertyForVariable()) ? INVTEXT(" w/ Broadcast") : FText::GetEmpty()),
-				Assignment.ViewModelClass.Get()->GetDisplayNameText(),
-				FText::FromName(Assignment.ViewModelName)
-			), this);
+		if (!Assignment.IsAssignmentValid())
+		{
+			TitleCache.SetCachedText(INVTEXT("INVALID"), this);
+		}
+		else
+		{
+			const FProperty* Property = GetPropertyForVariable();
+			const FText DisplayName = Property != nullptr ? Property->GetDisplayNameText() : INVTEXT("NONE");
+			TitleCache.SetCachedText(
+				FText::Format(
+					INVTEXT("Set {0}{1}\nProperty on {2} ({3})"),
+					DisplayName,
+					(MDVMNSP_Private::IsPropertyNativeFieldNotify(GetPropertyForVariable()) ? INVTEXT(" w/ Broadcast") : FText::GetEmpty()),
+					Assignment.ViewModelClass.LoadSynchronous()->GetDisplayNameText(),
+					FText::FromName(Assignment.ViewModelName)
+				), this);
+		}
 	}
 
 	return TitleCache.GetCachedText();
