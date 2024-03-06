@@ -101,7 +101,8 @@ namespace MDVMCachedProvider_Private
 enum EMDVMDelegateIndex
 {
 	MDVMDI_Default = 0,
-	MDVMDI_ViewTarget = 1
+	MDVMDI_ViewTarget = 1,
+	MDVMDI_LevelWorldChanged = 2,
 };
 
 const FGameplayTag& FMDViewModelProvider_Cached_Settings::GetLifetimeTag() const
@@ -163,6 +164,8 @@ UMDViewModelBase* UMDViewModelProvider_Cached::FindCachedViewModel(const UObject
 void UMDViewModelProvider_Cached::Deinitialize()
 {
 	FGameDelegates::Get().GetViewTargetChangedDelegate().RemoveAll(this);
+	FWorldDelegates::LevelAddedToWorld.RemoveAll(this);
+	FWorldDelegates::LevelRemovedFromWorld.RemoveAll(this);
 
 	Super::Deinitialize();
 }
@@ -701,6 +704,36 @@ void UMDViewModelProvider_Cached::OnActorRemoved(AActor* Actor, TWeakObjectPtr<A
 	}
 }
 
+void UMDViewModelProvider_Cached::OnLevelAddedToWorld(ULevel* Level, UWorld* World, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data)
+{
+	// Don't go through refresh view model since we have the Level with the list of actors it's adding so we can avoid the expensive TActorIterator
+
+	const FMDViewModelProvider_Cached_Settings* Settings = Data.ProviderSettings.GetPtr<FMDViewModelProvider_Cached_Settings>();
+	IMDViewModelRuntimeInterface* Object = ObjectPtr.Get();
+	if (Object != nullptr && Settings != nullptr && IsValid(World) && IsValid(Level) && Object->ResolveWorld() == World)
+	{
+		for (AActor* Actor : Level->Actors)
+		{
+			if (IsValid(Actor) && DoesActorPassFilter(Actor, Settings->WorldActorFilter))
+			{
+				IMDViewModelCacheInterface* CacheInterface = ResolveWorldActorCacheAndBindDelegates(Actor, *Object, Assignment, Data);
+				SetViewModelFromCache(Actor, CacheInterface, *Object, Assignment, Data);
+
+				break;
+			}
+		}
+	}
+}
+
+void UMDViewModelProvider_Cached::OnLevelRemovedFromWorld(ULevel* Level, UWorld* World, TWeakObjectPtr<AActor> BoundActor, TWeakInterfacePtr<IMDViewModelRuntimeInterface> ObjectPtr, FMDViewModelAssignment Assignment, FMDViewModelAssignmentData Data)
+{
+	const IMDViewModelRuntimeInterface* Object = ObjectPtr.Get();
+	if (Object != nullptr && Object->ResolveWorld() == World && IsValid(Level) && Level->Actors.Contains(BoundActor.Get()))
+	{
+		RefreshViewModel(ObjectPtr, Assignment, Data);
+	}
+}
+
 void UMDViewModelProvider_Cached::OnViewModelCacheShuttingDown(TWeakInterfacePtr<IMDViewModelCacheInterface> CachePtr)
 {
 	const TMultiMap<TWeakInterfacePtr<IMDViewModelRuntimeInterface>, FMDViewModelAssignmentReference>* CacheAssignmentsPtr = BoundCaches.Find(CachePtr);
@@ -1199,6 +1232,8 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheA
 #endif
 		});
 
+		BindLevelRemovedFromWorldDelegates(MakeWeakObjectPtr(Actor), Object, Assignment, Data);
+
 		return ResolveActorCache(Actor);
 	}
 	else
@@ -1217,6 +1252,8 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheA
 			auto Delegate = FOnActorSpawned::FDelegate::CreateUObject(this, &UMDViewModelProvider_Cached::OnActorSpawned, Object.MakeWeak(), Assignment, Data);
 			return Owner.AddOnActorSpawnedHandler(MoveTemp(Delegate));
 		});
+
+		BindLevelAddedToWorldDelegates(Object, Assignment, Data);
 
 		return nullptr;
 	}
@@ -1245,6 +1282,34 @@ void UMDViewModelProvider_Cached::BindViewTargetDelegates(IMDViewModelRuntimeInt
 	BindDelegateIfUnbound<IMDViewModelRuntimeInterface>(MoveTemp(BindingKey), &Object, MDVMDI_ViewTarget, [&](auto& Owner)
 	{
 		return FGameDelegates::Get().GetViewTargetChangedDelegate().AddUObject(this, &UMDViewModelProvider_Cached::OnViewTargetChanged, Object.MakeWeak(), Assignment, Data);
+	});
+}
+
+void UMDViewModelProvider_Cached::BindLevelAddedToWorldDelegates(IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
+{
+	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
+	UnbindDelegate<UObject>(BindingKey, MDVMDI_LevelWorldChanged, [](auto& OldOwner, FDelegateHandle& Handle)
+	{
+		FWorldDelegates::LevelRemovedFromWorld.Remove(Handle);
+	});
+	
+	BindDelegateIfUnbound<IMDViewModelRuntimeInterface>(MoveTemp(BindingKey), &Object, MDVMDI_LevelWorldChanged, [&](auto& Owner)
+	{
+		return FWorldDelegates::LevelAddedToWorld.AddUObject(this, &UMDViewModelProvider_Cached::OnLevelAddedToWorld, Object.MakeWeak(), Assignment, Data);
+	});
+}
+
+void UMDViewModelProvider_Cached::BindLevelRemovedFromWorldDelegates(TWeakObjectPtr<AActor> BoundActor, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
+{
+	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
+	UnbindDelegate<UObject>(BindingKey, MDVMDI_LevelWorldChanged, [](auto& OldOwner, FDelegateHandle& Handle)
+	{
+		FWorldDelegates::LevelAddedToWorld.Remove(Handle);
+	});
+	
+	BindDelegateIfUnbound<IMDViewModelRuntimeInterface>(MoveTemp(BindingKey), &Object, MDVMDI_LevelWorldChanged, [&](auto& Owner)
+	{
+		return FWorldDelegates::LevelRemovedFromWorld.AddUObject(this, &UMDViewModelProvider_Cached::OnLevelRemovedFromWorld, BoundActor, Object.MakeWeak(), Assignment, Data);
 	});
 }
 
