@@ -49,5 +49,5 @@ protected:
 	virtual void CheckCacheForDestroyedObjects();
 
 private:
-	TMap<TWeakObjectPtr<const UObject>, FMDObjectViewModelCache> ObjectCacheMap;
+	TMap<TWeakObjectPtr<const UObject>, TSharedPtr<FMDObjectViewModelCache>> ObjectCacheMap;
 };

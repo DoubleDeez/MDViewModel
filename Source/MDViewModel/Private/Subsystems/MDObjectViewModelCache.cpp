@@ -58,7 +58,10 @@ void UMDObjectViewModelCacheSystem::Deinitialize()
 	
 	for (auto It = ObjectCacheMap.CreateIterator(); It; ++It)
 	{
-		It.Value().HandleObjectDestroyed();
+		if (It.Value().IsValid())
+		{
+			It.Value()->HandleObjectDestroyed();
+		}
 	}
 	
 	Super::Deinitialize();
@@ -72,24 +75,29 @@ IMDViewModelCacheInterface* UMDObjectViewModelCacheSystem::ResolveCacheForObject
 		return nullptr;
 	}
 
-	FMDObjectViewModelCache& Cache = CacheSystem->ObjectCacheMap.FindOrAdd(Object);
-	if (Cache.Object != Object)
+	TSharedPtr<FMDObjectViewModelCache>& CachePtr = CacheSystem->ObjectCacheMap.FindOrAdd(Object);
+	if (!CachePtr.IsValid())
 	{
-		Cache.Object = Object;
+		CachePtr = MakeShared<FMDObjectViewModelCache>();
 	}
 
-	return &Cache;
+	if (CachePtr->Object != Object)
+	{
+		CachePtr->Object = Object;
+	}
+
+	return CachePtr.Get();
 }
 
 IMDViewModelCacheInterface* UMDObjectViewModelCacheSystem::ResolveCacheForObject(const UObject* Object, const UObject* WorldContextObject)
 {
-	UMDObjectViewModelCacheSystem* CacheSystem = UMDObjectViewModelCacheSystem::Get(WorldContextObject);
+	const UMDObjectViewModelCacheSystem* CacheSystem = UMDObjectViewModelCacheSystem::Get(WorldContextObject);
 	if (!IsValid(CacheSystem))
 	{
 		return nullptr;
 	}
 
-	return CacheSystem->ObjectCacheMap.Find(Object);
+	return CacheSystem->ObjectCacheMap.FindRef(Object).Get();
 }
 
 void UMDObjectViewModelCacheSystem::AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector)
@@ -98,7 +106,10 @@ void UMDObjectViewModelCacheSystem::AddReferencedObjects(UObject* InThis, FRefer
 	{
 		for (auto It = CacheSystem->ObjectCacheMap.CreateIterator(); It; ++It)
 		{
-			It.Value().AddReferencedObjects(Collector);
+			if (It.Value().IsValid())
+			{
+				It.Value()->AddReferencedObjects(Collector);
+			}
 		}
 	}
 }
@@ -111,7 +122,11 @@ void UMDObjectViewModelCacheSystem::CheckCacheForDestroyedObjects()
 	{
 		if (!It.Key().IsValid())
 		{
-			It.Value().HandleObjectDestroyed();
+			if (It.Value().IsValid())
+			{
+				It.Value()->HandleObjectDestroyed();
+			}
+
 			It.RemoveCurrent();
 		}
 	}
