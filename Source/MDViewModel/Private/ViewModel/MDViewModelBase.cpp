@@ -1,5 +1,9 @@
 #include "ViewModel/MDViewModelBase.h"
+#include "Runtime/Launch/Resources/Version.h"
 
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 4
+#include "Blueprint/BlueprintExceptionInfo.h"
+#endif
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "InstancedStruct.h"
