@@ -5,8 +5,10 @@
 #include "Blueprint/BlueprintExceptionInfo.h"
 #endif
 #include "Engine/Engine.h"
+#include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "InstancedStruct.h"
+#include "Kismet/GameplayStatics.h"
 
 #if WITH_EDITOR
 bool GIsInDebugViewModelContext = false;
@@ -239,18 +241,20 @@ UMDViewModelBase* UMDViewModelBase::CreateSubViewModel(TSubclassOf<UMDViewModelB
 {
 	checkf(IsValid(ViewModelClass), TEXT("UMDViewModelBase::CreateSubViewModel required a valid ViewModelClass"));
 
+	// Use the provided WorldContextObject if set, otherwise try the Context Object, then fallback to whatever this view model uses as its context object
+	const bool bDoesContextHaveValidWorld = IsValid(InContextObject) && IsValid(GEngine) && IsValid(GEngine->GetWorldFromContextObject(InContextObject, EGetWorldErrorMode::ReturnNull));
+	const UObject* WorldContext = IsValid(WorldContextObject) ? WorldContextObject : (bDoesContextHaveValidWorld ? InContextObject : GetEffectiveWorldContextObject());
+	UObject* GameInstance = UGameplayStatics::GetGameInstance(WorldContext);
+	UObject* VMOuter = IsValid(GameInstance) ? GameInstance : GetTransientPackage();
+
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 	const FName NameBase = *FString::Printf(TEXT("SubVM_%s_From_%s"), *ViewModelClass->GetName(), *GetName());
-	const FName VMObjectName = MakeUniqueObjectName(GetTransientPackage(), ViewModelClass, NameBase);
+	const FName VMObjectName = MakeUniqueObjectName(VMOuter, ViewModelClass, NameBase);
 #else
 	const FName VMObjectName = NAME_None;
 #endif
 
-	// Use the provided WorldContextObject if set, otherwise try the Context Object, then fallback to whatever this view model uses as its context object
-	const bool bDoesContextHaveValidWorld = IsValid(InContextObject) && IsValid(GEngine) && IsValid(GEngine->GetWorldFromContextObject(InContextObject, EGetWorldErrorMode::ReturnNull));
-	const UObject* WorldContext = IsValid(WorldContextObject) ? WorldContextObject : (bDoesContextHaveValidWorld ? InContextObject : GetEffectiveWorldContextObject());
-
-	UMDViewModelBase* ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), ViewModelClass, VMObjectName);
+	UMDViewModelBase* ViewModel = NewObject<UMDViewModelBase>(VMOuter, ViewModelClass, VMObjectName);
 	ViewModel->InitializeViewModelWithContext(ViewModelSettings, InContextObject, WorldContext);
 	return ViewModel;
 }

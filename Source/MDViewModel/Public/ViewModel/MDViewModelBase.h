@@ -34,7 +34,7 @@ extern MDVIEWMODEL_API bool GIsInDebugViewModelContext;
  *
  * InitializeViewModelWithContext() and ShutdownViewModel() are expected to be called by the creator of this object.
  */
-UCLASS(Abstract, BlueprintType, Config=ViewModel, Within=Package)
+UCLASS(Abstract, BlueprintType, Config=ViewModel)
 class MDVIEWMODEL_API UMDViewModelBase : public UObject, public INotifyFieldValueChanged
 {
 	GENERATED_BODY()

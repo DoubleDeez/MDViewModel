@@ -4,6 +4,8 @@
 #if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 #include "Logging/StructuredLog.h"
 #endif
+#include "Engine/GameInstance.h"
+#include "Kismet/GameplayStatics.h"
 #include "UObject/WeakObjectPtrTemplates.h"
 #include "Util/MDViewModelAssignment.h"
 #include "Util/MDViewModelAssignmentData.h"
@@ -86,9 +88,11 @@ UMDViewModelBase* IMDViewModelRuntimeInterface::SetViewModelOfClass(const UObjec
 	const UClass* VMClass = Assignment.ViewModelClass.LoadSynchronous();
 	if (IsValid(VMClass))
 	{
+		UObject* GameInstance = UGameplayStatics::GetGameInstance(WorldContextObject);
+		UObject* VMOuter = IsValid(GameInstance) ? GameInstance : GetTransientPackage();
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 		const FName NameBase = *FString::Printf(TEXT("SetVMofClass_%s_%s"), *VMClass->GetName(), *Assignment.ViewModelName.ToString());
-		const FName VMObjectName = MakeUniqueObjectName(GetTransientPackage(), VMClass, NameBase);
+		const FName VMObjectName = MakeUniqueObjectName(VMOuter, VMClass, NameBase);
 #else
 		const FName VMObjectName = NAME_None;
 #endif
@@ -103,7 +107,7 @@ UMDViewModelBase* IMDViewModelRuntimeInterface::SetViewModelOfClass(const UObjec
 			*Assignment.ViewModelName.ToString(),
 			*GetPathNameSafe(GetOwningObject()));
 #endif
-		UMDViewModelBase* ViewModel = NewObject<UMDViewModelBase>(GetTransientPackage(), VMClass, VMObjectName);
+		UMDViewModelBase* ViewModel = NewObject<UMDViewModelBase>(VMOuter, VMClass, VMObjectName);
 		if (IsValid(ViewModel))
 		{
 			ViewModel->InitializeViewModelWithContext(ViewModelSettings, ContextObject, WorldContextObject);
