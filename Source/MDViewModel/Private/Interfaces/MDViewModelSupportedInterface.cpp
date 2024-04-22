@@ -1,5 +1,6 @@
 #include "Interfaces/MDViewModelSupportedInterface.h"
 
+#include "Engine/BlueprintGeneratedClass.h"
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
