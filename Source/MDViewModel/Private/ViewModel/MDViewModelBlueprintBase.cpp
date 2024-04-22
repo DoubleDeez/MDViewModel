@@ -134,6 +134,8 @@ void UMDViewModelBlueprintBase::InitializeViewModel()
 {
 	InitializeViewModelSupport();
 
+	PopulateViewModels();
+
 	Super::InitializeViewModel();
 
 	if (bImplements_InitializeViewModel)
@@ -151,6 +153,8 @@ void UMDViewModelBlueprintBase::ShutdownViewModel()
 
 	ShutdownSubViewModels(SubViewModels);
 	SubViewModels.Reset();
+
+	CleanUpViewModels();
 
 	Super::ShutdownViewModel();
 }
