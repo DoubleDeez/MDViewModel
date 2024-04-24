@@ -23,8 +23,9 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const UObject
 		return nullptr;
 	}
 
-	TObjectPtr<UMDViewModelBase>& ViewModel = GetViewModelCache().FindOrAdd(Key);
-	if (!IsValid(ViewModel))
+	TObjectPtr<UMDViewModelBase>& ViewModelRef = GetViewModelCache().FindOrAdd(Key);
+	UMDViewModelBase* ViewModelPtr = ViewModelRef;
+	if (!IsValid(ViewModelPtr))
 	{
 		UObject* GameInstance = UGameplayStatics::GetGameInstance(WorldContextObject);
 		UObject* VMOuter = IsValid(GameInstance) ? GameInstance : GetTransientPackage();
@@ -45,37 +46,38 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const UObject
 			*Key.ViewModelName.ToString(),
 			*GetCacheDebugName());
 #endif
-		ViewModel = NewObject<UMDViewModelBase>(VMOuter, Key.ViewModelClass, VMObjectName);
-		ViewModel->InitializeViewModelWithContext(ViewModelSettings, GetViewModelOwner(), WorldContextObject);
+		ViewModelRef = NewObject<UMDViewModelBase>(VMOuter, Key.ViewModelClass, VMObjectName);
+		ViewModelPtr = ViewModelRef;
+		ViewModelPtr->InitializeViewModelWithContext(ViewModelSettings, GetViewModelOwner(), WorldContextObject);
 	}
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-	else if (ViewModel->GetViewModelSettings() != ViewModelSettings)
+	else if (ViewModelPtr->GetViewModelSettings() != ViewModelSettings)
 	{
 		// TODO - The view model editor should be able to facilitate "Make my settings the same as that other view model assignment" to make this less likely to happen
 		FString CachedSettingsString;
-		ViewModel->GetViewModelSettings().ExportTextItem(CachedSettingsString, {}, nullptr, PPF_None, nullptr);
+		ViewModelPtr->GetViewModelSettings().ExportTextItem(CachedSettingsString, {}, nullptr, PPF_None, nullptr);
 		FString RequestedSettingsString;
 		ViewModelSettings.ExportTextItem(RequestedSettingsString, {}, nullptr, PPF_None, nullptr);
-		UE_LOG(LogMDViewModel, Warning, TEXT("The cached view model [%s] has different view model settings than currently being requested:\r\nCached: %s\r\nRequested: %s"), *ViewModel->GetName(), *CachedSettingsString, *RequestedSettingsString);
+		UE_LOG(LogMDViewModel, Warning, TEXT("The cached view model [%s] has different view model settings than currently being requested:\r\nCached: %s\r\nRequested: %s"), *ViewModelPtr->GetName(), *CachedSettingsString, *RequestedSettingsString);
 	}
 #endif
 	else
 	{
 #if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
 		UE_LOGFMT(LogMDViewModel, Verbose, "Retrieving Cached View Model [{ViewModel}] with Key [{Key}] from Cache [{CacheName}]",
-			("ViewModel", ViewModel->GetName()),
+			("ViewModel", ViewModelPtr->GetName()),
 			("Key", Key),
 			("CacheName", GetCacheDebugName()));
 #else
 		UE_LOG(LogMDViewModel, Verbose, TEXT("Retrieving Cached View Model [%s] with Key [%s (%s)] from Cache [%s]"),
-			*ViewModel->GetName(),
+			*ViewModelPtr->GetName(),
 			*GetNameSafe(Key.ViewModelClass),
 			*Key.ViewModelName.ToString(),
 			*GetCacheDebugName());
 #endif
 	}
 
-	return ViewModel;
+	return ViewModelPtr;
 }
 
 UMDViewModelBase* IMDViewModelCacheInterface::GetViewModel(const FName& CachedViewModelKey, TSubclassOf<UMDViewModelBase> ViewModelClass) const
