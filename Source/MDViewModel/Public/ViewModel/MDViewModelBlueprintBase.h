@@ -100,7 +100,7 @@ private:
 	bool bImplements_ShutdownViewModel;
 
 	UPROPERTY(Transient)
-	mutable TArray<TWeakObjectPtr<UMDViewModelBase>> SubViewModels;
+	mutable TArray<TObjectPtr<UMDViewModelBase>> SubViewModels;
 
 	UPROPERTY(Transient)
 	mutable TWeakObjectPtr<const UObject> CDOWorldContextObjectPtr;
