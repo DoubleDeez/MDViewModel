@@ -24,6 +24,9 @@ void UMDViewModelAssignmentComponent::BeginDestroy()
 	OnBeginDestroy.Broadcast();
 	
 	Super::BeginDestroy();
+
+	// Work around issue where ~FInstancedStruct would crash when calling DestroyStruct on partially destroyed UserDefinedStructs
+	Assignments.Empty();
 }
 
 UObject* UMDViewModelAssignmentComponent::GetOwningObject() const

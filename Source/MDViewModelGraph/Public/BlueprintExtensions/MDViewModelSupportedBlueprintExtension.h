@@ -15,6 +15,7 @@ class MDVIEWMODELGRAPH_API UMDViewModelSupportedBlueprintExtension : public UBlu
 	GENERATED_BODY()
 
 public:
+	virtual void BeginDestroy() override;
 	virtual void PostLoad() override;
 
 	virtual TArray<FMDViewModelEditorAssignment>& GetAssignments() override { return Assignments; }

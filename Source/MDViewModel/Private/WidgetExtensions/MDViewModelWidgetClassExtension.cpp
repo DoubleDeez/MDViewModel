@@ -8,6 +8,14 @@
 #include "Util/MDViewModelLog.h"
 #include "WidgetExtensions/MDViewModelWidgetExtension.h"
 
+void UMDViewModelWidgetClassExtension::BeginDestroy()
+{
+	Super::BeginDestroy();
+
+	// Work around issue where ~FInstancedStruct would crash when calling DestroyStruct on partially destroyed UserDefinedStructs
+	Assignments.Empty();
+}
+
 void UMDViewModelWidgetClassExtension::Initialize(UUserWidget* UserWidget)
 {
 	Super::Initialize(UserWidget);

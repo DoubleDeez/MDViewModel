@@ -10,6 +10,9 @@ void UMDViewModelBlueprintBase::BeginDestroy()
 	OnBeginDestroy.Broadcast();
 
 	Super::BeginDestroy();
+
+	// Work around issue where ~FInstancedStruct would crash when calling DestroyStruct on partially destroyed UserDefinedStructs
+	Assignments.Empty();
 }
 
 UWorld* UMDViewModelBlueprintBase::GetWorld() const

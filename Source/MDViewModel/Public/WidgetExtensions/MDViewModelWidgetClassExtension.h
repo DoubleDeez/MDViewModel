@@ -17,6 +17,7 @@ class MDVIEWMODEL_API UMDViewModelWidgetClassExtension : public UWidgetBlueprint
 	GENERATED_BODY()
 
 public:
+	virtual void BeginDestroy() override;
 	virtual void Initialize(UUserWidget* UserWidget) override;
 
 #if WITH_EDITOR

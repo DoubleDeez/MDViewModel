@@ -17,6 +17,7 @@ class MDVIEWMODELGRAPH_API UMDViewModelWidgetBlueprintExtension : public UWidget
 	GENERATED_BODY()
 
 public:
+	virtual void BeginDestroy() override;
 	virtual void PostLoad() override;
 
 	virtual TArray<FMDViewModelEditorAssignment>& GetAssignments() override { return Assignments; }
