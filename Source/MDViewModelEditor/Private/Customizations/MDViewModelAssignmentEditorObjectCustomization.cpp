@@ -210,22 +210,25 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 
 		if (UMDViewModelBase* ViewModelCDO = EditorObject->ViewModelClass.GetDefaultObject())
 		{
-			TArray<FText> ViewModelIssues;
-			ViewModelCDO->ValidateViewModelSettings(EditorObject->ViewModelSettings, Dialog->GetBlueprint(), Assignment, ViewModelIssues);
-
-			if (!ViewModelIssues.IsEmpty())
+			if (IsValid(Provider) && Provider->DoesSupportViewModelSettings())
 			{
-				IDetailCategoryBuilder& ViewModelValidationCategory = DetailBuilder.EditCategory(TEXT("View Model Validation"));
-				ViewModelValidationCategory.SetSortOrder(++CustomSortOrder);
-
-				for (const FText& Issue : ViewModelIssues)
+				TArray<FText> ViewModelIssues;
+				ViewModelCDO->ValidateViewModelSettings(EditorObject->ViewModelSettings, Dialog->GetBlueprint(), Assignment, ViewModelIssues);
+	
+				if (!ViewModelIssues.IsEmpty())
 				{
-					ViewModelValidationCategory.AddCustomRow(Issue).WholeRowContent()
-					[
-						SNew(STextBlock)
-						.Text(Issue)
-						.AutoWrapText(true)
-					];
+					IDetailCategoryBuilder& ViewModelValidationCategory = DetailBuilder.EditCategory(TEXT("View Model Validation"));
+					ViewModelValidationCategory.SetSortOrder(++CustomSortOrder);
+	
+					for (const FText& Issue : ViewModelIssues)
+					{
+						ViewModelValidationCategory.AddCustomRow(Issue).WholeRowContent()
+						[
+							SNew(STextBlock)
+							.Text(Issue)
+							.AutoWrapText(true)
+						];
+					}
 				}
 			}
 
