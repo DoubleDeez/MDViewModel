@@ -60,11 +60,14 @@ void UMDViewModelBase::InitializeViewModelWithContext(const UObject* InContextOb
 
 void UMDViewModelBase::ShutdownViewModelFromProvider()
 {
-	ShutdownViewModel();
-
-	OnViewModelShutDown.Broadcast();
-
-	bIsInitialized = false;
+	if (bIsInitialized)
+	{
+		ShutdownViewModel();
+	
+		OnViewModelShutDown.Broadcast();
+	
+		bIsInitialized = false;
+	}
 }
 
 UWorld* UMDViewModelBase::GetWorld() const
