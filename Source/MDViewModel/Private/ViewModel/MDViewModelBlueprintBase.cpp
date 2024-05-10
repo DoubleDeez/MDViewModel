@@ -149,7 +149,7 @@ void UMDViewModelBlueprintBase::InitializeViewModel()
 
 void UMDViewModelBlueprintBase::ShutdownViewModel()
 {
-	if (bImplements_ShutdownViewModel)
+	if (bImplements_ShutdownViewModel && !IsUnreachable())
 	{
 		BP_ShutdownViewModel();
 	}
