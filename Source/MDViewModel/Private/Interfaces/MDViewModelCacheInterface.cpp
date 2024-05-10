@@ -58,7 +58,7 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const UObject
 		ViewModelPtr->GetViewModelSettings().ExportTextItem(CachedSettingsString, {}, nullptr, PPF_None, nullptr);
 		FString RequestedSettingsString;
 		ViewModelSettings.ExportTextItem(RequestedSettingsString, {}, nullptr, PPF_None, nullptr);
-		UE_LOG(LogMDViewModel, Warning, TEXT("The cached view model [%s] has different view model settings than currently being requested:\r\nCached: %s\r\nRequested: %s"), *ViewModelPtr->GetName(), *CachedSettingsString, *RequestedSettingsString);
+		UE_LOG(LogMDViewModel, Error, TEXT("The cached view model [%s] has different view model settings than currently being requested which can lead to unexpected bugs:\r\nCached: %s\r\nRequested: %s"), *ViewModelPtr->GetName(), *CachedSettingsString, *RequestedSettingsString);
 	}
 #endif
 	else
