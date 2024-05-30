@@ -17,7 +17,8 @@ UMDViewModelNodeSpawner* UMDViewModelNodeSpawner::Create(TSubclassOf<UEdGraphNod
 	Spawner->Assignment = Assignment;
 	Spawner->BlueprintPtr = Blueprint;
 
-	const FText VMClassDisplayName = Assignment.ViewModelClass != nullptr ? Assignment.ViewModelClass->GetDisplayNameText() : FText::GetEmpty();
+	TSubclassOf<UMDViewModelBase> ViewModelClass = Assignment.ViewModelClass.LoadSynchronous();
+	const FText VMClassDisplayName = IsValid(ViewModelClass) ? ViewModelClass->GetDisplayNameText() : FText::GetEmpty();
 
 	FBlueprintActionUiSpec& MenuSignature = Spawner->DefaultMenuSignature;
 	if (const UFunction* Function = Field.Get<const UFunction>())
@@ -50,8 +51,8 @@ UMDViewModelNodeSpawner* UMDViewModelNodeSpawner::Create(TSubclassOf<UEdGraphNod
 
 FBlueprintNodeSignature UMDViewModelNodeSpawner::GetSpawnerSignature() const
 {
-	FBlueprintNodeSignature SpawnerSignature = FBlueprintNodeSignature(NodeClass);//Super::GetSpawnerSignature();
-	SpawnerSignature.AddSubObject(Assignment.ViewModelClass.Get());
+	FBlueprintNodeSignature SpawnerSignature = FBlueprintNodeSignature(NodeClass);
+	SpawnerSignature.AddSubObject(Assignment.ViewModelClass.LoadSynchronous());
 	SpawnerSignature.AddNamedValue(TEXT("ViewModelName"), Assignment.ViewModelName.ToString());
 
 	return SpawnerSignature;
