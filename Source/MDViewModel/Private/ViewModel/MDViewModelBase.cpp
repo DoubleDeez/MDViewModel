@@ -312,7 +312,7 @@ void UMDViewModelBase::K2_BroadcastFieldValueChanged(FFieldNotificationId InFiel
 	if (InFieldId.IsValid())
 	{
 		const UE::FieldNotification::FFieldId FieldId = GetFieldNotificationDescriptor().GetField(GetClass(), InFieldId.FieldName);
-		if (ensureMsgf(FieldId.IsValid(), TEXT("The field should be compiled correctly.")))
+		if (ensureMsgf(FieldId.IsValid(), TEXT("Could not find a field named [%s] on [%s] when attempting to broadcast a value changed"), *InFieldId.GetFieldName().ToString(), *GetFullName()))
 		{
 			BroadcastFieldValueChanged(FieldId);
 		}
