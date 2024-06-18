@@ -83,6 +83,11 @@ void UMDVMDynamicEntryBox::PostEditChangeChainProperty(FPropertyChangedChainEven
 
 void UMDVMDynamicEntryBox::PopulateItems(const TArray<UMDViewModelBase*>& ViewModels)
 {
+	if (!ensureMsgf(IsValid(GetEntryWidgetClass()), TEXT("Cannot populate list when EntryWidgetClass is null for %s."), *GetFullName()))
+	{
+		return;
+	}
+
 	const int32 NumVMs = ViewModels.Num();
 	const int32 NumEntries = FMath::Max(NumVMs, MinimumEntriesToDisplay);
 	const int32 StartNumItems = GetNumEntries();
