@@ -48,6 +48,12 @@ UMDViewModelBase* IMDViewModelCacheInterface::GetOrCreateViewModel(const UObject
 #endif
 		ViewModelRef = NewObject<UMDViewModelBase>(VMOuter, Key.ViewModelClass, VMObjectName);
 		ViewModelPtr = ViewModelRef;
+		ViewModelPtr->OnViewModelShutDown.AddWeakLambda(Cast<UObject>(this), [this, WeakViewModel = MakeWeakObjectPtr(ViewModelPtr)]()
+		{
+			ensureAlwaysMsgf(bIsShutdown, TEXT("Shutting down cached view model while the cache is still alive. This view model does not need ShutdownViewModelFromProvider called on it. View Model [%s] | Cache [%s]")
+				, *GetNameSafe(WeakViewModel.Get())
+				, *GetCacheDebugName());
+		});
 		ViewModelPtr->InitializeViewModelWithContext(ViewModelSettings, GetViewModelOwner(), WorldContextObject);
 	}
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
