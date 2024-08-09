@@ -105,6 +105,19 @@ enum EMDVMDelegateIndex
 	MDVMDI_LevelWorldChanged = 2,
 };
 
+void FMDWrappedDelegateHandle::Unbind()
+{
+	if (IsBound())
+	{
+		if (ensureMsgf(UnbindFunc, TEXT("The delegate's stored UnbindFunc is invalid, bound delegates are likely leaking")))
+		{
+			UnbindFunc(DelegateOwner.Get(), Handle);
+		}
+
+		*this = {};
+	}
+}
+
 const FGameplayTag& FMDViewModelProvider_Cached_Settings::GetLifetimeTag() const
 {
 	if (ViewModelLifetimeTag.IsValid())
@@ -568,6 +581,11 @@ void UMDViewModelProvider_Cached::OnObjectDestroy(TWeakInterfacePtr<IMDViewModel
 	{
 		if (!It.Key().ObjectPtr.IsValid() || It.Key().ObjectPtr == ObjectPtr)
 		{
+			for (FMDWrappedDelegateHandle& DelegateHandle : It.Value())
+			{
+				DelegateHandle.Unbind();
+			}
+
 			It.RemoveCurrent();
 		}
 	}
@@ -896,10 +914,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveHUDCacheAndBindD
 		: nullptr;
 
 	FMDVMAssignmentObjectKey BindingKey = { Assignment, Object.GetOwningObject() };
-	UnbindDelegateIfNewOwner<UMDVMPCUpdatePollingComponent>(BindingKey, Poller, MDVMDI_Default, [](auto& OldPoller, FDelegateHandle& Handle)
-	{
-		OldPoller.UnbindOnHUDChanged(Handle);
-	});
+	UnbindDelegateIfNewOwner(BindingKey, Poller, MDVMDI_Default);
 
 	if (IsValid(PlayerController))
 	{
@@ -907,6 +922,14 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveHUDCacheAndBindD
 		{
 			FSimpleDelegate Delegate = FSimpleDelegate::CreateUObject(this, &UMDViewModelProvider_Cached::RefreshViewModel, Object.MakeWeak(), Assignment, Data);
 			return Owner.BindOnHUDChanged(MoveTemp(Delegate));
+		},
+		[](UObject* OldOwner, FDelegateHandle& Handle)
+		{
+			auto* OldPoller = Cast<UMDVMPCUpdatePollingComponent>(OldOwner);
+			if (IsValid(OldPoller))
+			{
+				OldPoller->UnbindOnHUDChanged(Handle);
+			}
 		});
 
 		return ResolveActorCache(PlayerController->GetHUD());
@@ -923,16 +946,21 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePawnCacheAndBind
 		: nullptr;
 
 	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
-	UnbindDelegateIfNewOwner<UMDVMPCDynamicDelegateIntermediate>(BindingKey, Intermediate, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
-	{
-		OldOwner.OnPawnChanged.Remove(Handle);
-	});
+	UnbindDelegateIfNewOwner(BindingKey, Intermediate, MDVMDI_Default);
 
 	if (IsValid(PlayerController))
 	{
 		BindDelegateIfUnbound<UMDVMPCDynamicDelegateIntermediate>(MoveTemp(BindingKey), Intermediate, MDVMDI_Default, [&](auto& Owner)
 		{
 			return Owner.OnPawnChanged.AddUObject(this, &UMDViewModelProvider_Cached::RefreshViewModel, Object.MakeWeak(), Assignment, Data);
+		},
+		[](UObject* OldOwner, FDelegateHandle& Handle)
+		{
+			auto* OldIntermediate = Cast<UMDVMPCDynamicDelegateIntermediate>(OldOwner);
+			if (IsValid(OldIntermediate))
+			{
+				OldIntermediate->OnPawnChanged.Remove(Handle);
+			}
 		});
 
 		return ResolveActorCache(PlayerController->GetPawn());
@@ -949,16 +977,21 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePawnCacheAndBind
 		: nullptr;
 
 	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
-	UnbindDelegateIfNewOwner<UMDVMPSDynamicDelegateIntermediate>(BindingKey, Intermediate, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
-	{
-		OldOwner.OnPawnChanged.Remove(Handle);
-	});
+	UnbindDelegateIfNewOwner(BindingKey, Intermediate, MDVMDI_Default);
 
 	if (IsValid(PlayerState))
 	{
 		BindDelegateIfUnbound<UMDVMPSDynamicDelegateIntermediate>(MoveTemp(BindingKey), Intermediate, MDVMDI_Default, [&](auto& Owner)
 		{
 			return Owner.OnPawnChanged.AddUObject(this, &UMDViewModelProvider_Cached::RefreshViewModel, Object.MakeWeak(), Assignment, Data);
+		},
+		[](UObject* OldOwner, FDelegateHandle& Handle)
+		{
+			auto* OldIntermediate = Cast<UMDVMPSDynamicDelegateIntermediate>(OldOwner);
+			if (IsValid(OldIntermediate))
+			{
+				OldIntermediate->OnPawnChanged.Remove(Handle);
+			}
 		});
 
 		return ResolveActorCache(PlayerState->GetPawn());
@@ -975,10 +1008,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePlayerStateCache
 		: nullptr;
 
 	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
-	UnbindDelegateIfNewOwner<UMDVMPCUpdatePollingComponent>(BindingKey, Poller, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
-	{
-		OldOwner.UnbindOnPlayerStateChanged(Handle);
-	});
+	UnbindDelegateIfNewOwner(BindingKey, Poller, MDVMDI_Default);
 
 	if (IsValid(PlayerController))
 	{
@@ -986,6 +1016,14 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePlayerStateCache
 		{
 			FSimpleDelegate Delegate = FSimpleDelegate::CreateUObject(this, &UMDViewModelProvider_Cached::RefreshViewModel, Object.MakeWeak(), Assignment, Data);
 			return Owner.BindOnPlayerStateChanged(MoveTemp(Delegate));
+		},
+		[](UObject* OldOwner, FDelegateHandle& Handle)
+		{
+			auto* OldPoller = Cast<UMDVMPCUpdatePollingComponent>(OldOwner);
+			if (IsValid(OldPoller))
+			{
+				OldPoller->UnbindOnPlayerStateChanged(Handle);
+			}
 		});
 
 		return ResolveActorCache(PlayerController->PlayerState);
@@ -1002,10 +1040,7 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePlayerStateCache
 		: nullptr;
 
 	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
-	UnbindDelegateIfNewOwner<UMDVMPawnUpdatePollingComponent>(BindingKey, Poller, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
-	{
-		OldOwner.UnbindOnPlayerStateChanged(Handle);
-	});
+	UnbindDelegateIfNewOwner(BindingKey, Poller, MDVMDI_Default);
 
 	if (IsValid(Pawn))
 	{
@@ -1013,6 +1048,14 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolvePlayerStateCache
 		{
 			FSimpleDelegate Delegate = FSimpleDelegate::CreateUObject(this, &UMDViewModelProvider_Cached::RefreshViewModel, Object.MakeWeak(), Assignment, Data);
 			return Owner.BindOnPlayerStateChanged(MoveTemp(Delegate));
+		},
+		[](UObject* OldOwner, FDelegateHandle& Handle)
+		{
+			auto* OldPoller = Cast<UMDVMPawnUpdatePollingComponent>(OldOwner);
+			if (IsValid(OldPoller))
+			{
+				OldPoller->UnbindOnPlayerStateChanged(Handle);
+			}
 		});
 
 		return ResolveActorCache(Pawn->GetPlayerState());
@@ -1025,16 +1068,21 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveGameStateCacheAn
 	IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
 	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
-	UnbindDelegateIfNewOwner<UWorld>(BindingKey, World, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
-	{
-		OldOwner.GameStateSetEvent.Remove(Handle);
-	});
+	UnbindDelegateIfNewOwner(BindingKey, World, MDVMDI_Default);
 
 	if (IsValid(World))
 	{
 		BindDelegateIfUnbound<UWorld>(MoveTemp(BindingKey), World, MDVMDI_Default, [&](auto& Owner)
 		{
 			return Owner.GameStateSetEvent.AddUObject(this, &UMDViewModelProvider_Cached::OnGameStateChanged, Object.MakeWeak(), Assignment, Data);
+		},
+		[](UObject* OldOwner, FDelegateHandle& Handle)
+		{
+			auto* OldWorld = Cast<UWorld>(OldOwner);
+			if (IsValid(OldWorld))
+			{
+				OldWorld->GameStateSetEvent.Remove(Handle);
+			}
 		});
 
 		return ResolveActorCache(World->GetGameState());
@@ -1137,15 +1185,20 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveFieldCacheAndBin
 	const UE::FieldNotification::FFieldId FieldId = FieldNotifyOwner->GetFieldNotificationDescriptor().GetField(Owner->GetClass(), FieldName);
 
 	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
-	UnbindDelegateIfNewOwner<INotifyFieldValueChanged>(BindingKey, FieldNotifyOwner, DelegateIndex, [&FieldId](auto& OldOwner, FDelegateHandle& Handle)
-	{
-		OldOwner.RemoveFieldValueChangedDelegate(FieldId, Handle);
-	});
+	UnbindDelegateIfNewOwner(BindingKey, Owner, DelegateIndex);
 
 	BindDelegateIfUnbound<INotifyFieldValueChanged>(MoveTemp(BindingKey), FieldNotifyOwner, DelegateIndex, [&](auto& NewOwner)
 	{
 		const auto Delegate = INotifyFieldValueChanged::FFieldValueChangedDelegate::CreateUObject(this, &UMDViewModelProvider_Cached::OnFieldValueChanged, Object.MakeWeak(), Assignment, Data);
 		return NewOwner.AddFieldValueChangedDelegate(FieldId, Delegate);
+	},
+	[FieldId](UObject* OldOwner, FDelegateHandle& Handle)
+	{
+		auto* OldFieldValueChanged = Cast<INotifyFieldValueChanged>(OldOwner);
+		if (IsValidObject(OldFieldValueChanged))
+		{
+			OldFieldValueChanged->RemoveFieldValueChangedDelegate(FieldId, Handle);
+		}
 	});
 
 	UObject* PropertyValue = nullptr;
@@ -1197,24 +1250,10 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheA
 	UWorld* World = Object.ResolveWorld();
 
 	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
-	UnbindDelegateIfNewOwner<UWorld>(BindingKey, World, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
-	{
-		OldOwner.RemoveOnActorSpawnedHandler(Handle);
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
-		OldOwner.RemoveOnActorRemovedFromWorldHandler(Handle);
-#else
-		OldOwner.RemoveOnActorDestroyededHandler(Handle);
-#endif
-	});
+	UnbindDelegate(BindingKey, MDVMDI_Default);
 
 	if (IsValid(Actor))
 	{
-		// Unbind if we were bound since we don't need to listen for it anymore
-		UnbindDelegate<UWorld>(BindingKey, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
-		{
-			OldOwner.RemoveOnActorSpawnedHandler(Handle);
-		});
-
 		// Bind to when the actor is removed from the world so we can find a new actor that meets our criteria
 		BindDelegateIfUnbound<UWorld>(MoveTemp(BindingKey), World, MDVMDI_Default, [&](auto& Owner)
 		{
@@ -1230,6 +1269,19 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheA
 #else
 			return Owner.AddOnActorDestroyedHandler(MoveTemp(Delegate));
 #endif
+		},
+		[](UObject* OldOwner, FDelegateHandle& Handle)
+		{
+			auto* OldWorld = Cast<UWorld>(OldOwner);
+			if (IsValid(OldWorld))
+			{
+				OldWorld->RemoveOnActorSpawnedHandler(Handle);
+#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
+				OldWorld->RemoveOnActorRemovedFromWorldHandler(Handle);
+#else
+				OldWorld->RemoveOnActorDestroyededHandler(Handle);
+#endif
+			}
 		});
 
 		BindLevelRemovedFromWorldDelegates(MakeWeakObjectPtr(Actor), Object, Assignment, Data);
@@ -1238,19 +1290,18 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheA
 	}
 	else
 	{
-		UnbindDelegate<UWorld>(BindingKey, MDVMDI_Default, [](auto& OldOwner, FDelegateHandle& Handle)
-		{
-#if ENGINE_MAJOR_VERSION > 5 || ENGINE_MINOR_VERSION >= 2
-			OldOwner.RemoveOnActorRemovedFromWorldHandler(Handle);
-#else
-			OldOwner.RemoveOnActorDestroyededHandler(Handle);
-#endif
-		});
-
 		BindDelegateIfUnbound<UWorld>(MoveTemp(BindingKey), World, MDVMDI_Default, [&](auto& Owner)
 		{
 			auto Delegate = FOnActorSpawned::FDelegate::CreateUObject(this, &UMDViewModelProvider_Cached::OnActorSpawned, Object.MakeWeak(), Assignment, Data);
 			return Owner.AddOnActorSpawnedHandler(MoveTemp(Delegate));
+		},
+		[](UObject* OldOwner, FDelegateHandle& Handle)
+		{
+			auto* OldWorld = Cast<UWorld>(OldOwner);
+			if (IsValid(OldWorld))
+			{
+				OldWorld->RemoveOnActorSpawnedHandler(Handle);
+			}
 		});
 
 		BindLevelAddedToWorldDelegates(Object, Assignment, Data);
@@ -1262,15 +1313,20 @@ IMDViewModelCacheInterface* UMDViewModelProvider_Cached::ResolveWorldActorCacheA
 UMDViewModelBase* UMDViewModelProvider_Cached::ResolveViewModelAndBindDelegates(const FMDViewModelAssignmentReference& Reference, int32 DelegateIndex, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
 	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
-	UnbindDelegateIfNewOwner<IMDViewModelRuntimeInterface>(BindingKey, &Object, DelegateIndex, [Reference](auto& OldOwner, FDelegateHandle& Handle)
-	{
-		OldOwner.StopListeningForChanges(Handle, Reference);
-	});
+	UnbindDelegateIfNewOwner(BindingKey, Cast<UObject>(&Object), DelegateIndex);
 
 	BindDelegateIfUnbound<IMDViewModelRuntimeInterface>(MoveTemp(BindingKey), &Object, DelegateIndex, [&](auto& Owner)
 	{
 		auto Delegate = FMDVMOnViewModelSet::FDelegate::CreateUObject(this, &UMDViewModelProvider_Cached::OnRelativeViewModelChanged, Object.MakeWeak(), Assignment, Data);
 		return Owner.ListenForChanges(MoveTemp(Delegate), Reference);
+	},
+	[Reference](UObject* OldOwner, FDelegateHandle& Handle)
+	{
+		auto* OldVMRuntime = Cast<IMDViewModelRuntimeInterface>(OldOwner);
+		if (IsValidObject(OldVMRuntime))
+		{
+			OldVMRuntime->StopListeningForChanges(Handle, Reference);
+		}
 	});
 
 	return Object.GetViewModel(Reference);
@@ -1282,34 +1338,40 @@ void UMDViewModelProvider_Cached::BindViewTargetDelegates(IMDViewModelRuntimeInt
 	BindDelegateIfUnbound<IMDViewModelRuntimeInterface>(MoveTemp(BindingKey), &Object, MDVMDI_ViewTarget, [&](auto& Owner)
 	{
 		return FGameDelegates::Get().GetViewTargetChangedDelegate().AddUObject(this, &UMDViewModelProvider_Cached::OnViewTargetChanged, Object.MakeWeak(), Assignment, Data);
+	},
+	[](UObject* OldOwner, FDelegateHandle& Handle)
+	{
+		FGameDelegates::Get().GetViewTargetChangedDelegate().Remove(Handle);
 	});
 }
 
 void UMDViewModelProvider_Cached::BindLevelAddedToWorldDelegates(IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
 	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
-	UnbindDelegate<UObject>(BindingKey, MDVMDI_LevelWorldChanged, [](auto& OldOwner, FDelegateHandle& Handle)
-	{
-		FWorldDelegates::LevelRemovedFromWorld.Remove(Handle);
-	});
+	UnbindDelegate(BindingKey, MDVMDI_LevelWorldChanged);
 	
 	BindDelegateIfUnbound<IMDViewModelRuntimeInterface>(MoveTemp(BindingKey), &Object, MDVMDI_LevelWorldChanged, [&](auto& Owner)
 	{
 		return FWorldDelegates::LevelAddedToWorld.AddUObject(this, &UMDViewModelProvider_Cached::OnLevelAddedToWorld, Object.MakeWeak(), Assignment, Data);
+	},
+	[](UObject* OldOwner, FDelegateHandle& Handle)
+	{
+		FWorldDelegates::LevelAddedToWorld.Remove(Handle);
 	});
 }
 
 void UMDViewModelProvider_Cached::BindLevelRemovedFromWorldDelegates(TWeakObjectPtr<AActor> BoundActor, IMDViewModelRuntimeInterface& Object, const FMDViewModelAssignment& Assignment, const FMDViewModelAssignmentData& Data)
 {
 	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
-	UnbindDelegate<UObject>(BindingKey, MDVMDI_LevelWorldChanged, [](auto& OldOwner, FDelegateHandle& Handle)
-	{
-		FWorldDelegates::LevelAddedToWorld.Remove(Handle);
-	});
+	UnbindDelegate(BindingKey, MDVMDI_LevelWorldChanged);
 	
 	BindDelegateIfUnbound<IMDViewModelRuntimeInterface>(MoveTemp(BindingKey), &Object, MDVMDI_LevelWorldChanged, [&](auto& Owner)
 	{
 		return FWorldDelegates::LevelRemovedFromWorld.AddUObject(this, &UMDViewModelProvider_Cached::OnLevelRemovedFromWorld, BoundActor, Object.MakeWeak(), Assignment, Data);
+	},
+	[](UObject* OldOwner, FDelegateHandle& Handle)
+	{
+		FWorldDelegates::LevelRemovedFromWorld.Remove(Handle);
 	});
 }
 
@@ -1374,4 +1436,33 @@ bool UMDViewModelProvider_Cached::DoesActorPassFilter(AActor* Candidate, const F
 	}
 
 	return true;
+}
+
+void UMDViewModelProvider_Cached::UnbindDelegate(const FMDVMAssignmentObjectKey& BindingKey, int32 DelegateIndex)
+{
+	auto* WrapperArrayPtr = ObjectDelegateHandles.Find(BindingKey);
+	if (WrapperArrayPtr == nullptr || !WrapperArrayPtr->IsValidIndex(DelegateIndex))
+	{
+		return;
+	}
+
+	(*WrapperArrayPtr)[DelegateIndex].Unbind();
+}
+
+void UMDViewModelProvider_Cached::UnbindDelegateIfNewOwner(const FMDVMAssignmentObjectKey& BindingKey, const UObject* Owner, int32 DelegateIndex)
+{
+	auto* WrapperArrayPtr = ObjectDelegateHandles.Find(BindingKey);
+	if (WrapperArrayPtr == nullptr || !WrapperArrayPtr->IsValidIndex(DelegateIndex))
+	{
+		return;
+	}
+
+	FMDWrappedDelegateHandle& Wrapper = (*WrapperArrayPtr)[DelegateIndex];
+	UObject* OldOwner = Wrapper.DelegateOwner.Get();
+	if (IsValid(OldOwner) && OldOwner == Owner)
+	{
+		return;
+	}
+
+	Wrapper.Unbind();
 }

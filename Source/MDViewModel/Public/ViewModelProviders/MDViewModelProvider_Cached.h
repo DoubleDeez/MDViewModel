@@ -86,12 +86,15 @@ struct MDVIEWMODEL_API FMDWrappedDelegateHandle
 {
 	FDelegateHandle Handle;
 	TWeakObjectPtr<UObject> DelegateOwner;
+	TFunction<void(UObject*, FDelegateHandle&)> UnbindFunc;
 
 	bool IsBound() const
 	{
 		// Only a handle is required to be considered Bound
 		return Handle.IsValid();
 	}
+
+	void Unbind();
 };
 
 UENUM(meta = (Deprecated))
@@ -278,17 +281,15 @@ protected:
 
 	bool DoesActorPassFilter(AActor* Candidate, const FMDVMWorldActorFilter& Filter) const;
 
-	// Checks WidgetDelegateHandles to see if the handle at the specified index is bound, if not it adds a new entry and calls BindFunc to populate it
+	// Checks WidgetDelegateHandles to see if the handle at the specified index is bound, if not it adds a new entry and calls BindFunc to populate it. UnbindFunc is stored to unbind at a later time.
 	template<typename T, typename TBindingKey, typename = typename TEnableIf<std::is_same_v<typename TDecay<TBindingKey>::Type, FMDVMAssignmentObjectKey>>::Type>
-	void BindDelegateIfUnbound(TBindingKey&& BindingKey, T* Owner, int32 DelegateIndex, TFunctionRef<FDelegateHandle(T&)> BindFunc);
+	void BindDelegateIfUnbound(TBindingKey&& BindingKey, T* Owner, int32 DelegateIndex, TFunctionRef<FDelegateHandle(T&)> BindFunc, const TFunction<void(UObject*, FDelegateHandle&)>& UnbindFunc);
 
-	// Checks WidgetDelegateHandles to see if the specified delegate exists, if so it calls UnbindFunc and resets the stored delegate data
-	template<typename T>
-	void UnbindDelegate(const FMDVMAssignmentObjectKey& BindingKey, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc);
+	// Checks WidgetDelegateHandles to see if the specified delegate exists, if so it calls the stored UnbindFunc and resets the stored delegate data
+	void UnbindDelegate(const FMDVMAssignmentObjectKey& BindingKey, int32 DelegateIndex);
 
-	// Checks WidgetDelegateHandles to see if the delegate owner is different, if so it calls UnbindFunc and resets the stored delegate data
-	template<typename T>
-	void UnbindDelegateIfNewOwner(const FMDVMAssignmentObjectKey& BindingKey, const T* Owner, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc);
+	// Checks WidgetDelegateHandles to see if the delegate owner is different, if so it calls the stored UnbindFunc and resets the stored delegate data
+	void UnbindDelegateIfNewOwner(const FMDVMAssignmentObjectKey& BindingKey, const UObject* Owner, int32 DelegateIndex);
 
 	// Certain lifetimes may require binding multiple delegates, they can index into the array to store multiple handles
 	TMap<FMDVMAssignmentObjectKey, TArray<FMDWrappedDelegateHandle, TInlineAllocator<4>>> ObjectDelegateHandles;
@@ -300,7 +301,7 @@ protected:
 	TMap<TWeakInterfacePtr<IMDViewModelRuntimeInterface>, TMap<FMDViewModelAssignmentReference, TWeakInterfacePtr<IMDViewModelCacheInterface>>> BoundAssignments;
 
 	template<typename T>
-	bool IsValidObject(const T* Object) const;
+	static bool IsValidObject(const T* Object);
 };
 
 template <typename T>
@@ -337,7 +338,7 @@ T* UMDViewModelProvider_Cached::FindCachedViewModel(const UObject* WorldContextO
 }
 
 template <typename T, typename TBindingKey, typename>
-void UMDViewModelProvider_Cached::BindDelegateIfUnbound(TBindingKey&& BindingKey, T* Owner, int32 DelegateIndex, TFunctionRef<FDelegateHandle(T&)> BindFunc)
+void UMDViewModelProvider_Cached::BindDelegateIfUnbound(TBindingKey&& BindingKey, T* Owner, int32 DelegateIndex, TFunctionRef<FDelegateHandle(T&)> BindFunc, const TFunction<void(UObject*, FDelegateHandle&)>& UnbindFunc)
 {
 	if (!IsValidObject(Owner))
 	{
@@ -362,61 +363,7 @@ void UMDViewModelProvider_Cached::BindDelegateIfUnbound(TBindingKey&& BindingKey
 	FMDWrappedDelegateHandle& Wrapper = WrapperArray[DelegateIndex];
 	Wrapper.DelegateOwner = Cast<UObject>(Owner);
 	Wrapper.Handle = BindFunc(*Owner);
-}
-
-template <typename T>
-void UMDViewModelProvider_Cached::UnbindDelegate(const FMDVMAssignmentObjectKey& BindingKey, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc)
-{
-	auto* WrapperArrayPtr = ObjectDelegateHandles.Find(BindingKey);
-	if (WrapperArrayPtr == nullptr || !WrapperArrayPtr->IsValidIndex(DelegateIndex))
-	{
-		return;
-	}
-
-	FMDWrappedDelegateHandle& Wrapper = (*WrapperArrayPtr)[DelegateIndex];
-	T* OldOwner = Cast<T>(Wrapper.DelegateOwner.Get());
-	if (!IsValidObject(OldOwner))
-	{
-		Wrapper = {}; // Clear anyway, otherwise we'll still be seen as "bound"
-		return;
-	}
-
-	UnbindFunc(*OldOwner, Wrapper.Handle);
-	Wrapper = {};
-}
-
-template <typename T>
-void UMDViewModelProvider_Cached::UnbindDelegateIfNewOwner(const FMDVMAssignmentObjectKey& BindingKey, const T* Owner, int32 DelegateIndex, TFunctionRef<void(T&, FDelegateHandle&)> UnbindFunc)
-{
-	auto* WrapperArrayPtr = ObjectDelegateHandles.Find(BindingKey);
-	if (WrapperArrayPtr == nullptr || !WrapperArrayPtr->IsValidIndex(DelegateIndex))
-	{
-		return;
-	}
-
-	FMDWrappedDelegateHandle& Wrapper = (*WrapperArrayPtr)[DelegateIndex];
-	UObject* OldOwnerObject = Wrapper.DelegateOwner.Get();
-	if constexpr (TIsIInterface<T>::Value)
-	{
-		if (OldOwnerObject == Cast<UObject>(Owner))
-		{
-			return;
-		}
-	}
-	else if (OldOwnerObject == Owner)
-	{
-		return;
-	}
-
-	T* OldOwner = Cast<T>(OldOwnerObject);
-	if (!IsValidObject(OldOwner))
-	{
-		Wrapper = {}; // Clear anyway, otherwise we'll still be seen as "bound"
-		return;
-	}
-
-	UnbindFunc(*OldOwner, Wrapper.Handle);
-	Wrapper = {};
+	Wrapper.UnbindFunc = UnbindFunc;
 }
 
 template <typename T>
