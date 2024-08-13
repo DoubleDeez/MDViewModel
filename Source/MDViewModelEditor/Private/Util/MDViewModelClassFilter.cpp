@@ -22,7 +22,12 @@ FMDViewModelClassFilter::FMDViewModelClassFilter(bool bAllowAbstract)
 
 bool FMDViewModelClassFilter::IsClassAllowed(const FClassViewerInitializationOptions& InInitOptions, const UClass* InClass, TSharedRef<FClassViewerFilterFuncs> InFilterFuncs)
 {
-	if (InClass == UMDViewModelBase::StaticClass() || InClass == UMDViewModelBlueprintBase::StaticClass() || !InClass->IsChildOf<UMDViewModelBase>())
+	if (InClass == UMDViewModelBase::StaticClass())
+	{
+		return true;
+	}
+
+	if (InClass == UMDViewModelBlueprintBase::StaticClass() || !InClass->IsChildOf<UMDViewModelBase>())
 	{
 		return false;
 	}
