@@ -214,12 +214,12 @@ void FMDViewModelAssignmentEditorObjectCustomization::CustomizeDetails(IDetailLa
 			{
 				TArray<FText> ViewModelIssues;
 				ViewModelCDO->ValidateViewModelSettings(EditorObject->ViewModelSettings, Dialog->GetBlueprint(), Assignment, ViewModelIssues);
-	
+
 				if (!ViewModelIssues.IsEmpty())
 				{
 					IDetailCategoryBuilder& ViewModelValidationCategory = DetailBuilder.EditCategory(TEXT("View Model Validation"));
 					ViewModelValidationCategory.SetSortOrder(++CustomSortOrder);
-	
+
 					for (const FText& Issue : ViewModelIssues)
 					{
 						ViewModelValidationCategory.AddCustomRow(Issue).WholeRowContent()
