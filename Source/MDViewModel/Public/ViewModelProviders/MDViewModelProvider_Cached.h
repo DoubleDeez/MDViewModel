@@ -367,7 +367,7 @@ void UMDViewModelProvider_Cached::BindDelegateIfUnbound(TBindingKey&& BindingKey
 }
 
 template <typename T>
-bool UMDViewModelProvider_Cached::IsValidObject(const T* Object) const
+bool UMDViewModelProvider_Cached::IsValidObject(const T* Object)
 {
 	using DecayedT = typename TDecay<T>::Type;
 	if constexpr (TIsDerivedFrom<DecayedT, UObject>::Value)
