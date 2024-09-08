@@ -151,6 +151,12 @@ void SMDViewModelFieldInspector::PopulateTreeView()
 					continue;
 				}
 
+				// Non-public blueprint events are usually internal functions (eg. async node execution pins)
+				if (Func->HasAllFunctionFlags(FUNC_BlueprintEvent) && !Func->HasAllFunctionFlags(FUNC_Public))
+				{
+					continue;
+				}
+
 				const bool bIsFieldNotify = FieldNotifySupportedNames.Contains(Func->GetFName());
 				FMDVMDragAndDropCreatorFunc DragAndDropCreatorFunc;
 				GetDragAndDropCreatorForFunction(*Func, bIsFieldNotify, DragAndDropCreatorFunc);
