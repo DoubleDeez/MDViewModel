@@ -2,6 +2,7 @@
 
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintNodeSpawner.h"
+#include "Kismet2/CompilerResultsLog.h"
 #include "Util/MDViewModelAssignmentReference.h"
 #include "Util/MDViewModelFunctionLibrary.h"
 #include "ViewModel/MDViewModelBase.h"
@@ -83,7 +84,7 @@ void UMDVMNode_SetViewModelOfClass::UpdateAssignmentBasedData()
 	GetAssignmentFromPinDefaults(Assignment);
 
 	const TSubclassOf<UMDViewModelBase> ViewModelClass = Assignment.ViewModelClass.LoadSynchronous();
-	
+
 	// Change the return pin's class to the assigned view model class
 	if (IsValid(ViewModelClass))
 	{
@@ -91,10 +92,10 @@ void UMDVMNode_SetViewModelOfClass::UpdateAssignmentBasedData()
 		{
 			ReturnPin->PinType.PinSubCategoryObject = ViewModelClass;
 		}
-		
+
 #if WITH_EDITOR
 		bool bAreViewModelSettingsRequired = false;
-		
+
 		// Check if view model settings are required by the view model
 		if (const UMDViewModelBase* VMCDO = ViewModelClass.GetDefaultObject())
 		{
@@ -116,13 +117,13 @@ void UMDVMNode_SetViewModelOfClass::UpdateAssignmentBasedData()
 		{
 			bAreViewModelSettingsValid = true;
 			VMSettingsPin->BreakAllPinLinks(true);
-		}		
+		}
 #endif
 
 		ErrorMsg.Reset();
 		ErrorType = EMessageSeverity::Info + 1;
 		bHasCompilerMessage = false;
-		
+
 		FCompilerResultsLog Log;
 		ValidateNodeDuringCompilation(Log);
 	}
