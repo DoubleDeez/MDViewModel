@@ -79,4 +79,13 @@ struct TMDVMFuncTraits<void(TFirstArg, TArgs...)>
 #define MDVM_SET_FIELD(FIELD_NAME, VALUE) SetFieldNotifyValue(FIELD_NAME, VALUE, ThisClass::FFieldNotificationClassDescriptor::FIELD_NAME)
 #endif
 
+// Fix syntax highlighting caused by code analysis engine not detecting FieldNotify names
+#if defined(__RESHARPER__)
+// Shutdown a field of SubViewModels, clear the field value, and broadcast it
+#define MDVM_SHUTDOWN_SUBVMS(FIELD_NAME) [_ = FIELD_NAME](){}()
+#else
+// Shutdown a field of SubViewModels, clear the field value, and broadcast it
+#define MDVM_SHUTDOWN_SUBVMS(FIELD_NAME) ShutdownSubViewModels(FIELD_NAME); BroadcastFieldValueChanged(ThisClass::FFieldNotificationClassDescriptor::FIELD_NAME)
+#endif
+
 
