@@ -66,6 +66,8 @@ protected:
 
 	virtual FFieldVariant GetFieldForDefinitionNavigation() const { return {}; }
 
+	EVisibility GetIsConfigFieldVisibility() const;
+
 	void OnFindReferencesClicked() const;
 
 	void NavigateToDefinitionField() const;

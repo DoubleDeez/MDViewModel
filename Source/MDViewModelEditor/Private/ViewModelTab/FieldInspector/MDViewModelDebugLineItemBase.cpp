@@ -11,6 +11,7 @@
 #include "Kismet2/KismetEditorUtilities.h"
 #include "PropertyInfoViewStyle.h"
 #include "SourceCodeNavigation.h"
+#include "ViewModel/MDViewModelBase.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMDragAndDropWrapperButton.h"
 #include "ViewModelTab/FieldInspector/DragAndDrop/MDVMInspectorDragAndDropActionBase.h"
 #include "WidgetBlueprint.h"
@@ -112,13 +113,29 @@ TSharedRef<SWidget> FMDViewModelDebugLineItemBase::GenerateNameWidget(TSharedPtr
 		.OnGetDragAndDropAction(this, &FMDViewModelDebugLineItemBase::CreateDragAndDropAction)
 		.bCanDrag(this, &FMDViewModelDebugLineItemBase::CanDrag)
 		[
-			SNew(PropertyInfoViewStyle::STextHighlightOverlay)
-			.FullText(this, &FMDViewModelDebugLineItemBase::GetDisplayName)
-			.HighlightText(this, &FDebugLineItem::GetHighlightText, InSearchString)
+			SNew(SHorizontalBox)
+			+SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(0, 0, 4.f, 0)
+			.VAlign(VAlign_Center)
 			[
-				SNew(STextBlock)
-					.ToolTipText(this, &FDebugLineItem::GetDescription)
-					.Text(this, &FMDViewModelDebugLineItemBase::GetDisplayName)
+				SNew(SImage)
+				.Visibility(this, &FMDViewModelDebugLineItemBase::GetIsConfigFieldVisibility)
+				.ToolTipText(INVTEXT("This property is set by config and is shared across all instances of the viewmodel class. Open the viewmodel assignment to view/edit its value."))
+				.Image(FAppStyle::Get().GetBrush(TEXT("ProjectSettings.TabIcon")))
+			]
+			+SHorizontalBox::Slot()
+			.FillWidth(1.f)
+			.VAlign(VAlign_Center)
+			[
+				SNew(PropertyInfoViewStyle::STextHighlightOverlay)
+				.FullText(this, &FMDViewModelDebugLineItemBase::GetDisplayName)
+				.HighlightText(this, &FDebugLineItem::GetHighlightText, InSearchString)
+				[
+					SNew(STextBlock)
+						.ToolTipText(this, &FDebugLineItem::GetDescription)
+						.Text(this, &FMDViewModelDebugLineItemBase::GetDisplayName)
+				]
 			]
 		];
 }
@@ -136,6 +153,21 @@ FText FMDViewModelDebugLineItemBase::GetDescription() const
 bool FMDViewModelDebugLineItemBase::CanCreateNodes() const
 {
 	return !GEditor->bIsSimulatingInEditor && GEditor->PlayWorld == nullptr;
+}
+
+EVisibility FMDViewModelDebugLineItemBase::GetIsConfigFieldVisibility() const
+{
+	FFieldVariant FieldVariant = GetFieldForDefinitionNavigation();
+
+	if (FieldVariant.IsValid() && FieldVariant.IsA<FProperty>())
+	{
+		if (const FProperty* Property = FieldVariant.Get<FProperty>())
+		{
+			return Property->HasAnyPropertyFlags(CPF_Config) ? EVisibility::Visible : EVisibility::Collapsed;
+		}
+	}
+
+	return EVisibility::Collapsed;
 }
 
 void FMDViewModelDebugLineItemBase::OnFindReferencesClicked() const
