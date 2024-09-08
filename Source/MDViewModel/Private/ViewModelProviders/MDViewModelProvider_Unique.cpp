@@ -51,7 +51,7 @@ void UMDViewModelProvider_Unique::GetExpectedContextObjectTypes(const FInstanced
 {
 	if (IsValid(Blueprint))
 	{
-		OutContextObjectClasses.Add(Blueprint->SkeletonGeneratedClass != nullptr ? Blueprint->SkeletonGeneratedClass : Blueprint->GeneratedClass);
+		OutContextObjectClasses.Add(Blueprint->GeneratedClass);
 	}
 }
 #endif

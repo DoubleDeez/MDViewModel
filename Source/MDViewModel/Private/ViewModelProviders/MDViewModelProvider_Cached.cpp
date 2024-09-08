@@ -364,7 +364,6 @@ void UMDViewModelProvider_Cached::GetExpectedContextObjectTypes(const FInstanced
 void UMDViewModelProvider_Cached::GetExpectedContextObjectType(const FMDViewModelProvider_Cached_Settings& ProviderSettings, const FInstancedStruct& ViewModelSettings, UBlueprint* Blueprint, TArray<TSubclassOf<UObject>>& OutContextObjectClasses) const
 {
 	const FGameplayTag& Lifetime = ProviderSettings.GetLifetimeTag();
-	UClass* AssignedObjectClass = Blueprint->SkeletonGeneratedClass != nullptr ? Blueprint->SkeletonGeneratedClass : Blueprint->GeneratedClass;
 	if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_Global)
 	{
 		OutContextObjectClasses.Add(UGameInstance::StaticClass());
@@ -415,6 +414,7 @@ void UMDViewModelProvider_Cached::GetExpectedContextObjectType(const FMDViewMode
 	}
 	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_RelativeProperty)
 	{
+		UClass* AssignedObjectClass = Blueprint->SkeletonGeneratedClass != nullptr ? Blueprint->SkeletonGeneratedClass : Blueprint->GeneratedClass;
 		const FMemberReference& Reference = ProviderSettings.RelativePropertyReference;
 		const UFunction* Function = Reference.ResolveMember<UFunction>(AssignedObjectClass);
 		const FObjectPropertyBase* Property = CastField<FObjectPropertyBase>(IsValid(Function) ? MDViewModelUtils::GetFunctionReturnProperty(Function) : Reference.ResolveMember<FProperty>(AssignedObjectClass));
@@ -442,7 +442,7 @@ void UMDViewModelProvider_Cached::GetExpectedContextObjectType(const FMDViewMode
 	}
 	else if (Lifetime == TAG_MDVMProvider_Cached_Lifetimes_Self)
 	{
-		OutContextObjectClasses.Add(AssignedObjectClass);
+		OutContextObjectClasses.Add(Blueprint->GeneratedClass);
 	}
 }
 #endif
@@ -1349,7 +1349,7 @@ void UMDViewModelProvider_Cached::BindLevelAddedToWorldDelegates(IMDViewModelRun
 {
 	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
 	UnbindDelegate(BindingKey, MDVMDI_LevelWorldChanged);
-	
+
 	BindDelegateIfUnbound<IMDViewModelRuntimeInterface>(MoveTemp(BindingKey), &Object, MDVMDI_LevelWorldChanged, [&](auto& Owner)
 	{
 		return FWorldDelegates::LevelAddedToWorld.AddUObject(this, &UMDViewModelProvider_Cached::OnLevelAddedToWorld, Object.MakeWeak(), Assignment, Data);
@@ -1364,7 +1364,7 @@ void UMDViewModelProvider_Cached::BindLevelRemovedFromWorldDelegates(TWeakObject
 {
 	FMDVMAssignmentObjectKey BindingKey = { Assignment, &Object };
 	UnbindDelegate(BindingKey, MDVMDI_LevelWorldChanged);
-	
+
 	BindDelegateIfUnbound<IMDViewModelRuntimeInterface>(MoveTemp(BindingKey), &Object, MDVMDI_LevelWorldChanged, [&](auto& Owner)
 	{
 		return FWorldDelegates::LevelRemovedFromWorld.AddUObject(this, &UMDViewModelProvider_Cached::OnLevelRemovedFromWorld, BoundActor, Object.MakeWeak(), Assignment, Data);
